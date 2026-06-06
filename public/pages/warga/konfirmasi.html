@@ -1,0 +1,127 @@
+<section class="warga-shell konfirmasi-page" data-warga-page="konfirmasi">
+  <aside class="warga-side">
+    <div class="side-head">
+      <h3><i class="fa-solid fa-user"></i> Panel Warga</h3>
+      <div class="muted" style="font-size:12px;margin-top:6px" id="wargaUserLabel">-</div>
+    </div>
+
+    <ul class="side-menu">
+      <li><a class="nav-link" data-page="warga/dashboard" href="#warga/dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</a></li>
+      <li><a class="nav-link" data-page="warga/surat" href="#warga/surat"><i class="fa-solid fa-file-lines"></i> Surat Saya</a></li>
+      <li><a class="nav-link" data-page="warga/pengaduan" href="#warga/pengaduan"><i class="fa-solid fa-comments"></i> Pengaduan Saya</a></li>
+      <li><a class="nav-link" data-page="warga/chat" href="#warga/chat"><i class="fa-solid fa-message"></i> Chat</a></li>
+      <li><a class="nav-link" data-page="warga/profil" href="#warga/profil"><i class="fa-solid fa-id-card"></i> Profil</a></li>
+      <li class="divider" style="margin:6px 0"></li>
+      <li><a class="nav-link" data-page="home" href="#home"><i class="fa-solid fa-arrow-left"></i> Ke Publik</a></li>
+      <li><a href="#" data-action="logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
+    </ul>
+  </aside>
+
+  <div class="warga-main" style="padding: 0; background: #f8fafc;">
+    <!-- SUCCESS HEADER BANNER -->
+    <div id="thanksBanner" style="background: #10b981; color: #ffffff; text-align: center; padding: 42px 20px; border-radius: 0 0 24px 24px; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.15);">
+      <div style="width: 68px; height: 68px; background: #ffffff; color: #10b981; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 34px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <h1 id="thanksMainTitle" style="font-size: 24px; font-weight: 800; margin: 0 0 8px 0; letter-spacing: -0.02em;">Permohonan Surat Berhasil Dikirim!</h1>
+      <p id="thanksMainDesc" style="font-size: 14px; margin: 0; opacity: 0.95;">Terima kasih atas kepercayaan Anda menggunakan layanan kami</p>
+    </div>
+
+    <div style="padding: 24px 20px; max-width: 680px; margin: 0 auto;" class="stack-lg">
+      
+      <!-- REGISTRATION NUMBER CARD -->
+      <div class="card" id="thanksRefBox" style="border: 1px solid rgba(30, 99, 255, 0.15); background: #f0f6ff; border-radius: 16px;">
+        <div class="card-pad" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; gap: 14px;">
+          <div>
+            <div id="refLabel" class="muted" style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Nomor Registrasi:</div>
+            <div id="thanksRefCode" style="font-size: 22px; font-weight: 900; color: var(--primary); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: 0.05em;">-</div>
+            <div id="refSub" class="muted" style="font-size: 12px; margin-top: 4px;">Simpan nomor ini untuk melacak status permohonan surat Anda</div>
+          </div>
+          <button id="btnCopyReg" class="btn btn-ghost" style="padding: 10px; border-radius: 12px; border: 1px solid rgba(30, 99, 255, 0.2); background: #ffffff; color: var(--primary); cursor: pointer;" title="Salin nomor">
+            <i class="fa-regular fa-copy" style="font-size: 18px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- INFO LIST CARDS -->
+      <div class="card" style="border-radius: 16px;">
+        <div class="card-pad" style="padding: 0;">
+          <!-- Waktu Pemprosesan -->
+          <div style="display: flex; gap: 16px; padding: 20px; border-bottom: 1px solid var(--border);">
+            <div id="card1Icon" style="width: 40px; height: 40px; background: rgba(30, 99, 255, 0.1); color: var(--primary); border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+              <i class="fa-regular fa-clock"></i>
+            </div>
+            <div>
+              <h4 id="card1Title" style="margin: 0 0 4px 0; font-size: 15px; font-weight: 800; color: var(--text);">Waktu Pemprosesan</h4>
+              <p id="card1Desc" class="muted" style="font-size: 13px; margin: 0; line-height: 1.4;">Permohonan surat Anda akan diproses dalam waktu 2-5 hari kerja. Status akan diperbarui secara berkala.</p>
+            </div>
+          </div>
+
+          <!-- Notifikasi Status -->
+          <div style="display: flex; gap: 16px; padding: 20px; border-bottom: 1px solid var(--border);">
+            <div id="card2Icon" style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+              <i class="fa-regular fa-envelope"></i>
+            </div>
+            <div>
+              <h4 id="card2Title" style="margin: 0 0 4px 0; font-size: 15px; font-weight: 800; color: var(--text);">Notifikasi Status</h4>
+              <p id="card2Desc" class="muted" style="font-size: 13px; margin: 0; line-height: 1.4;">Anda akan menerima pemberitahuan melalui email dan sistem dashboard setiap kali terjadi perubahan status pada permohonan Anda.</p>
+            </div>
+          </div>
+
+          <!-- Komunikasi & Bantuan -->
+          <div style="display: flex; gap: 16px; padding: 20px;">
+            <div id="card3Icon" style="width: 40px; height: 40px; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+              <i class="fa-regular fa-comments"></i>
+            </div>
+            <div>
+              <h4 id="card3Title" style="margin: 0 0 4px 0; font-size: 15px; font-weight: 800; color: var(--text);">Komunikasi & Bantuan</h4>
+              <p id="card3Desc" class="muted" style="font-size: 13px; margin: 0; line-height: 1.4;">Jika ada pertanyaan atau dokumen tambahan yang diperlukan, petugas akan menghubungi Anda melalui fitur chat yang tersedia di dashboard.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LANGKAH SELANJUTNYA CARD -->
+      <div class="card" style="background: #fffdf5; border: 1px solid #fef08a; border-radius: 16px;">
+        <div class="card-pad" style="padding: 20px;">
+          <h4 id="nextStepsTitle" style="margin: 0 0 12px 0; font-size: 15px; font-weight: 800; color: #854d0e;">Langkah Selanjutnya:</h4>
+          <ul id="nextStepsList" class="stack" style="padding: 0; list-style: none;">
+            <li style="display: flex; gap: 10px; font-size: 13px; color: #854d0e; line-height: 1.4;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: #fef08a; border-radius: 50%; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 1px;">1</span>
+              <span id="step1Text">Pantau status permohonan Anda secara berkala melalui dashboard</span>
+            </li>
+            <li style="display: flex; gap: 10px; font-size: 13px; color: #854d0e; line-height: 1.4;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: #fef08a; border-radius: 50%; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 1px;">2</span>
+              <span id="step2Text">Pastikan notifikasi email Anda aktif agar tidak melewatkan update penting</span>
+            </li>
+            <li style="display: flex; gap: 10px; font-size: 13px; color: #854d0e; line-height: 1.4;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: #fef08a; border-radius: 50%; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 1px;">3</span>
+              <span id="step3Text">Jika surat sudah selesai, Anda akan diberitahu untuk mengambil dokumen di kantor kelurahan</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ACTION BUTTONS -->
+      <div class="stack" style="gap: 12px; margin-top: 10px;">
+        <a id="thanksTrackLink" class="btn btn-primary nav-link" data-page="warga/surat" href="#warga/surat" style="width: 100%; padding: 14px; font-size: 15px; border-radius: 12px; justify-content: center; font-weight: 800;">
+          <i class="fa-regular fa-file-lines"></i> Lihat Status Surat
+        </a>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <a id="thanksBtnSurat" class="btn btn-ghost nav-link" data-page="pengajuan-online" href="#pengajuan-online" style="padding: 12px; border-radius: 12px; justify-content: center; border: 1px solid var(--border); background: #ffffff; font-weight: 700;">
+            <i class="fa-solid fa-paper-plane"></i> Ajukan Surat Lagi
+          </a>
+          <a class="btn btn-ghost nav-link" data-page="home" href="#home" style="padding: 12px; border-radius: 12px; justify-content: center; border: 1px solid var(--border); background: #ffffff; font-weight: 700;">
+            <i class="fa-solid fa-house"></i> Kembali ke Beranda
+          </a>
+        </div>
+      </div>
+
+      <!-- FOOTER HELP LINK -->
+      <div style="text-align: center; margin-top: 15px; font-size: 13px;">
+        <span class="muted">Butuh bantuan? Hubungi kami melalui</span>
+        <a class="nav-link" data-page="kontak" href="#kontak" style="color: var(--primary); text-decoration: underline; font-weight: 800;">halaman kontak</a>
+      </div>
+    </div>
+  </div>
+</section>

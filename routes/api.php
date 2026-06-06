@@ -1,0 +1,139 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SuratController;
+use App\Http\Controllers\PengaduanController;
+use App\Http\Controllers\WargaDashboardController;
+use App\Http\Controllers\StafDashboardController;
+use App\Http\Controllers\PelayananController;
+use App\Http\Controllers\BeritaController;
+use App\Http\Controllers\PengumumanController;
+use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\AgendaController;
+use App\Http\Controllers\GaleriController;
+use App\Http\Controllers\LembagaController;
+use App\Http\Controllers\FaqController;
+use App\Http\Controllers\RtrwController;
+use App\Http\Controllers\SettingController;
+use App\Http\Controllers\UnitKerjaController;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
+Route::get('/test-auth', function () {
+    return response()->json([
+        'logged_in' => auth()->check(),
+        'user' => auth()->user(),
+    ]);
+
+})->middleware('auth');
+
+
+/*
+|--------------------------------------------------------------------------
+| PUBLIC API
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/public/berita', [BeritaController::class, 'index']);
+
+Route::get('/public/agenda', [AgendaController::class, 'index']);
+
+Route::get('/public/pengumuman', [PengumumanController::class, 'index']);
+
+Route::get('/public/lembaga', [LembagaController::class, 'index']);
+Route::get('/public/unit-kerja', [UnitKerjaController::class, 'index']);
+Route::get('/public/pelayanan', [PelayananController::class, 'index']);
+// ==================== AUTHENTICATED API ====================
+Route::middleware(['auth'])->group(function () {
+
+    // Get current user
+    Route::get('/user', function () {
+        return response()->json([
+            'id' => auth()->id(),
+            'name' => auth()->user()->name,
+            'email' => auth()->user()->email,
+            'role' => auth()->user()->role,
+        ]);
+    });
+
+    // ==================== ADMIN API ====================
+Route::prefix('admin')->middleware(['role:admin'])->group(function () {
+
+    Route::apiResource('users', UserManagementController::class);
+
+    Route::apiResource('surat', SuratController::class);
+
+    Route::apiResource('berita', BeritaController::class);
+
+    Route::apiResource('pengaduan', PengaduanController::class);
+
+    Route::apiResource('pengumuman', PengumumanController::class);
+
+    Route::apiResource('agenda', AgendaController::class);
+
+    Route::apiResource('galeri', GaleriController::class);
+
+    Route::apiResource('lembaga', LembagaController::class);
+
+    Route::apiResource('faq', FaqController::class);
+
+    Route::apiResource('rtrw', RtrwController::class);
+
+    Route::apiResource('setting', SettingController::class);
+
+    Route::apiResource('pelayanan', PelayananController::class);
+
+    Route::apiResource('unit-kerja', UnitKerjaController::class);
+
+    Route::get('/laporan', [LaporanController::class, 'index']);
+
+    Route::post(
+        'surat/{surat}/upload',
+        [SuratController::class, 'uploadPdf']
+    );
+
+   Route::get('/stats', function () {
+    return response()->json([
+        'berita' => \App\Models\Berita::count(),
+        'agenda' => \App\Models\Agenda::count(),
+        'galeri' => \App\Models\Galeri::count(),
+        'pengumuman' => \App\Models\Pengumuman::count(),
+        'surat' => \App\Models\Surat::count(),
+        'pengaduan' => \App\Models\Pengaduan::count(),
+        'warga' => \App\Models\User::where('role','warga')->count(),
+    ]);
+});
+
+});
+
+    // ==================== WARGA API ====================
+    Route::prefix('warga')->middleware(['role:warga'])->group(function () {
+        Route::get('/dashboard', [WargaDashboardController::class, 'index']);
+        Route::get('/surat', [SuratController::class, 'indexWarga']);
+        Route::post('/surat', [SuratController::class, 'storeWarga']);
+        Route::get('/pengaduan', [PengaduanController::class, 'indexWarga']);
+        Route::post('/pengaduan', [PengaduanController::class, 'storeWarga']);
+        Route::get('/pelayanan', [PelayananController::class, 'indexWarga']);
+        Route::get('/profil', [ProfileController::class, 'showApi']);
+        Route::put('/profil', [ProfileController::class, 'updateApi']);
+    });
+
+    // ==================== STAF API ====================
+    Route::prefix('staf')->middleware(['role:staf'])->group(function () {
+        Route::get('/dashboard', [StafDashboardController::class, 'index']);
+        Route::get('/pengaduan', [PengaduanController::class, 'indexStaf']);
+        Route::put('/pengaduan/{id}/status', [PengaduanController::class, 'updateStatus']);
+        Route::get('/pengaduan/{id}', [PengaduanController::class, 'show']);
+        Route::get('/surat', [SuratController::class, 'indexStaf']);
+        Route::get('/surat/{surat}', [SuratController::class, 'show']);
+        Route::put('/surat/{id}/status', [SuratController::class, 'updateStatus']);
+        Route::post('/surat/{id}/upload-hasil', [SuratController::class, 'uploadHasil']);
+        Route::get('/profil', [ProfileController::class, 'showApi']);
+        Route::put('/profil', [ProfileController::class, 'updateApi']);
+    });
+});

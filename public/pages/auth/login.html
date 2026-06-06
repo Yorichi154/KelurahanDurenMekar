@@ -1,0 +1,74 @@
+<section class="auth-page">
+    <div class="auth-card">
+        <div class="auth-icon">
+            <i class="fa fa-arrow-right-to-bracket"></i>
+        </div>
+
+        <h2>Login Sistem Kelurahan</h2>
+        <p class="auth-subtitle">
+            Masukkan email dan password untuk mengakses sistem
+        </p>
+
+        <!-- pesan error -->
+        <div
+            id="loginError"
+            class="auth-error"
+            style="
+                display: none;
+                margin: 12px 0;
+                padding: 10px 12px;
+                border-radius: 10px;
+                background: #fee2e2;
+                color: #991b1b;
+                font-weight: 600;
+            "
+        >
+            Email / password salah.
+        </div>
+
+        <form id="loginForm">
+            <label>Email / Username</label>
+            <input
+                type="text"
+                id="loginEmail"
+                placeholder="admin@kelurahan.id"
+                required
+            />
+
+            <label>Password</label>
+            <input
+                type="password"
+                id="loginPassword"
+                placeholder="********"
+                required
+            />
+
+            <button type="submit" class="btn-auth">Login</button>
+            <div
+                id="loginError"
+                style="
+                    display: none;
+                    color: #ef4444;
+                    margin: 10px 0;
+                    font-weight: 600;
+                "
+            ></div>
+        </form>
+
+        <div class="auth-links">
+            <a href="#" class="nav-link" data-page="forgot-password"
+                >Lupa Password?</a
+            >
+            <span
+                >Belum punya akun?
+                <a href="#" class="nav-link" data-page="register"
+                    >Daftar di sini</a
+                ></span
+            >
+        </div>
+
+        <a href="#" class="back-home nav-link" data-page="home">
+            ← Kembali ke Beranda
+        </a>
+    </div>
+</section>
