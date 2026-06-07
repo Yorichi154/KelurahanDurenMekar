@@ -216,3 +216,220 @@ body.is-staf #footer{ display:none; }
     gap: 16px !important;
   }
 }
+
+/* ==========================================================
+   SiSurat — Wizard Buat Surat & Arsip
+========================================================== */
+
+/* ── Step Progress Bar ── */
+.sisurat-step-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.sis-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.45;
+  transition: opacity .2s;
+}
+
+.sis-step.active { opacity: 1; }
+.sis-step.done   { opacity: 0.75; }
+
+.sis-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 1000;
+  background: var(--surface);
+  color: var(--muted);
+  transition: background .2s, border-color .2s, color .2s;
+}
+
+.sis-step.active .sis-step-num {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(31,95,224,.18);
+}
+
+.sis-step.done .sis-step-num {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+}
+
+.sis-step-label {
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.sis-step-line {
+  width: 32px;
+  height: 2px;
+  background: var(--border);
+  margin: 0 6px;
+}
+
+/* ── Jenis Surat Grid ── */
+.sisurat-jenis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.sisurat-jenis-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .18s, background .18s, box-shadow .18s, transform .15s;
+  position: relative;
+}
+
+.sisurat-jenis-card:hover {
+  border-color: rgba(31,95,224,.35);
+  background: rgba(31,95,224,.04);
+  box-shadow: 0 8px 24px rgba(31,95,224,.12);
+  transform: translateY(-2px);
+}
+
+.sisurat-jenis-card:active {
+  transform: translateY(0);
+}
+
+.sis-jenis-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.sis-jenis-nama {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.35;
+  flex: 1;
+}
+
+.sis-jenis-kode {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  background: rgba(148,163,184,.14);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.sis-jenis-chevron {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity .18s, right .18s;
+}
+
+.sisurat-jenis-card:hover .sis-jenis-chevron {
+  opacity: 1;
+  right: 12px;
+}
+
+/* ── Form Grid ── */
+.sis-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sis-field-wide {
+  grid-column: span 2;
+}
+
+/* ── Checklist ── */
+.sis-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(148,163,184,.25);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  user-select: none;
+}
+
+.sis-check-item:last-child { border-bottom: 0; }
+
+.sis-check-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  margin-top: 1px;
+  accent-color: var(--primary);
+}
+
+/* Loading */
+.sisurat-loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--muted);
+  padding: 40px;
+  font-weight: 700;
+}
+
+/* ── Arsip Filter Bar ── */
+.arsip-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ── Step 2/3 responsive grid ── */
+@media (max-width: 900px) {
+  .sisurat-step2-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .sis-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .sis-field-wide {
+    grid-column: span 1;
+  }
+  .sisurat-jenis-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sis-step-label { display: none; }
+}

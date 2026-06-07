@@ -55,6 +55,37 @@ Render public pages dari API Laravel (BUKAN localStorage)
         const newsGrid = document.getElementById("homeNewsGrid");
         const agendaList = document.getElementById("homeAgendaList");
 
+        // Statistics
+        const statTotalWarga = document.getElementById("stat-total-warga");
+        const statTotalRtrw = document.getElementById("stat-total-rtrw");
+        const statLayananAktif = document.getElementById("stat-layanan-aktif");
+        const statSuratDiproses = document.getElementById("stat-surat-diproses");
+
+        if (statTotalWarga || statTotalRtrw || statLayananAktif || statSuratDiproses) {
+            try {
+                const response = await fetch("/api/public/stats", {
+                    credentials: "include",
+                });
+                if (response.ok) {
+                    const stats = await response.json();
+                    if (statTotalWarga && stats.total_warga !== undefined) {
+                        statTotalWarga.textContent = Number(stats.total_warga).toLocaleString("id-ID");
+                    }
+                    if (statTotalRtrw && stats.total_rtrw !== undefined) {
+                        statTotalRtrw.textContent = Number(stats.total_rtrw).toLocaleString("id-ID");
+                    }
+                    if (statLayananAktif && stats.layanan_aktif !== undefined) {
+                        statLayananAktif.textContent = Number(stats.layanan_aktif).toLocaleString("id-ID");
+                    }
+                    if (statSuratDiproses && stats.surat_diproses !== undefined) {
+                        statSuratDiproses.textContent = Number(stats.surat_diproses).toLocaleString("id-ID");
+                    }
+                }
+            } catch (error) {
+                console.error("Gagal memuat statistik:", error);
+            }
+        }
+
         // Berita
         if (newsGrid) {
             try {

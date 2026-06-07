@@ -769,4 +769,10 @@ window.addEventListener("page:loaded", (e) => {
     if (page === "staf/pengaduan") {
         initStafPengaduanLaravel();
     }
+    if (page === 'staf/buat-surat') {
+        if (typeof window.initBuatSurat === 'function') window.initBuatSurat();
+    }
+    if (page === 'staf/arsip-surat') {
+        if (typeof window.initArsipSurat === 'function') window.initArsipSurat();
+    }
 });

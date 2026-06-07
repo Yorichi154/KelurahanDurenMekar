@@ -224,6 +224,7 @@
         const search = document.getElementById("wargaSuratSearch");
         const filter = document.getElementById("wargaSuratFilter");
         const form = document.getElementById("wargaSuratForm");
+        let currentLetters = [];
 
         // esc is defined globally in warga.js
 
@@ -285,19 +286,40 @@
 
         function openBerkasModal(item) {
             const files = Array.isArray(item?.berkas) ? item.berkas : [];
+            const fileSurat = item?.file_surat;
             const hasil =
                 item?.hasilSurat && typeof item.hasilSurat === "object"
                     ? item.hasilSurat
                     : null;
             if (berkasUi.meta) {
-                berkasUi.meta.innerHTML = `${esc(item?.jenis || "-")} • ${esc(fmtDate(item?.tanggal))} • ${pill(item?.status)}`;
+                const jenis = item?.jenis_surat || item?.jenis || "-";
+                const tanggal = item?.created_at || item?.tanggal;
+                berkasUi.meta.innerHTML = `${esc(jenis)} • ${esc(fmtDate(tanggal))} • ${pill(item?.status)}`;
             }
 
             if (!berkasUi.body) return;
 
             let html = "";
 
-            if (hasil) {
+            if (fileSurat) {
+                const fileUrl = `/storage/${fileSurat}`;
+                html += `
+                    <div class="card" style="margin-bottom:10px">
+                        <div class="card-body" style="padding:14px">
+                            <div style="display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
+                                <div>
+                                    <div style="font-weight:1000">Hasil Surat</div>
+                                    <div class="muted" style="font-size:12px">Surat selesai diproses.</div>
+                                </div>
+                                <div>
+                                    <a class="btn btn-primary btn-sm" href="${fileUrl}" target="_blank" rel="noopener">
+                                        <i class="fa-regular fa-eye" aria-hidden="true"></i> Buka Surat
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            } else if (hasil) {
                 const hName = esc(hasil.fileName || "surat.pdf");
                 const hMeta = `${esc(hasil.mime || "application/pdf")}${hasil.size ? ` • ${fmtSize(hasil.size)}` : ""}`;
                 const hNote = hasil.note
@@ -388,6 +410,7 @@
                 }
 
                 let items = await response.json();
+                currentLetters = items;
 
                 const q = (search?.value || "").toLowerCase();
                 const f = (filter?.value || "").toLowerCase();
@@ -461,8 +484,12 @@
             const btn = e.target.closest("[data-action='viewDetail']");
             if (!btn) return;
             const id = btn.dataset.id;
-            // TODO: Fetch detail surat dari API jika perlu
-            console.log("View detail for surat ID:", id);
+            const item = currentLetters.find(x => String(x.id) === String(id));
+            if (item) {
+                openBerkasModal(item);
+            } else {
+                console.warn("Letter not found for ID:", id);
+            }
         });
 
         // ✅ Event Delegation untuk close modal

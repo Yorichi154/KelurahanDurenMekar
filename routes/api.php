@@ -18,6 +18,7 @@ use App\Http\Controllers\FaqController;
 use App\Http\Controllers\RtrwController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UnitKerjaController;
+use App\Http\Controllers\BuatSuratController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,6 +49,14 @@ Route::get('/public/pengumuman', [PengumumanController::class, 'index']);
 Route::get('/public/lembaga', [LembagaController::class, 'index']);
 Route::get('/public/unit-kerja', [UnitKerjaController::class, 'index']);
 Route::get('/public/pelayanan', [PelayananController::class, 'index']);
+Route::get('/public/stats', function () {
+    return response()->json([
+        'total_warga' => \App\Models\User::where('role', 'warga')->count(),
+        'total_rtrw' => \App\Models\Rtrw::count(),
+        'layanan_aktif' => \App\Models\Pelayanan::count(),
+        'surat_diproses' => \App\Models\Surat::where('status', 'diproses')->count(),
+    ]);
+});
 // ==================== AUTHENTICATED API ====================
 Route::middleware(['auth'])->group(function () {
 
@@ -135,5 +144,12 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
         Route::post('/surat/{id}/upload-hasil', [SuratController::class, 'uploadHasil']);
         Route::get('/profil', [ProfileController::class, 'showApi']);
         Route::put('/profil', [ProfileController::class, 'updateApi']);
+
+        // ── SiSurat: Pembuatan & Arsip Surat ──
+        Route::get('/buat-surat/jenis', [BuatSuratController::class, 'indexJenis']);
+        Route::post('/buat-surat/preview', [BuatSuratController::class, 'preview']);
+        Route::post('/buat-surat', [BuatSuratController::class, 'store']);
+        Route::get('/buat-surat/{id}/download', [BuatSuratController::class, 'download']);
+        Route::get('/arsip-surat', [BuatSuratController::class, 'indexArsip']);
     });
 });
