@@ -1,0 +1,445 @@
+<section class="admin-shell" data-admin-page="struktur-organisasi">
+    <aside class="admin-side">
+        <div class="side-head">
+            <h3><i class="fa-solid fa-shield-halved"></i> Panel Admin</h3>
+            <div class="muted" style="font-size: 12px; margin-top: 6px" id="adminUserLabel" data-bind="userName">-</div>
+        </div>
+
+        <ul class="side-menu" id="adminSideMenu">
+            <li><a class="nav-link" data-page="admin/dashboard" href="#admin/dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</a></li>
+            <li><a class="nav-link" data-page="admin/profil-kelurahan" href="#admin/profil-kelurahan"><i class="fa-solid fa-location-dot"></i> Profil Kelurahan</a></li>
+            <li><a class="nav-link" data-page="admin/pelayanan" href="#admin/pelayanan"><i class="fa-regular fa-file-lines"></i> Pelayanan Surat</a></li>
+            <li><a class="nav-link" data-page="admin/unit-kerja" href="#admin/unit-kerja"><i class="fa-solid fa-people-roof"></i> Unit Kerja</a></li>
+            <li><a class="nav-link" data-page="admin/lembaga" href="#admin/lembaga"><i class="fa-solid fa-building-columns"></i> Lembaga</a></li>
+            <li><a class="nav-link active" data-page="admin/struktur-organisasi" href="#admin/struktur-organisasi"><i class="fa-solid fa-sitemap"></i> Struktur Organisasi</a></li>
+            <li class="menu-group" data-group="konten">
+                <button class="group-toggle" type="button" aria-expanded="false" aria-controls="groupKonten">
+                    <span class="left"><i class="fa-regular fa-folder-open"></i><span>Konten</span></span>
+                    <i class="fa-solid fa-chevron-down chev"></i>
+                </button>
+                <ul class="group-items" id="groupKonten">
+                    <li><a class="nav-link" data-page="admin/berita" href="#admin/berita"><i class="fa-regular fa-newspaper"></i> Berita</a></li>
+                    <li><a class="nav-link" data-page="admin/agenda" href="#admin/agenda"><i class="fa-regular fa-calendar"></i> Agenda</a></li>
+                    <li><a class="nav-link" data-page="admin/galeri" href="#admin/galeri"><i class="fa-regular fa-image"></i> Galeri</a></li>
+                    <li><a class="nav-link" data-page="admin/pengumuman" href="#admin/pengumuman"><i class="fa-solid fa-bullhorn"></i> Pengumuman</a></li>
+                </ul>
+            </li>
+            <li class="menu-group" data-group="operasional">
+                <button class="group-toggle" type="button" aria-expanded="false" aria-controls="groupOperasional">
+                    <span class="left"><i class="fa-solid fa-clipboard-check"></i><span>Operasional</span></span>
+                    <i class="fa-solid fa-chevron-down chev"></i>
+                </button>
+                <ul class="group-items" id="groupOperasional">
+                    <li><a class="nav-link" data-page="admin/pengaduan" href="#admin/pengaduan"><i class="fa-solid fa-comments"></i> Pengaduan</a></li>
+                    <li><a class="nav-link" data-page="admin/surat" href="#admin/surat"><i class="fa-solid fa-file-signature"></i> Surat</a></li>
+                    <li><a class="nav-link" data-page="admin/rt-rw" href="#admin/rt-rw"><i class="fa-solid fa-users"></i> RT/RW</a></li>
+                    <li><a class="nav-link" data-page="admin/faq" href="#admin/faq"><i class="fa-regular fa-circle-question"></i> FAQ</a></li>
+                </ul>
+            </li>
+            <li class="menu-group" data-group="sistem">
+                <button class="group-toggle" type="button" aria-expanded="false" aria-controls="groupSistem">
+                    <span class="left"><i class="fa-solid fa-sliders"></i><span>Sistem</span></span>
+                    <i class="fa-solid fa-chevron-down chev"></i>
+                </button>
+                <ul class="group-items" id="groupSistem">
+                    <li><a class="nav-link" data-page="admin/pengaturan" href="#admin/pengaturan"><i class="fa-solid fa-gear"></i> Pengaturan</a></li>
+                    <li><a class="nav-link" data-page="admin/laporan" href="#admin/laporan"><i class="fa-solid fa-chart-column"></i> Laporan</a></li>
+                </ul>
+            </li>
+            <li><a class="nav-link" data-page="admin/users" href="#admin/users"><i class="fa-solid fa-users-gear"></i> Kelola User</a></li>
+            <li><a class="nav-link" data-page="home" href="#home"><i class="fa-solid fa-arrow-left"></i> Ke Publik</a></li>
+            <li><a href="#" data-action="logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
+        </ul>
+    </aside>
+
+    <div class="admin-main">
+        <div class="admin-top">
+            <div>
+                <h1><i class="fa-solid fa-sitemap" style="color:var(--primary);margin-right:8px"></i>Struktur Organisasi</h1>
+                <div class="muted" style="font-weight:700">Kelola foto, nama, dan jabatan anggota organisasi kelurahan</div>
+            </div>
+            <div class="top-actions">
+                <a class="btn btn-ghost nav-link" data-page="admin/dashboard" href="#admin/dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="card" style="margin-bottom:16px">
+            <div class="card-body">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;justify-content:space-between">
+                    <div class="field" style="min-width:260px;flex:1">
+                        <label>Cari Anggota</label>
+                        <input class="input" id="soSearch" placeholder="Cari nama atau jabatan..." />
+                    </div>
+                    <div>
+                        <button class="btn btn-solid" id="soBtnTambah">
+                            <i class="fa-solid fa-plus"></i> Tambah Anggota
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Grid -->
+        <div id="soGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:20px">
+            <!-- Rendered by JS -->
+        </div>
+
+        <div id="soEmpty" class="muted" style="display:none;text-align:center;padding:40px">
+            <i class="fa-solid fa-sitemap" style="font-size:40px;opacity:.2"></i>
+            <p style="margin-top:12px">Belum ada data anggota. Klik "Tambah Anggota" untuk memulai.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Modal Form Tambah / Edit -->
+<div class="modal" id="soModal" aria-hidden="true">
+    <div class="modal-panel" style="max-width:500px;width:100%">
+        <div class="modal-head">
+            <div class="modal-title">
+                <h3 id="soModalTitle">Tambah Anggota</h3>
+            </div>
+            <button class="btn btn-ghost icon-btn" id="soBtnClose" type="button"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form id="soForm" class="modal-body" enctype="multipart/form-data">
+            <input type="hidden" id="soId" />
+
+            <!-- Preview Foto -->
+            <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:16px">
+                <div id="soPhotoWrap" style="
+                    width:120px;height:120px;border-radius:50%;overflow:hidden;
+                    border:3px solid var(--border);background:var(--field-bg);
+                    display:flex;align-items:center;justify-content:center;margin-bottom:8px">
+                    <img id="soPhotoPreview" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none" />
+                    <i id="soPhotoIcon" class="fa-solid fa-user" style="font-size:48px;color:var(--muted);opacity:.4"></i>
+                </div>
+                <label class="btn btn-ghost" for="soFoto" style="cursor:pointer;font-size:13px">
+                    <i class="fa-solid fa-camera"></i> Pilih Foto
+                </label>
+                <input type="file" id="soFoto" name="foto" accept="image/*" style="display:none" />
+            </div>
+
+            <div class="field">
+                <label>Nama Lengkap <span style="color:red">*</span></label>
+                <input class="input" id="soNama" placeholder="Contoh: Drs. Budi Santoso, M.Si" required />
+            </div>
+
+            <div class="field">
+                <label>Jabatan <span style="color:red">*</span></label>
+                <input class="input" id="soJabatan" placeholder="Contoh: Lurah" required />
+            </div>
+
+            <div class="field">
+                <label>Atasan / Jabatan Induk</label>
+                <input class="input" id="soParent" placeholder="Kosongkan jika paling atas (mis: Lurah)" />
+                <small class="muted" style="font-size:11px">Isi dengan jabatan atasan langsung untuk keperluan bagan organisasi</small>
+            </div>
+
+            <div class="field">
+                <label>Urutan Tampil</label>
+                <input type="number" class="input" id="soUrutan" placeholder="0 = paling atas" min="0" value="0" />
+            </div>
+
+            <div class="modal-foot">
+                <button class="btn btn-ghost" type="button" id="soBtnBatal">Batal</button>
+                <button class="btn btn-solid" type="submit" id="soBtnSimpan">
+                    <i class="fa-solid fa-floppy-disk"></i> Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* Struktur Organisasi — card style */
+.so-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 16px;
+    gap: 8px;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+    position: relative;
+}
+
+.so-card:hover {
+    box-shadow: 0 12px 30px rgba(15,23,42,.14);
+    transform: translateY(-2px);
+}
+
+.so-card .so-photo {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--primary);
+    background: var(--field-bg);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.so-card .so-photo img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+}
+
+.so-card .so-photo .so-avatar-icon {
+    font-size: 38px;
+    color: var(--muted);
+    opacity: 0.35;
+}
+
+.so-card .so-nama {
+    font-size: 15px;
+    font-weight: 900;
+    text-align: center;
+    color: var(--text);
+    margin-top: 4px;
+}
+
+.so-card .so-jabatan {
+    font-size: 12px;
+    color: var(--primary);
+    font-weight: 800;
+    background: rgba(31,95,224,.1);
+    padding: 2px 10px;
+    border-radius: 999px;
+    text-align: center;
+}
+
+.so-card .so-parent {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+}
+
+.so-card .so-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.so-card .so-urutan-badge {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    background: rgba(31,95,224,.12);
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+</style>
+
+<script>
+(function() {
+    const API = '/api/admin/struktur-organisasi';
+    let items = [];
+    let editingId = null;
+
+    const grid  = document.getElementById('soGrid');
+    const empty = document.getElementById('soEmpty');
+    const search = document.getElementById('soSearch');
+    const modal = document.getElementById('soModal');
+    const form  = document.getElementById('soForm');
+
+    function getCSRF() {
+        return document.querySelector('meta[name="csrf-token"]')?.content;
+    }
+
+    async function load() {
+        try {
+            const res = await fetch(API, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            items = Array.isArray(data) ? data : (data?.data ?? []);
+            render();
+        } catch (e) {
+            console.error('Gagal memuat struktur:', e);
+            items = [];
+            render();
+        }
+    }
+
+    function render() {
+        const q = (search?.value || '').toLowerCase();
+        let filtered = items;
+        if (q) filtered = items.filter(it =>
+            (it.nama + ' ' + it.jabatan).toLowerCase().includes(q)
+        );
+
+        if (!filtered.length) {
+            grid.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        empty.style.display = 'none';
+
+        grid.innerHTML = filtered.map(it => {
+            const fotoEl = it.foto
+                ? `<img src="/storage/${it.foto}" alt="${it.nama}" />`
+                : `<i class="fa-solid fa-user so-avatar-icon"></i>`;
+
+            const parentEl = it.parent_jabatan
+                ? `<div class="so-parent">Bawahan dari: ${it.parent_jabatan}</div>`
+                : `<div class="so-parent" style="color:var(--primary);font-weight:700">— Kepala —</div>`;
+
+            return `
+            <div class="so-card">
+                <span class="so-urutan-badge">#${it.urutan}</span>
+                <div class="so-photo">${fotoEl}</div>
+                <div class="so-nama">${it.nama}</div>
+                <div class="so-jabatan">${it.jabatan}</div>
+                ${parentEl}
+                <div class="so-actions">
+                    <button class="btn btn-ghost btn-sm so-edit" data-id="${it.id}" title="Edit">
+                        <i class="fa-solid fa-pen"></i> Edit
+                    </button>
+                    <button class="btn btn-danger btn-sm so-delete" data-id="${it.id}" title="Hapus">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function openModal(item = null) {
+        editingId = item ? item.id : null;
+        document.getElementById('soModalTitle').textContent = item ? 'Edit Anggota' : 'Tambah Anggota';
+        document.getElementById('soId').value = item?.id || '';
+        document.getElementById('soNama').value = item?.nama || '';
+        document.getElementById('soJabatan').value = item?.jabatan || '';
+        document.getElementById('soParent').value = item?.parent_jabatan || '';
+        document.getElementById('soUrutan').value = item?.urutan ?? 0;
+        document.getElementById('soFoto').value = '';
+
+        // Reset preview
+        const preview = document.getElementById('soPhotoPreview');
+        const icon    = document.getElementById('soPhotoIcon');
+        if (item?.foto) {
+            preview.src = '/storage/' + item.foto;
+            preview.style.display = 'block';
+            icon.style.display = 'none';
+        } else {
+            preview.style.display = 'none';
+            icon.style.display = 'block';
+        }
+
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal() {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+        editingId = null;
+    }
+
+    // Photo preview on file select
+    document.getElementById('soFoto').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const preview = document.getElementById('soPhotoPreview');
+            const icon    = document.getElementById('soPhotoIcon');
+            preview.src = ev.target.result;
+            preview.style.display = 'block';
+            icon.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Form submit
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('soBtnSimpan');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+        const fd = new FormData();
+        fd.append('nama',           document.getElementById('soNama').value.trim());
+        fd.append('jabatan',        document.getElementById('soJabatan').value.trim());
+        fd.append('parent_jabatan', document.getElementById('soParent').value.trim());
+        fd.append('urutan',         document.getElementById('soUrutan').value || 0);
+
+        const fotoFile = document.getElementById('soFoto').files[0];
+        if (fotoFile) fd.append('foto', fotoFile);
+
+        const url    = editingId ? `${API}/${editingId}` : API;
+        const method = editingId ? 'POST' : 'POST';
+        if (editingId) fd.append('_method', 'PUT');
+
+        try {
+            const res = await fetch(url, {
+                method,
+                credentials: 'same-origin',
+                headers: { 'X-CSRF-TOKEN': getCSRF(), Accept: 'application/json' },
+                body: fd,
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || 'Gagal menyimpan');
+            }
+            closeModal();
+            await load();
+        } catch (err) {
+            alert('Error: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan';
+        }
+    });
+
+    // Event delegation
+    document.addEventListener('click', async (e) => {
+        if (e.target.closest('#soBtnTambah')) { openModal(); return; }
+        if (e.target.closest('#soBtnClose') || e.target.closest('#soBtnBatal')) { closeModal(); return; }
+
+        const editBtn = e.target.closest('.so-edit');
+        if (editBtn) {
+            const id = Number(editBtn.dataset.id);
+            const item = items.find(i => i.id === id);
+            if (item) openModal(item);
+            return;
+        }
+
+        const delBtn = e.target.closest('.so-delete');
+        if (delBtn) {
+            const id = Number(delBtn.dataset.id);
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+            if (!confirm(`Hapus "${item.nama}" dari struktur organisasi?`)) return;
+            try {
+                const res = await fetch(`${API}/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'same-origin',
+                    headers: { 'X-CSRF-TOKEN': getCSRF(), Accept: 'application/json' },
+                });
+                if (!res.ok) throw new Error('Gagal menghapus');
+                await load();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+            return;
+        }
+    });
+
+    // Search
+    search?.addEventListener('input', render);
+
+    // Close modal on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    // Init
+    load();
+})();
+</script>

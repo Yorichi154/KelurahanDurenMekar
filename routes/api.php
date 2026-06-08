@@ -19,6 +19,7 @@ use App\Http\Controllers\RtrwController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UnitKerjaController;
 use App\Http\Controllers\BuatSuratController;
+use App\Http\Controllers\StrukturOrganisasiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,6 +50,10 @@ Route::get('/public/pengumuman', [PengumumanController::class, 'index']);
 Route::get('/public/lembaga', [LembagaController::class, 'index']);
 Route::get('/public/unit-kerja', [UnitKerjaController::class, 'index']);
 Route::get('/public/pelayanan', [PelayananController::class, 'index']);
+Route::get('/public/setting', [SettingController::class, 'index']);
+Route::get('/public/faq', [FaqController::class, 'index']);
+Route::get('/public/rtrw', [RtrwController::class, 'index']);
+Route::get('/public/struktur-organisasi', [StrukturOrganisasiController::class, 'index']);
 Route::get('/public/stats', function () {
     return response()->json([
         'total_warga' => \App\Models\User::where('role', 'warga')->count(),
@@ -99,6 +104,8 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
 
     Route::apiResource('unit-kerja', UnitKerjaController::class);
 
+    Route::apiResource('struktur-organisasi', StrukturOrganisasiController::class);
+
     Route::get('/laporan', [LaporanController::class, 'index']);
 
     Route::post(
@@ -142,6 +149,7 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
         Route::get('/surat/{surat}', [SuratController::class, 'show']);
         Route::put('/surat/{id}/status', [SuratController::class, 'updateStatus']);
         Route::post('/surat/{id}/upload-hasil', [SuratController::class, 'uploadHasil']);
+        Route::delete('/surat/{id}', [SuratController::class, 'destroy']);
         Route::get('/profil', [ProfileController::class, 'showApi']);
         Route::put('/profil', [ProfileController::class, 'updateApi']);
 

@@ -241,11 +241,11 @@ class BuatSuratController extends Controller
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   @page {
-    margin: 1.5cm 2cm 2cm 2cm;
+    margin: 1cm 1.5cm;
   }
   body {
     font-family: 'Times New Roman', Times, serif;
-    font-size: 12pt;
+    font-size: 11pt;
     color: #000;
     background: #fff;
     margin: 0;
@@ -256,47 +256,47 @@ class BuatSuratController extends Controller
     position: relative;
   }
   /* KOP */
-  .kop { display: table; width: 100%; border-bottom: 4px solid #000; padding-bottom: 8px; margin-bottom: 12px; }
+  .kop { display: table; width: 100%; border-bottom: 3px solid #000; padding-bottom: 6px; margin-bottom: 10px; }
   .kop-logo { display: table-cell; width: 80px; vertical-align: middle; text-align: center; }
   .kop-logo img { width: 70px; height: 70px; }
   .kop-logo .no-logo { width:70px; height:70px; border:1px solid #999; display:inline-block; line-height:70px; font-size:10pt; color:#666; text-align:center; }
   .kop-text { display: table-cell; vertical-align: middle; text-align: center; padding: 0 10px; }
   .kop-text .k1 { font-size: 11pt; font-weight: normal; }
   .kop-text .k2 { font-size: 11pt; font-weight: normal; }
-  .kop-text .k3 { font-size: 15pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+  .kop-text .k3 { font-size: 14pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
   .kop-text .k4 { font-size: 10pt; word-wrap: break-word; }
 
   /* TITLE */
-  .surat-title { text-align: center; margin: 16px 0 4px; }
-  .surat-title h2 { font-size: 13pt; font-weight: bold; text-transform: uppercase; text-decoration: underline; }
-  .surat-nomor { text-align: center; font-size: 11pt; margin-bottom: 16px; }
+  .surat-title { text-align: center; margin: 12px 0 4px; }
+  .surat-title h2 { font-size: 12pt; font-weight: bold; text-transform: uppercase; text-decoration: underline; }
+  .surat-nomor { text-align: center; font-size: 11pt; margin-bottom: 12px; }
 
   /* BODY TEXT */
-  .intro { margin-bottom: 10px; text-align: justify; line-height: 1.6; }
+  .intro { margin-bottom: 8px; text-align: justify; line-height: 1.4; }
   .intro p { margin-bottom: 6px; word-wrap: break-word; }
 
   /* DATA TABLE */
-  .data-table { width: 100%; border-collapse: collapse; margin: 12px 0; table-layout: fixed; }
-  .data-table td { padding: 3px 0; vertical-align: top; font-size: 11.5pt; line-height: 1.5; word-wrap: break-word; overflow-wrap: break-word; }
+  .data-table { width: 100%; border-collapse: collapse; margin: 8px 0; table-layout: fixed; }
+  .data-table td { padding: 2px 0; vertical-align: top; font-size: 11pt; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word; }
   .data-table td:first-child { width: 40%; padding-left: 20px; }
   .data-table td.sep { width: 16px; text-align: center; }
   .data-table td:last-child { font-weight: normal; }
   .data-table .field-label { font-weight: normal; }
 
   /* PENUTUP */
-  .penutup { margin-top: 12px; text-align: justify; line-height: 1.6; }
+  .penutup { margin-top: 8px; text-align: justify; line-height: 1.4; }
   .penutup p { margin-bottom: 6px; word-wrap: break-word; }
 
   /* TTD */
-  .ttd-section { margin-top: 28px; float: right; width: 260px; text-align: center; }
-  .ttd-section .ttd-kota { margin-bottom: 4px; }
-  .ttd-section .ttd-jabatan { margin-bottom: 80px; }
+  .ttd-section { margin-top: 16px; float: right; width: 240px; text-align: center; }
+  .ttd-section .ttd-kota { margin-bottom: 2px; }
+  .ttd-section .ttd-jabatan { margin-bottom: 60px; }
   .ttd-section .ttd-nama { font-weight: bold; text-decoration: underline; }
   .ttd-section .ttd-nip { font-size: 10.5pt; }
   .clearfix::after { content:''; display:table; clear:both; }
 
   /* Stempel placeholder */
-  .stempel { position: absolute; left: 1cm; bottom: 2cm; width: 100px; height: 100px; border: 2px dashed #aaa; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8pt; color: #aaa; text-align: center; }
+  .stempel { position: absolute; left: 1cm; bottom: 1cm; width: 80px; height: 80px; border: 2px dashed #aaa; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8pt; color: #aaa; text-align: center; }
 </style>
 </head>
 <body>

@@ -63,14 +63,20 @@
 }
 
 .btn-ghost {
-  background: transparent;
-  border-color: var(--border);
-  color: var(--text);
+  background: #f1f5f9;
+  border-color: transparent;
+  color: #475569;
 }
 
 .btn-ghost:hover {
-  background: rgba(31, 95, 224, 0.08);
-  color: var(--primary);
+  background: #e2e8f0;
+  color: #1e293b;
+  transform: translateY(-1px);
+}
+
+.btn-ghost:active {
+  background: #cbd5e1;
+  transform: translateY(0);
 }
 
 /* Cards */

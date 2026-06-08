@@ -1,45 +1,155 @@
-<section class="container" style="padding:28px 0">
-  <div class="section-head" style="margin-bottom:12px">
-    <h1>Struktur Organisasi</h1>
-    <div class="muted">Ringkasan struktur organisasi Kelurahan Duren Mekar.</div>
+<section class="container" style="padding: 36px 0">
+  <!-- Header -->
+  <div class="section-head" style="margin-bottom: 28px; flex-direction: column; align-items: flex-start; gap: 6px">
+    <h1 style="font-size: 26px; font-weight: 900">Struktur Organisasi</h1>
+    <div class="muted">Susunan pengurus Kelurahan Duren Mekar</div>
   </div>
 
-  <div class="card" style="border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow-sm)">
-    <div class="card-body" style="padding:16px">
-      <p class="muted" style="margin-top:0">
-        Contoh sederhana. (Bisa diganti gambar struktur/diagram sesuai kebutuhan.)
-      </p>
+  <!-- Anggota "kepala" (tanpa parent) -->
+  <div id="soTopLevel" style="display:flex; justify-content:center; margin-bottom: 32px"></div>
 
-      <div style="display:grid;gap:10px">
-        <div style="padding:12px;border:1px dashed var(--border);border-radius:12px">
-          <b>Lurah</b>
-          <div class="muted" style="font-size:13px">Pimpinan Kelurahan</div>
-        </div>
+  <!-- Anggota lainnya -->
+  <div id="soOthers" style="
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
+  "></div>
 
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
-          <div style="padding:12px;border:1px dashed var(--border);border-radius:12px">
-            <b>Sekretariat</b>
-            <div class="muted" style="font-size:13px">Administrasi & tata usaha</div>
-          </div>
-          <div style="padding:12px;border:1px dashed var(--border);border-radius:12px">
-            <b>Seksi Tata Pemerintahan</b>
-            <div class="muted" style="font-size:13px">Kependudukan & pemerintahan</div>
-          </div>
-          <div style="padding:12px;border:1px dashed var(--border);border-radius:12px">
-            <b>Seksi Pemberdayaan</b>
-            <div class="muted" style="font-size:13px">Pemberdayaan masyarakat</div>
-          </div>
-          <div style="padding:12px;border:1px dashed var(--border);border-radius:12px">
-            <b>Seksi Ketertiban</b>
-            <div class="muted" style="font-size:13px">Ketentraman & ketertiban</div>
-          </div>
-        </div>
-      </div>
+  <div id="soEmpty" class="muted" style="display:none; text-align:center; padding:60px">
+    <i class="fa-solid fa-sitemap" style="font-size:48px; opacity:.15"></i>
+    <p style="margin-top:16px">Struktur organisasi belum tersedia.</p>
+  </div>
 
-      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-        <a class="btn btn-solid nav-link" href="#unit-kerja" data-page="unit-kerja"><i class="fa-solid fa-briefcase" aria-hidden="true"></i> Detail Unit Kerja</a>
-        <a class="btn btn-ghost nav-link" href="#profil" data-page="profil"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Profil Kelurahan</a>
-      </div>
-    </div>
+  <!-- Tombol navigasi -->
+  <div style="margin-top: 32px; display:flex; gap:10px; flex-wrap:wrap">
+    <a class="btn btn-solid nav-link" href="#unit-kerja" data-page="unit-kerja">
+      <i class="fa-solid fa-briefcase"></i> Detail Unit Kerja
+    </a>
+    <a class="btn btn-ghost nav-link" href="#profil" data-page="profil">
+      <i class="fa-solid fa-building-columns"></i> Profil Kelurahan
+    </a>
   </div>
 </section>
+
+<style>
+/* ── PUBLIC: SO Card ──────────────────────────────── */
+.so-pub-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 18px;
+  gap: 8px;
+  transition: box-shadow .2s, transform .15s;
+}
+.so-pub-card:hover {
+  box-shadow: 0 16px 38px rgba(15,23,42,.13);
+  transform: translateY(-3px);
+}
+.so-pub-photo {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid var(--primary);
+  background: var(--field-bg);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.so-pub-photo img {
+  width:100%; height:100%; object-fit:cover;
+}
+.so-pub-photo .so-icon {
+  font-size: 42px;
+  color: var(--muted);
+  opacity: .3;
+}
+.so-pub-nama {
+  font-size: 15px; font-weight: 900;
+  text-align: center; color: var(--text);
+  margin-top: 4px;
+}
+.so-pub-jabatan {
+  font-size: 12px; font-weight: 800;
+  color: var(--primary);
+  background: rgba(31,95,224,.1);
+  padding: 3px 12px;
+  border-radius: 999px;
+  text-align: center;
+}
+.so-pub-parent {
+  font-size: 11px; color: var(--muted); text-align: center;
+}
+
+/* Top-level card (Lurah) is bigger */
+.so-pub-card.so-top {
+  min-width: 200px; max-width: 240px;
+  padding: 32px 24px 24px;
+  border-color: rgba(31,95,224,.35);
+  box-shadow: 0 8px 30px rgba(31,95,224,.12);
+}
+.so-pub-card.so-top .so-pub-photo {
+  width: 120px; height: 120px;
+  border-width: 5px;
+}
+.so-pub-card.so-top .so-pub-nama { font-size: 17px; }
+.so-pub-card.so-top .so-pub-jabatan {
+  font-size: 13px;
+  padding: 4px 14px;
+}
+</style>
+
+<script>
+(function() {
+  async function load() {
+    try {
+      const res = await fetch('/api/public/struktur-organisasi', { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const items = Array.isArray(data) ? data : (data?.data ?? []);
+
+      if (!items.length) {
+        document.getElementById('soEmpty').style.display = 'block';
+        return;
+      }
+
+      // Separate top-level (no parent) and the rest
+      const tops   = items.filter(i => !i.parent_jabatan);
+      const others = items.filter(i => !!i.parent_jabatan);
+
+      function makeCard(it, isTop = false) {
+        const photo = it.foto
+          ? `<img src="/storage/${it.foto}" alt="${it.nama}" />`
+          : `<i class="fa-solid fa-user so-icon"></i>`;
+        const parentEl = isTop
+          ? ''
+          : (it.parent_jabatan ? `<div class="so-pub-parent">Bawahan: ${it.parent_jabatan}</div>` : '');
+
+        return `
+          <div class="so-pub-card${isTop ? ' so-top' : ''}">
+            <div class="so-pub-photo">${photo}</div>
+            <div class="so-pub-nama">${it.nama}</div>
+            <div class="so-pub-jabatan">${it.jabatan}</div>
+            ${parentEl}
+          </div>`;
+      }
+
+      const topContainer = document.getElementById('soTopLevel');
+      topContainer.innerHTML = tops.map(i => makeCard(i, true)).join('');
+
+      const othersContainer = document.getElementById('soOthers');
+      othersContainer.innerHTML = others.map(i => makeCard(i, false)).join('');
+
+      document.getElementById('soEmpty').style.display = (tops.length + others.length) ? 'none' : 'block';
+
+    } catch(e) {
+      console.error('Gagal memuat struktur organisasi', e);
+      document.getElementById('soEmpty').style.display = 'block';
+    }
+  }
+
+  load();
+})();
+</script>

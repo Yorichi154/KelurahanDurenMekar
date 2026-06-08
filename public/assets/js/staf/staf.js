@@ -421,6 +421,14 @@ async function initStafSuratLaravel() {
                         <a href="/storage/${surat.file_surat}" target="_blank" class="btn btn-primary btn-sm" style="padding: 6px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; text-decoration: none; display: flex; align-items: center; gap: 4px; background: #2563eb; color: white; border: none;">
                             <i class="fa-solid fa-download"></i> Download
                         </a>` : ''}
+                        <button
+                            class="btn btn-danger btn-sm delete-surat"
+                            data-id="${surat.id}"
+                            style="padding: 6px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; background: #dc2626; color: white; border: none; cursor: pointer;"
+                            title="Hapus Surat"
+                        >
+                            <i class="fa-solid fa-trash"></i> Hapus
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -454,6 +462,30 @@ document.addEventListener("click", async (e) => {
     if (kirimBtn) {
         const id = kirimBtn.dataset.id;
         openKirimSuratModal(id);
+        return;
+    }
+
+    const delBtn = e.target.closest(".delete-surat");
+    if (delBtn) {
+        const id = delBtn.dataset.id;
+        if (confirm("Hapus surat ini? Aksi ini tidak dapat dibatalkan.")) {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            try {
+                const res = await fetch(`/api/staf/surat/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'application/json'
+                    }
+                });
+                if (!res.ok) throw new Error('Gagal menghapus surat');
+                if (typeof window._refreshStafSurat === 'function') {
+                    window._refreshStafSurat();
+                }
+            } catch (err) {
+                alert(err.message);
+            }
+        }
         return;
     }
 

@@ -46,27 +46,16 @@ class SuratController extends Controller
 
     public function destroy(Surat $surat)
     {
+        // Delete associated files if any
+        if ($surat->berkas && \Illuminate\Support\Facades\Storage::disk('public')->exists($surat->berkas)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($surat->berkas);
+        }
+        if ($surat->file_surat && \Illuminate\Support\Facades\Storage::disk('public')->exists($surat->file_surat)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($surat->file_surat);
+        }
+
         $surat->delete();
-        return response()->json(['success' => true]);
-    }
-
-    public function uploadPdf(Request $request, Surat $surat)
-    {
-        $request->validate([
-            'file' => 'required|mimes:pdf|max:5120'
-        ]);
-
-        $path = $request->file('file')->store('surat', 'public');
-
-        $surat->update([
-            'file_surat' => $path,
-            'status' => 'selesai'
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'file' => $path
-        ]);
+        return response()->json(['message' => 'Surat berhasil dihapus', 'success' => true]);
     }
 
     // ==================== WARGA METHODS ====================

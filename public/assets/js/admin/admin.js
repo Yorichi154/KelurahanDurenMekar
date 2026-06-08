@@ -1836,10 +1836,15 @@
                         Accept: "application/json",
                     },
                 });
-                items = await response.json();
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                // Handle both plain array and paginated response { data: [...] }
+                items = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
                 render();
             } catch (error) {
                 console.error("Gagal memuat surat", error);
+                items = [];
+                render();
             }
         }
 
@@ -3416,5 +3421,7 @@
         if (name === "admin/unit-kerja") initUnitKerjaLaravel();
         if (name === "admin/pelayanan") initPelayananLaravel();
         if (name === "admin/users") initUsersLaravel();
+        // struktur-organisasi has inline script, no separate init needed
+
     });
 })();
