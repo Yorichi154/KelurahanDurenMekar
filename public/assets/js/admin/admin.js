@@ -1818,6 +1818,181 @@
         }
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // STRUKTUR ORGANISASI
+    // ─────────────────────────────────────────────────────────────
+    async function initStrukturOrganisasi() {
+        const SO_API = '/api/admin/struktur-organisasi';
+        let soItems = [];
+        let soEditId = null;
+
+        const grid    = document.getElementById('soGrid');
+        const empty   = document.getElementById('soEmpty');
+        const search  = document.getElementById('soSearch');
+        const modal   = document.getElementById('soModal');
+        const form    = document.getElementById('soForm');
+
+        if (!grid) return;   // guard: page not mounted
+
+        async function soLoad() {
+            try {
+                const res = await fetch(SO_API, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                soItems = Array.isArray(data) ? data : (data?.data ?? []);
+                soRender();
+            } catch (e) {
+                console.error('Gagal memuat struktur:', e);
+                soItems = [];
+                soRender();
+            }
+        }
+
+        function soRender() {
+            const q = (search?.value || '').toLowerCase();
+            const filtered = q ? soItems.filter(i => (i.nama + ' ' + i.jabatan).toLowerCase().includes(q)) : soItems;
+
+            if (!filtered.length) {
+                grid.innerHTML = '';
+                if (empty) empty.style.display = 'block';
+                return;
+            }
+            if (empty) empty.style.display = 'none';
+
+            grid.innerHTML = filtered.map(it => {
+                const fotoEl = it.foto
+                    ? `<img src="/storage/${it.foto}" alt="${it.nama}" />`
+                    : `<i class="fa-solid fa-user so-avatar-icon"></i>`;
+                const parentEl = it.parent_jabatan
+                    ? `<div class="so-parent">Bawahan dari: ${it.parent_jabatan}</div>`
+                    : `<div class="so-parent" style="color:var(--primary);font-weight:800">— Kepala —</div>`;
+                return `
+                <div class="so-card">
+                    <span class="so-urutan-badge">#${it.urutan}</span>
+                    <div class="so-photo">${fotoEl}</div>
+                    <div class="so-nama">${it.nama}</div>
+                    <div class="so-jabatan">${it.jabatan}</div>
+                    ${parentEl}
+                    <div class="so-actions">
+                        <button class="btn btn-ghost btn-sm" data-so-edit="${it.id}"><i class="fa-solid fa-pen"></i> Edit</button>
+                        <button class="btn btn-danger btn-sm" data-so-del="${it.id}"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function soOpenModal(item = null) {
+            soEditId = item ? item.id : null;
+            document.getElementById('soModalTitle').textContent = item ? 'Edit Anggota' : 'Tambah Anggota';
+            document.getElementById('soId').value    = item?.id || '';
+            document.getElementById('soNama').value  = item?.nama || '';
+            document.getElementById('soJabatan').value = item?.jabatan || '';
+            document.getElementById('soParent').value  = item?.parent_jabatan || '';
+            document.getElementById('soUrutan').value  = item?.urutan ?? 0;
+            document.getElementById('soFoto').value = '';
+            const preview = document.getElementById('soPhotoPreview');
+            const icon    = document.getElementById('soPhotoIcon');
+            if (item?.foto) {
+                preview.src = '/storage/' + item.foto;
+                preview.style.display = 'block';
+                icon.style.display = 'none';
+            } else {
+                preview.style.display = 'none';
+                icon.style.display = 'block';
+            }
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function soCloseModal() {
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+            soEditId = null;
+        }
+
+        // Photo preview
+        document.getElementById('soFoto')?.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const preview = document.getElementById('soPhotoPreview');
+                const icon    = document.getElementById('soPhotoIcon');
+                if (preview) { preview.src = ev.target.result; preview.style.display = 'block'; }
+                if (icon) icon.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Form submit
+        form?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('soBtnSimpan');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...'; }
+
+            const fd = new FormData();
+            fd.append('nama',           document.getElementById('soNama')?.value.trim() || '');
+            fd.append('jabatan',        document.getElementById('soJabatan')?.value.trim() || '');
+            fd.append('parent_jabatan', document.getElementById('soParent')?.value.trim() || '');
+            fd.append('urutan',         document.getElementById('soUrutan')?.value || 0);
+            const fotoFile = document.getElementById('soFoto')?.files?.[0];
+            if (fotoFile) fd.append('foto', fotoFile);
+            if (soEditId) fd.append('_method', 'PUT');
+
+            const url = soEditId ? `${SO_API}/${soEditId}` : SO_API;
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content, Accept: 'application/json' },
+                    body: fd,
+                });
+                if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || 'Gagal'); }
+                soCloseModal();
+                await soLoad();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan'; }
+            }
+        });
+
+        // Clicks: Tambah, Close, Edit, Delete
+        document.getElementById('soBtnTambah')?.addEventListener('click', () => soOpenModal());
+        document.getElementById('soBtnClose')?.addEventListener('click',  soCloseModal);
+        document.getElementById('soBtnBatal')?.addEventListener('click',  soCloseModal);
+        modal?.addEventListener('click', (e) => { if (e.target === modal) soCloseModal(); });
+
+        // Delegated: edit / delete buttons inside cards
+        grid.addEventListener('click', async (e) => {
+            const editBtn = e.target.closest('[data-so-edit]');
+            if (editBtn) {
+                const id = Number(editBtn.dataset.soEdit);
+                soOpenModal(soItems.find(i => i.id === id));
+                return;
+            }
+            const delBtn = e.target.closest('[data-so-del]');
+            if (delBtn) {
+                const id   = Number(delBtn.dataset.soDel);
+                const item = soItems.find(i => i.id === id);
+                if (!item || !confirm(`Hapus "${item.nama}"?`)) return;
+                try {
+                    const res = await fetch(`${SO_API}/${id}`, {
+                        method: 'DELETE',
+                        credentials: 'same-origin',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content, Accept: 'application/json' },
+                    });
+                    if (!res.ok) throw new Error('Gagal menghapus');
+                    await soLoad();
+                } catch (err) { alert(err.message); }
+            }
+        });
+
+        search?.addEventListener('input', soRender);
+
+        await soLoad();
+    }
+
     async function initSuratLaravel() {
         const tbody = document.getElementById("adminSuratTbody");
         const empty = document.getElementById("adminSuratEmpty");
@@ -3421,7 +3596,7 @@
         if (name === "admin/unit-kerja") initUnitKerjaLaravel();
         if (name === "admin/pelayanan") initPelayananLaravel();
         if (name === "admin/users") initUsersLaravel();
-        // struktur-organisasi has inline script, no separate init needed
+        if (name === "admin/struktur-organisasi") initStrukturOrganisasi();
 
     });
 })();

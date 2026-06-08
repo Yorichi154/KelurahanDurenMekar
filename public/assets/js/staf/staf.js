@@ -504,6 +504,10 @@ document.addEventListener("click", async (e) => {
     }
 
     if (e.target.closest("[data-action='closeModal']")) {
+        // Move focus away before hiding to prevent aria-hidden focus warning
+        if (document.activeElement && document.activeElement.closest('.modal')) {
+            document.activeElement.blur();
+        }
         const suratModal = document.getElementById("suratDetailModal");
         if (suratModal) {
             suratModal.classList.remove("open");
