@@ -131,13 +131,16 @@ class SuratController extends Controller
     public function uploadHasil(Request $request, $id)
     {
         $request->validate([
-            'file_surat' => 'required|file|mimes:pdf|max:2048',
+            'file_surat' => 'required|file|mimes:pdf|max:5120',
         ]);
 
         $surat = Surat::findOrFail($id);
         $path = $request->file('file_surat')->store('surat_hasil', 'public');
-        $surat->update(['file_surat' => $path]);
+        $surat->update([
+            'file_surat' => $path,
+            'status'     => 'selesai',
+        ]);
 
-        return response()->json(['message' => 'File uploaded', 'path' => $path]);
+        return response()->json(['message' => 'Surat berhasil dikirim ke warga', 'path' => $path]);
     }
 }

@@ -421,6 +421,7 @@ async function sisShowPreview() {
   frame.srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-family:sans-serif;color:#6b7280;"><i class="fa-solid fa-spinner fa-spin" style="margin-right:8px"></i> Memuat preview...</div>';
 
   try {
+    const ukuran = document.getElementById('sisUkuranKertas')?.value || 'F4';
     const res = await fetch('/api/staf/buat-surat/preview', {
       method: 'POST',
       headers: {
@@ -428,7 +429,7 @@ async function sisShowPreview() {
         'X-CSRF-TOKEN': CSRF(),
         'Accept': 'application/json',
       },
-      body: JSON.stringify({ kode_jenis: sisState.selectedKode, data_surat: data }),
+      body: JSON.stringify({ kode_jenis: sisState.selectedKode, data_surat: data, ukuran_kertas: ukuran }),
     });
     const html = await res.text();
     frame.srcdoc = html;
@@ -451,6 +452,7 @@ async function sisGenerate() {
   genState.style.display = '';
 
   try {
+    const ukuran = document.getElementById('sisUkuranKertas')?.value || 'F4';
     const res = await fetch('/api/staf/buat-surat', {
       method: 'POST',
       headers: {
@@ -462,6 +464,7 @@ async function sisGenerate() {
         kode_jenis: sisState.selectedKode,
         data_surat: { ...sisState.formData, catatan_staf: catatanStaf },
         keperluan,
+        ukuran_kertas: ukuran,
       }),
     });
 

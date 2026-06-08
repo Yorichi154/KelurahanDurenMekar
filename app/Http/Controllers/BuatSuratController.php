@@ -66,15 +66,17 @@ class BuatSuratController extends Controller
     public function preview(Request $request)
     {
         $request->validate([
-            'kode_jenis' => 'required|string',
-            'data_surat' => 'required|array',
+            'kode_jenis'    => 'required|string',
+            'data_surat'    => 'required|array',
+            'ukuran_kertas' => 'nullable|string|in:A4,F4',
         ]);
 
-        $kode = $request->kode_jenis;
-        $data = $request->data_surat;
-        $now  = Carbon::now();
+        $kode   = $request->kode_jenis;
+        $data   = $request->data_surat;
+        $ukuran = $request->ukuran_kertas ?? 'F4';
+        $now    = Carbon::now();
 
-        $html = $this->buildSuratHtml($kode, $data, '[PREVIEW — BELUM TERSIMPAN]', $now);
+        $html = $this->buildSuratHtml($kode, $data, '[PREVIEW — BELUM TERSIMPAN]', $now, $ukuran);
 
         return response($html, 200)->header('Content-Type', 'text/html; charset=utf-8');
     }
@@ -86,13 +88,15 @@ class BuatSuratController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'kode_jenis' => 'required|string',
-            'data_surat' => 'required|array',
-            'keperluan'  => 'required|string',
+            'kode_jenis'    => 'required|string',
+            'data_surat'    => 'required|array',
+            'keperluan'     => 'required|string',
+            'ukuran_kertas' => 'nullable|string|in:A4,F4',
         ]);
 
         $kode    = $request->kode_jenis;
         $data    = $request->data_surat;
+        $ukuran  = $request->ukuran_kertas ?? 'F4';
         $now     = Carbon::now();
         $bulanRomawi = self::$BULAN_ROMAWI[$now->month];
         $tahun   = (string) $now->year;
@@ -104,11 +108,18 @@ class BuatSuratController extends Controller
         $userId = $data['user_id'] ?? auth()->id();
 
         // Build HTML for PDF
-        $html = $this->buildSuratHtml($kode, $data, $nomorSurat, $now);
+        $html = $this->buildSuratHtml($kode, $data, $nomorSurat, $now, $ukuran);
+
+        // Paper size: A4 = default, F4/Folio = 8.5" x 13" (215.9mm x 330.2mm)
+        if ($ukuran === 'F4') {
+            $paper = [0, 0, 612, 936]; // 8.5" x 13" in points
+        } else {
+            $paper = 'A4';
+        }
 
         // Generate PDF via dompdf
         $pdf = Pdf::loadHTML($html)
-            ->setPaper('A4', 'portrait')
+            ->setPaper($paper, 'portrait')
             ->setOption('defaultFont', 'times')
             ->setOption('isHtml5ParserEnabled', true)
             ->setOption('isRemoteEnabled', false);
@@ -154,8 +165,8 @@ class BuatSuratController extends Controller
             $kode  = $this->getKodeFromJenis($surat->jenis_surat);
             $data  = is_array($surat->data_surat) ? $surat->data_surat : [];
             $created = $surat->created_at ?? Carbon::now();
-            $html  = $this->buildSuratHtml($kode, $data, $surat->nomor_surat ?? '-', $created);
-            $pdf   = Pdf::loadHTML($html)->setPaper('A4', 'portrait')->setOption('defaultFont', 'times');
+            $html  = $this->buildSuratHtml($kode, $data, $surat->nomor_surat ?? '-', $created, 'F4');
+            $pdf   = Pdf::loadHTML($html)->setPaper([0, 0, 612, 936], 'portrait')->setOption('defaultFont', 'times');
             $pdfContent = $pdf->output();
         }
 
@@ -201,7 +212,7 @@ class BuatSuratController extends Controller
     // HTML BUILDER — Template Surat per Jenis
     // ─────────────────────────────────────────────────────
 
-    private function buildSuratHtml(string $kode, array $d, string $nomor, $tanggal): string
+    private function buildSuratHtml(string $kode, array $d, string $nomor, $tanggal, string $ukuran = 'F4'): string
     {
         $now     = Carbon::parse($tanggal);
         $tglIndo = $this->tglIndonesia($now);
@@ -213,6 +224,15 @@ class BuatSuratController extends Controller
         $footer  = $this->buildFooter($d, $tglIndo);
         $isi     = $this->buildIsi($kode, $d, $nomor, $tglIndo);
 
+        // Page dimensions based on paper size
+        if ($ukuran === 'F4') {
+            $pageWidth  = '21.59cm';  // 8.5 inches
+            $pageHeight = '33.02cm';  // 13 inches
+        } else {
+            $pageWidth  = '21cm';
+            $pageHeight = '29.7cm';
+        }
+
         return <<<HTML
 <!DOCTYPE html>
 <html lang="id">
@@ -220,18 +240,19 @@ class BuatSuratController extends Controller
 <meta charset="utf-8"/>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
+  @page {
+    margin: 1.5cm 2cm 2cm 2cm;
+  }
   body {
     font-family: 'Times New Roman', Times, serif;
     font-size: 12pt;
     color: #000;
     background: #fff;
+    margin: 0;
     padding: 0;
   }
   .page {
-    width: 21cm;
-    min-height: 29.7cm;
-    margin: 0 auto;
-    padding: 1.5cm 2cm 2cm 2.5cm;
+    width: 100%;
     position: relative;
   }
   /* KOP */
@@ -243,7 +264,7 @@ class BuatSuratController extends Controller
   .kop-text .k1 { font-size: 11pt; font-weight: normal; }
   .kop-text .k2 { font-size: 11pt; font-weight: normal; }
   .kop-text .k3 { font-size: 15pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-  .kop-text .k4 { font-size: 10pt; }
+  .kop-text .k4 { font-size: 10pt; word-wrap: break-word; }
 
   /* TITLE */
   .surat-title { text-align: center; margin: 16px 0 4px; }
@@ -252,19 +273,19 @@ class BuatSuratController extends Controller
 
   /* BODY TEXT */
   .intro { margin-bottom: 10px; text-align: justify; line-height: 1.6; }
-  .intro p { margin-bottom: 6px; }
+  .intro p { margin-bottom: 6px; word-wrap: break-word; }
 
   /* DATA TABLE */
-  .data-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-  .data-table td { padding: 3px 0; vertical-align: top; font-size: 11.5pt; line-height: 1.5; }
-  .data-table td:first-child { width: 44%; padding-left: 20px; }
-  .data-table td.sep { width: 10px; text-align: center; }
+  .data-table { width: 100%; border-collapse: collapse; margin: 12px 0; table-layout: fixed; }
+  .data-table td { padding: 3px 0; vertical-align: top; font-size: 11.5pt; line-height: 1.5; word-wrap: break-word; overflow-wrap: break-word; }
+  .data-table td:first-child { width: 40%; padding-left: 20px; }
+  .data-table td.sep { width: 16px; text-align: center; }
   .data-table td:last-child { font-weight: normal; }
   .data-table .field-label { font-weight: normal; }
 
   /* PENUTUP */
   .penutup { margin-top: 12px; text-align: justify; line-height: 1.6; }
-  .penutup p { margin-bottom: 6px; }
+  .penutup p { margin-bottom: 6px; word-wrap: break-word; }
 
   /* TTD */
   .ttd-section { margin-top: 28px; float: right; width: 260px; text-align: center; }
@@ -275,7 +296,7 @@ class BuatSuratController extends Controller
   .clearfix::after { content:''; display:table; clear:both; }
 
   /* Stempel placeholder */
-  .stempel { position: absolute; left: 2.5cm; bottom: 3.2cm; width: 100px; height: 100px; border: 2px dashed #aaa; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8pt; color: #aaa; text-align: center; }
+  .stempel { position: absolute; left: 1cm; bottom: 2cm; width: 100px; height: 100px; border: 2px dashed #aaa; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8pt; color: #aaa; text-align: center; }
 </style>
 </head>
 <body>

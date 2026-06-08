@@ -267,6 +267,24 @@ async function openStafSuratDetail(id) {
     <i class="fa-regular fa-comment-dots" style="font-size: 18px;"></i> Chat dengan Warga
   </a>
 </div>
+
+${surat.status !== 'selesai' && surat.status !== 'ditolak' ? `
+<!-- Upload Surat Button in Detail -->
+<div style="margin-top: 12px;">
+  <button class="btn btn-success open-kirim-surat-from-detail" data-id="${surat.id}" style="width: 100%; border-radius: 12px; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; background: #16a34a; color: white; border: none; cursor: pointer;">
+    <i class="fa-solid fa-paper-plane"></i> Upload & Kirim Surat ke Warga
+  </button>
+</div>
+` : ''}
+
+${surat.file_surat ? `
+<!-- Download Link -->
+<div style="margin-top: 12px;">
+  <a href="/storage/${surat.file_surat}" target="_blank" class="card" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; box-shadow: var(--shadow-sm); border: 2px solid rgba(34,197,94,.22); border-radius: 12px; text-decoration: none; font-weight: 800; color: #16a34a; background: rgba(34,197,94,.04); transition: background 0.15s ease;">
+    <i class="fa-solid fa-file-pdf" style="font-size: 18px;"></i> Download Surat (PDF)
+  </a>
+</div>
+` : ''}
         `;
 
         if (body) body.innerHTML = bodyHtml;
@@ -314,19 +332,40 @@ async function updateStafSuratStatus(id, status) {
 
 async function initStafSuratLaravel() {
     const tbody = document.getElementById("suratTbody");
+    const filterWrap = document.getElementById("suratFilter");
+    const searchInput = document.getElementById("suratSearch");
 
     if (!tbody) return;
 
-    try {
-        const res = await fetch("/api/staf/surat");
+    let allData = [];
 
-        const data = await res.json();
-        const emptyEl = document.getElementById("staf-pengumuman-empty");
-        if (emptyEl) {
-            emptyEl.style.display = data.length ? "none" : "block";
+    async function loadAndRender() {
+        try {
+            const res = await fetch("/api/staf/surat");
+            allData = await res.json();
+            renderTable();
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function renderTable() {
+        const q = (searchInput?.value || '').toLowerCase();
+        let filtered = allData;
+
+        if (q) {
+            filtered = filtered.filter(s => {
+                const hay = `${s.user?.name || ''} ${s.jenis_surat || ''} ${s.keperluan || ''}`.toLowerCase();
+                return hay.includes(q);
+            });
         }
 
-        tbody.innerHTML = data
+        const emptyEl = document.getElementById("suratEmpty");
+        if (emptyEl) {
+            emptyEl.style.display = filtered.length ? "none" : "block";
+        }
+
+        tbody.innerHTML = filtered
             .map(
                 (surat) => `
             <tr>
@@ -343,52 +382,62 @@ async function initStafSuratLaravel() {
                 <td>${statusBadge(surat.status)}</td>
 
                 <td>
-                    <button
-                        class="btn btn-primary btn-sm view-surat-detail"
-                        data-id="${surat.id}"
-                        style="padding: 6px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; margin-right: 6px;"
-                    >
-                        <i class="fa-solid fa-eye"></i> Detail
-                    </button>
-                    <select
-                        class="surat-status"
-                        data-id="${surat.id}"
-                        style="padding: 4px; border-radius: 6px;"
-                    >
-                        <option value="menunggu"
-                            ${surat.status === "menunggu" ? "selected" : ""}>
-                            Menunggu
-                        </option>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                        <button
+                            class="btn btn-primary btn-sm view-surat-detail"
+                            data-id="${surat.id}"
+                            style="padding: 6px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; border: none; cursor: pointer; color: white;"
+                        >
+                            <i class="fa-solid fa-eye"></i> Detail
+                        </button>
 
-                        <option value="diproses"
-                            ${surat.status === "diproses" ? "selected" : ""}>
-                            Diproses
-                        </option>
+                        <select
+                            class="surat-status"
+                            data-id="${surat.id}"
+                            style="padding: 6px; border-radius: 6px; border: 1px solid var(--border); background: #fff;"
+                        >
+                            <option value="menunggu" ${surat.status === "menunggu" ? "selected" : ""}>Menunggu</option>
+                            <option value="diproses" ${surat.status === "diproses" ? "selected" : ""}>Diproses</option>
+                            <option value="selesai" ${surat.status === "selesai" ? "selected" : ""}>Selesai</option>
+                            <option value="ditolak" ${surat.status === "ditolak" ? "selected" : ""}>Ditolak</option>
+                        </select>
 
-                        <option value="selesai"
-                            ${surat.status === "selesai" ? "selected" : ""}>
-                            Selesai
-                        </option>
+                        <button
+                            class="btn save-surat"
+                            data-id="${surat.id}"
+                            style="padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 12px; background: var(--primary); color: white; border: none; cursor: pointer;">
+                            Simpan
+                        </button>
 
-                        <option value="ditolak"
-                            ${surat.status === "ditolak" ? "selected" : ""}>
-                            Ditolak
-                        </option>
-                    </select>
-
-                    <button
-                        class="btn btn-ghost save-surat"
-                        data-id="${surat.id}">
-                        Simpan
-                    </button>
+                        <button
+                            class="btn btn-success btn-sm open-kirim-surat"
+                            data-id="${surat.id}"
+                            style="padding: 6px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; background: #16a34a; color: #fff; border: none; cursor: pointer;"
+                            title="Upload & Kirim Surat ke Warga"
+                        >
+                            <i class="fa-solid fa-paper-plane"></i> Kirim Surat
+                        </button>
+                        ${surat.file_surat ? `
+                        <a href="/storage/${surat.file_surat}" target="_blank" class="btn btn-primary btn-sm" style="padding: 6px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; text-decoration: none; display: flex; align-items: center; gap: 4px; background: #2563eb; color: white; border: none;">
+                            <i class="fa-solid fa-download"></i> Download
+                        </a>` : ''}
+                    </div>
                 </td>
             </tr>
         `,
             )
             .join("");
-    } catch (err) {
-        console.error(err);
     }
+
+    // Search handler
+    if (searchInput) {
+        searchInput.addEventListener('input', renderTable);
+    }
+
+    await loadAndRender();
+
+    // Store refresh function globally
+    window._refreshStafSurat = loadAndRender;
 }
 
 // Bind modal-related click events for Staf
@@ -400,11 +449,38 @@ document.addEventListener("click", async (e) => {
         return;
     }
 
+    // Open Kirim Surat modal from table
+    const kirimBtn = e.target.closest(".open-kirim-surat");
+    if (kirimBtn) {
+        const id = kirimBtn.dataset.id;
+        openKirimSuratModal(id);
+        return;
+    }
+
+    // Open Kirim Surat modal from detail modal
+    const kirimFromDetail = e.target.closest(".open-kirim-surat-from-detail");
+    if (kirimFromDetail) {
+        const id = kirimFromDetail.dataset.id;
+        // Close detail modal first
+        const detailModal = document.getElementById("suratDetailModal");
+        if (detailModal) {
+            detailModal.classList.remove("open");
+            detailModal.setAttribute("aria-hidden", "true");
+        }
+        openKirimSuratModal(id);
+        return;
+    }
+
     if (e.target.closest("[data-action='closeModal']")) {
-        const modal = document.getElementById("suratDetailModal");
-        if (modal) {
-            modal.classList.remove("open");
-            modal.setAttribute("aria-hidden", "true");
+        const suratModal = document.getElementById("suratDetailModal");
+        if (suratModal) {
+            suratModal.classList.remove("open");
+            suratModal.setAttribute("aria-hidden", "true");
+        }
+        const kirimModal = document.getElementById("kirimSuratModal");
+        if (kirimModal) {
+            kirimModal.classList.remove("open");
+            kirimModal.setAttribute("aria-hidden", "true");
         }
         return;
     }
@@ -425,6 +501,86 @@ document.addEventListener("click", async (e) => {
             await updateStafSuratStatus(id, "ditolak");
         }
         return;
+    }
+});
+
+// ── Kirim Surat Modal ─────────────────────────────────────────
+function openKirimSuratModal(suratId) {
+    const modal = document.getElementById("kirimSuratModal");
+    const idInput = document.getElementById("kirimSuratId");
+    const fileInput = document.getElementById("kirimSuratFile");
+    const noteInput = document.getElementById("kirimSuratNote");
+
+    if (!modal || !idInput) return;
+
+    idInput.value = suratId;
+    if (fileInput) fileInput.value = '';
+    if (noteInput) noteInput.value = '';
+
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+}
+
+// Handle Kirim Surat form submit
+document.addEventListener("submit", async (e) => {
+    if (!e.target.matches("#kirimSuratForm")) return;
+    e.preventDefault();
+
+    const form = e.target;
+    const suratId = document.getElementById("kirimSuratId")?.value;
+    const fileInput = document.getElementById("kirimSuratFile");
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    if (!suratId || !fileInput?.files?.length) {
+        alert("Silakan pilih file PDF terlebih dahulu.");
+        return;
+    }
+
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+    const formData = new FormData();
+    formData.append('file_surat', fileInput.files[0]);
+
+    // Disable button during upload
+    const origHtml = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengunggah...';
+
+    try {
+        const res = await fetch(`/api/staf/surat/${suratId}/upload-hasil`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrf,
+                'Accept': 'application/json',
+            },
+            body: formData,
+        });
+
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || `HTTP error! status: ${res.status}`);
+        }
+
+        alert('Surat berhasil dikirim ke warga!');
+
+        // Close modal
+        const modal = document.getElementById("kirimSuratModal");
+        if (modal) {
+            modal.classList.remove("open");
+            modal.setAttribute("aria-hidden", "true");
+        }
+
+        // Refresh table
+        if (typeof window._refreshStafSurat === 'function') {
+            window._refreshStafSurat();
+        } else {
+            initStafSuratLaravel();
+        }
+    } catch (err) {
+        console.error('Upload surat gagal:', err);
+        alert('Gagal mengirim surat: ' + err.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origHtml;
     }
 });
 
