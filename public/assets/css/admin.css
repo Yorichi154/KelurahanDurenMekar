@@ -428,3 +428,175 @@ body.is-admin #footer {
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================================================
+   Visual Word-like Template Editor
+   ========================================================= */
+.word-editor-container {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #f9fafb;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-top: 8px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.word-editor-toolbar {
+    background: #f3f4f6;
+    border-bottom: 1px solid #d1d5db;
+    padding: 6px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 20px;
+    background: #d1d5db;
+    margin: 0 4px;
+}
+
+.editor-select {
+    height: 30px !important;
+    padding: 2px 24px 2px 8px !important;
+    font-size: 13px !important;
+    border-radius: 6px !important;
+    border: 1px solid #cccccc !important;
+    background-color: #ffffff !important;
+    cursor: pointer;
+    width: auto !important;
+}
+
+.toolbar-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+    font-size: 13px;
+    transition: all 0.15s ease;
+}
+
+.toolbar-btn:hover {
+    background: #e5e7eb;
+    color: #1f2937;
+    border-color: #d1d5db;
+}
+
+.toolbar-btn.active {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.word-editor-viewport {
+    background: #e5e7eb;
+    padding: 24px 12px;
+    overflow-y: auto;
+    max-height: 480px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.word-editor-ruler {
+    width: 100%;
+    max-width: 680px;
+    height: 12px;
+    position: relative;
+    margin-bottom: 4px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 4px;
+    border: 1px solid #d1d5db;
+}
+
+.word-editor-ruler .ruler-line {
+    position: absolute;
+    left: 40px;
+    right: 40px;
+    top: 50%;
+    height: 2px;
+    background: #9ca3af;
+}
+
+.word-editor-paper {
+    width: 100%;
+    max-width: 680px;
+    background: #ffffff;
+    border-radius: 4px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid #d1d5db;
+}
+
+.word-editor-canvas {
+    outline: none;
+    padding: 40px;
+    min-height: 400px;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #111827;
+    text-align: justify;
+}
+
+.word-editor-canvas[placeholder]:empty:before {
+    content: attr(placeholder);
+    color: #9ca3af;
+    font-style: italic;
+    cursor: text;
+    display: inline-block;
+}
+
+/* Size mappings in the canvas style for Old HTML tags */
+.word-editor-canvas font[size="1"] { font-size: 10px; }
+.word-editor-canvas font[size="2"] { font-size: 12px; }
+.word-editor-canvas font[size="3"] { font-size: 14px; }
+.word-editor-canvas font[size="4"] { font-size: 16px; }
+.word-editor-canvas font[size="5"] { font-size: 18px; }
+.word-editor-canvas font[size="6"] { font-size: 24px; }
+.word-editor-canvas font[size="7"] { font-size: 32px; }
+
+/* Dropdown Menu styling */
+.editor-dropdown-menu .dropdown-header {
+    padding: 6px 14px;
+    font-weight: 800;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #9ca3af;
+    background: #f9fafb;
+    border-bottom: 1px solid #f3f4f6;
+    margin-top: 6px;
+}
+.editor-dropdown-menu .dropdown-header:first-child {
+    margin-top: 0;
+}
+.editor-dropdown-menu .dropdown-item {
+    display: block;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #374151;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.15s ease;
+}
+.editor-dropdown-menu .dropdown-item:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+

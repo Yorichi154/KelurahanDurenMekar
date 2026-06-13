@@ -13,7 +13,7 @@ class SuratController extends Controller
     public function index()
     {
         $this->checkMigration();
-        return Surat::with('user')
+        return Surat::with(['user', 'pickup'])
             ->latest()
             ->get();
     }
@@ -32,13 +32,14 @@ class SuratController extends Controller
 
     public function show(Surat $surat)
     {
-        return $surat->load('user');
+        return $surat->load(['user', 'pickup']);
     }
 
     public function update(Request $request, Surat $surat)
     {
         $surat->update([
             'status' => $request->status,
+            'catatan_staf' => $request->catatan_staf ?? $request->catatan,
         ]);
 
         return response()->json($surat);
@@ -62,7 +63,7 @@ class SuratController extends Controller
 
     public function indexWarga()
     {
-        $surat = Surat::where('user_id', auth()->id())->latest()->get();
+        $surat = Surat::with('pickup')->where('user_id', auth()->id())->latest()->get();
         return response()->json($surat);
     }
 
@@ -72,6 +73,7 @@ class SuratController extends Controller
             'jenis_surat' => 'required|string|max:255',
             'keperluan' => 'required|string',
             'berkas' => 'nullable|array',
+            'data_surat' => 'nullable|array',
         ]);
 
         $surat = Surat::create([
@@ -80,6 +82,7 @@ class SuratController extends Controller
             'keperluan' => $request->keperluan,
             'status' => 'menunggu',
             'berkas' => $request->berkas,
+            'data_surat' => $request->data_surat,
         ]);
 
         return response()->json($surat, 201);
@@ -90,7 +93,7 @@ class SuratController extends Controller
     public function indexStaf()
     {
         $this->checkMigration();
-        $surat = Surat::with('user')->latest()->get();
+        $surat = Surat::with(['user', 'pickup'])->latest()->get();
         return response()->json($surat);
     }
 

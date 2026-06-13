@@ -39,5 +39,10 @@ class Surat extends Model
     {
         return $this->belongsTo(User::class, 'dibuat_oleh');
     }
+
+    public function pickup()
+    {
+        return $this->hasOne(SuratPickup::class, 'submission_id');
+    }
 }
 

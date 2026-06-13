@@ -138,12 +138,32 @@
         el.textContent = s ? `Login: ${s.name} (${s.role})` : "-";
     }
 
+    async function fetchAPI(url, options = {}) {
+        const headers = {
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            ...options.headers,
+        };
+        const method = (options.method || "GET").toUpperCase();
+        if (method !== "GET" && !headers["X-CSRF-TOKEN"]) {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            if (csrf) {
+                headers["X-CSRF-TOKEN"] = csrf;
+            }
+        }
+        return fetch(url, {
+            ...options,
+            credentials: "include",
+            headers,
+        });
+    }
+
     // --------------------
     // Dashboard
     // --------------------
     async function initDashboard() {
         try {
-            const response = await fetch("/api/admin/stats", {
+            const response = await fetchAPI("/api/admin/stats", {
                 credentials: "include",
                 headers: {
                     Accept: "application/json",
@@ -408,6 +428,7 @@
             if (s === "menunggu") cls = "badge-wait";
             if (s === "diproses") cls = "badge-proses";
             if (s === "selesai") cls = "badge-done";
+            if (s === "siap_diambil") cls = "badge-done";
             if (s === "ditolak") cls = "badge-reject";
         }
         // extra kinds
@@ -419,7 +440,8 @@
             if (s === "published") cls = "badge-done";
             if (s === "draft") cls = "badge-wait";
         }
-        return `<span class="badge ${cls}">${status || "-"}</span>`;
+        const labelText = s === "siap_diambil" ? "Siap Diambil" : (status || "-");
+        return `<span class="badge ${cls}">${labelText}</span>`;
     }
 
     function _openModal(id) {
@@ -440,82 +462,152 @@
     // Admin - Profil Kelurahan
     // --------------------
     let _profilBound = false;
-    function initProfilKelurahan() {
-        const s = Data.settings();
-
+    async function initProfilKelurahan() {
         const setVal = (id, v) => {
             const el = document.getElementById(id);
             if (el) el.value = v || "";
         };
 
-        setVal("pkSiteName", s.siteName);
-        setVal("pkLurahName", s.lurahName);
-        setVal("pkKecamatan", s.kecamatan);
-        setVal("pkKota", s.kota);
-        setVal("pkProvinsi", s.provinsi);
-        setVal("pkKodepos", s.kodepos);
-        setVal("pkDeskripsi", s.profil);
+        async function loadProfilData() {
+            try {
+                const res = await fetchAPI("/api/admin/setting", { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data) return;
 
-        setVal("pkEmail", s.email);
-        setVal("pkPhone", s.phone);
-        setVal("pkAddress", s.address);
-        setVal("pkInstagram", s.instagram);
-        setVal("pkMaps", s.maps);
-        setVal("pkJam", s.jamPelayanan || s.note);
+                setVal("pkSiteName", data.site_name);
+                setVal("pkLurahName", data.lurah_name);
+                setVal("pkKecamatan", data.kecamatan);
+                setVal("pkKota", data.kota);
+                setVal("pkProvinsi", data.provinsi);
+                setVal("pkKodepos", data.kodepos);
+                setVal("pkDeskripsi", data.profil);
+
+                setVal("pkVisi", data.visi);
+                setVal("pkMisi", data.misi);
+                setVal("pkLuas", data.luas_wilayah);
+                setVal("pkPenduduk", data.jumlah_penduduk);
+                setVal("pkRT", data.jumlah_rt);
+                setVal("pkRW", data.jumlah_rw);
+
+                setVal("pkEmail", data.email);
+                setVal("pkPhone", data.phone);
+                setVal("pkAddress", data.address);
+                setVal("pkInstagram", data.instagram);
+                setVal("pkMaps", data.maps);
+                setVal("pkJam", data.jam_pelayanan);
+
+                // Sync local storage fallback
+                if (window.KelurahanStore?.Data) {
+                    window.KelurahanStore.Data.saveSettings({
+                        siteName: data.site_name || "",
+                        email: data.email || "",
+                        phone: data.phone || "",
+                        address: data.address || "",
+                        instagram: data.instagram || "",
+                        note: data.profil || "",
+                        lurahName: data.lurah_name || "",
+                        kecamatan: data.kecamatan || "",
+                        kota: data.kota || "",
+                        provinsi: data.provinsi || "",
+                        kodepos: data.kodepos || "",
+                        profil: data.profil || "",
+                        maps: data.maps || "",
+                        jamPelayanan: data.jam_pelayanan || "",
+                        visi: data.visi || "",
+                        misi: data.misi || "",
+                        luas_wilayah: data.luas_wilayah || "",
+                        jumlah_penduduk: data.jumlah_penduduk || "",
+                        jumlah_rt: data.jumlah_rt || "",
+                        jumlah_rw: data.jumlah_rw || "",
+                    });
+                }
+            } catch (err) {
+                console.error("Gagal load profil kelurahan:", err);
+            }
+        }
+
+        await loadProfilData();
 
         if (_profilBound) return;
         _profilBound = true;
 
-        document.addEventListener("click", (e) => {
+        document.addEventListener("click", async (e) => {
             const save = e.target.closest("[data-action='saveProfil']");
             const reset = e.target.closest("[data-action='resetProfil']");
 
             if (reset) {
-                // reload from current storage
-                const cur = Data.settings();
-                setVal("pkSiteName", cur.siteName);
-                setVal("pkLurahName", cur.lurahName);
-                setVal("pkKecamatan", cur.kecamatan);
-                setVal("pkKota", cur.kota);
-                setVal("pkProvinsi", cur.provinsi);
-                setVal("pkKodepos", cur.kodepos);
-                setVal("pkDeskripsi", cur.profil);
-                setVal("pkEmail", cur.email);
-                setVal("pkPhone", cur.phone);
-                setVal("pkAddress", cur.address);
-                setVal("pkInstagram", cur.instagram);
-                setVal("pkMaps", cur.maps);
-                setVal("pkJam", cur.jamPelayanan || cur.note);
+                await loadProfilData();
                 return;
             }
 
             if (!save) return;
 
-            const get = (id) =>
-                document.getElementById(id)?.value?.trim() || "";
-            const prev = Data.settings();
+            const get = (id) => document.getElementById(id)?.value?.trim() || "";
 
-            Data.saveSettings({
-                ...prev,
-                siteName: get("pkSiteName"),
-                lurahName: get("pkLurahName"),
+            const payload = {
+                site_name: get("pkSiteName"),
+                lurah_name: get("pkLurahName"),
                 kecamatan: get("pkKecamatan"),
                 kota: get("pkKota"),
                 provinsi: get("pkProvinsi"),
                 kodepos: get("pkKodepos"),
                 profil: get("pkDeskripsi"),
+                visi: get("pkVisi"),
+                misi: get("pkMisi"),
+                luas_wilayah: get("pkLuas"),
+                jumlah_penduduk: get("pkPenduduk"),
+                jumlah_rt: get("pkRT"),
+                jumlah_rw: get("pkRW"),
                 email: get("pkEmail"),
                 phone: get("pkPhone"),
                 address: get("pkAddress"),
                 instagram: get("pkInstagram"),
                 maps: get("pkMaps"),
-                jamPelayanan: get("pkJam"),
-                // keep note for older footer widgets
-                note: get("pkJam") || prev.note,
-            });
+                jam_pelayanan: get("pkJam"),
+            };
 
-            alert("Profil kelurahan tersimpan.");
-            window.dispatchEvent(new CustomEvent("settings:changed"));
+            try {
+                const checkRes = await fetchAPI("/api/admin/setting", { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                const currentSetting = await checkRes.json().catch(() => null);
+
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                let response;
+
+                if (currentSetting?.id) {
+                    response = await fetchAPI(`/api/admin/setting/${currentSetting.id}`, {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": csrf,
+                            Accept: "application/json",
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(payload),
+                    });
+                } else {
+                    response = await fetchAPI("/api/admin/setting", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": csrf,
+                            Accept: "application/json",
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(payload),
+                    });
+                }
+
+                if (!response.ok) {
+                    throw new Error("Gagal menyimpan ke server");
+                }
+
+                alert("Profil kelurahan berhasil disimpan.");
+                await loadProfilData();
+                window.dispatchEvent(new CustomEvent("settings:changed"));
+            } catch (err) {
+                alert("Gagal menyimpan profil: " + err.message);
+            }
         });
     }
 
@@ -1107,7 +1199,7 @@
     }
     async function initLaporan() {
         async function loadData() {
-            const response = await fetch("/api/admin/laporan");
+            const response = await fetchAPI("/api/admin/laporan");
 
             const data = await response.json();
 
@@ -1187,7 +1279,7 @@
 
         async function loadData() {
             try {
-                const response = await fetch("/api/admin/berita", {
+                const response = await fetchAPI("/api/admin/berita", {
                     credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
@@ -1229,7 +1321,8 @@
         await loadData();
 
         const createBtn = document.querySelector("[data-action='create']");
-        if (createBtn) {
+        if (createBtn && !createBtn.dataset.bound) {
+            createBtn.dataset.bound = "true";
             createBtn.onclick = () => {
                 document.getElementById("itemId").value = "";
                 document.getElementById("adminForm")?.reset();
@@ -1241,8 +1334,27 @@
             };
         }
 
+        const fileInput = document.getElementById("fImage");
+        if (fileInput && !fileInput.dataset.bound) {
+            fileInput.dataset.bound = "true";
+            fileInput.addEventListener("change", async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    try {
+                        const base64 = await fileToDataURL(file);
+                        document.getElementById("fImageExisting").value = base64;
+                        setImagePreview(base64);
+                    } catch (err) {
+                        console.error(err);
+                        alert("Gagal membaca file");
+                    }
+                }
+            });
+        }
+
         const form = document.getElementById("adminForm");
-        if (form) {
+        if (form && !form.dataset.bound) {
+            form.dataset.bound = "true";
             form.onsubmit = async (e) => {
                 e.preventDefault();
                 const id = document.getElementById("itemId").value;
@@ -1259,8 +1371,9 @@
                 const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
                 let response;
                 if (id) {
-                    response = await fetch(`/api/admin/berita/${id}`, {
+                    response = await fetchAPI(`/api/admin/berita/${id}`, {
                         method: "PUT",
+                        credentials: "same-origin",
                         headers: {
                             "Content-Type": "application/json",
                             "X-CSRF-TOKEN": csrf,
@@ -1269,8 +1382,9 @@
                         body: JSON.stringify(payload),
                     });
                 } else {
-                    response = await fetch("/api/admin/berita", {
+                    response = await fetchAPI("/api/admin/berita", {
                         method: "POST",
+                        credentials: "same-origin",
                         headers: {
                             "Content-Type": "application/json",
                             "X-CSRF-TOKEN": csrf,
@@ -1296,7 +1410,7 @@
 
         async function loadData() {
             try {
-                const response = await fetch("/api/admin/agenda");
+                const response = await fetchAPI("/api/admin/agenda");
                 const data = await response.json();
                 tbody.innerHTML = data
                     .map(
@@ -1359,7 +1473,7 @@
                 const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
                 let response;
                 if (id) {
-                    response = await fetch(`/api/admin/agenda/${id}`, {
+                    response = await fetchAPI(`/api/admin/agenda/${id}`, {
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json",
@@ -1369,7 +1483,7 @@
                         body: JSON.stringify(payload),
                     });
                 } else {
-                    response = await fetch("/api/admin/agenda", {
+                    response = await fetchAPI("/api/admin/agenda", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -1396,7 +1510,7 @@
 
         async function loadData() {
             try {
-                const response = await fetch("/api/admin/pengumuman");
+                const response = await fetchAPI("/api/admin/pengumuman");
                 const data = await response.json();
 
                 tbody.innerHTML = data
@@ -1458,7 +1572,7 @@
                 const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
                 let response;
                 if (id) {
-                    response = await fetch(`/api/admin/pengumuman/${id}`, {
+                    response = await fetchAPI(`/api/admin/pengumuman/${id}`, {
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json",
@@ -1468,7 +1582,7 @@
                         body: JSON.stringify(payload),
                     });
                 } else {
-                    response = await fetch("/api/admin/pengumuman", {
+                    response = await fetchAPI("/api/admin/pengumuman", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -1497,7 +1611,7 @@
 
         async function loadData() {
             try {
-                const response = await fetch("/api/admin/galeri");
+                const response = await fetchAPI("/api/admin/galeri");
 
                 const data = await response.json();
                 console.log("BERITA RESPONSE =", data);
@@ -1542,8 +1656,26 @@
                 document.getElementById("itemId").value = "";
 
                 document.getElementById("adminForm")?.reset();
+                setImagePreview("");
 
                 openModal("galeri");
+            });
+        }
+
+        const fileInput = document.getElementById("fImage");
+        if (fileInput) {
+            fileInput.addEventListener("change", async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    try {
+                        const base64 = await fileToDataURL(file);
+                        document.getElementById("fImageExisting").value = base64;
+                        setImagePreview(base64);
+                    } catch (err) {
+                        console.error(err);
+                        alert("Gagal membaca file");
+                    }
+                }
             });
         }
 
@@ -1561,7 +1693,7 @@
                     title: document.getElementById("fTitle").value,
                     category: document.getElementById("fCategory").value,
                     date: document.getElementById("fDate").value,
-                    image: "",
+                    image: document.getElementById("fImageExisting")?.value || "",
                     content: document.getElementById("fContent").value,
                 };
 
@@ -1570,7 +1702,7 @@
 
                     if (id) {
                         console.log(payload);
-                        response = await fetch(`/api/admin/galeri/${id}`, {
+                        response = await fetchAPI(`/api/admin/galeri/${id}`, {
                             method: "PUT",
                             headers: {
                                 "Content-Type": "application/json",
@@ -1579,7 +1711,7 @@
                             body: JSON.stringify(payload),
                         });
                     } else {
-                        response = await fetch("/api/admin/galeri", {
+                        response = await fetchAPI("/api/admin/galeri", {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
@@ -1609,7 +1741,7 @@
 
         window.editGaleri = async function (id) {
             try {
-                const response = await fetch(`/api/admin/galeri/${id}`);
+                const response = await fetchAPI(`/api/admin/galeri/${id}`);
 
                 const item = await response.json();
 
@@ -1624,6 +1756,10 @@
 
                 document.getElementById("fContent").value = item.content ?? "";
 
+                const existing = document.getElementById("fImageExisting");
+                if (existing) existing.value = item.image || "";
+                setImagePreview(item.image || "");
+
                 openModal("galeri", item);
             } catch (error) {
                 console.error(error);
@@ -1634,7 +1770,7 @@
             if (!confirm("Hapus galeri ini?")) return;
 
             try {
-                const response = await fetch(`/api/admin/galeri/${id}`, {
+                const response = await fetchAPI(`/api/admin/galeri/${id}`, {
                     method: "DELETE",
                     headers: {
                         Accept: "application/json",
@@ -1663,7 +1799,7 @@
 
         async function loadData() {
             try {
-                const response = await fetch("/api/admin/pengaduan", {
+                const response = await fetchAPI("/api/admin/pengaduan", {
                     credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
@@ -1741,7 +1877,7 @@
                     const id = del.dataset.id;
                     if (!confirm("Hapus pengaduan ini secara permanen?")) return;
                     try {
-                        const response = await fetch(`/api/admin/pengaduan/${id}`, {
+                        const response = await fetchAPI(`/api/admin/pengaduan/${id}`, {
                             method: "DELETE",
                             headers: {
                                 "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
@@ -1764,7 +1900,7 @@
                 if (detail) {
                     const id = detail.dataset.id;
                     try {
-                        const res = await fetch(`/api/admin/pengaduan/${id}`, {
+                        const res = await fetchAPI(`/api/admin/pengaduan/${id}`, {
                             headers: { Accept: "application/json" }
                         });
                         const it = await res.json();
@@ -1793,7 +1929,7 @@
                     const status = document.getElementById("apdStatus").value;
 
                     try {
-                        const res = await fetch(`/api/admin/pengaduan/${id}`, {
+                        const res = await fetchAPI(`/api/admin/pengaduan/${id}`, {
                             method: "PUT",
                             headers: {
                                 "Content-Type": "application/json",
@@ -1836,7 +1972,7 @@
 
         async function soLoad() {
             try {
-                const res = await fetch(SO_API, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                const res = await fetchAPI(SO_API, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
                 soItems = Array.isArray(data) ? data : (data?.data ?? []);
@@ -1941,7 +2077,7 @@
 
             const url = soEditId ? `${SO_API}/${soEditId}` : SO_API;
             try {
-                const res = await fetch(url, {
+                const res = await fetchAPI(url, {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content, Accept: 'application/json' },
@@ -1977,7 +2113,7 @@
                 const item = soItems.find(i => i.id === id);
                 if (!item || !confirm(`Hapus "${item.nama}"?`)) return;
                 try {
-                    const res = await fetch(`${SO_API}/${id}`, {
+                    const res = await fetchAPI(`${SO_API}/${id}`, {
                         method: 'DELETE',
                         credentials: 'same-origin',
                         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content, Accept: 'application/json' },
@@ -2005,7 +2141,7 @@
 
         async function loadData() {
             try {
-                const response = await fetch("/api/admin/surat", {
+                const response = await fetchAPI("/api/admin/surat", {
                     credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
@@ -2086,7 +2222,7 @@
                     const id = del.dataset.id;
                     if (!confirm("Hapus pengajuan surat ini secara permanen?")) return;
                     try {
-                        const response = await fetch(`/api/admin/surat/${id}`, {
+                        const response = await fetchAPI(`/api/admin/surat/${id}`, {
                             method: "DELETE",
                             headers: {
                                 "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
@@ -2109,7 +2245,7 @@
                 if (detail) {
                     const id = detail.dataset.id;
                     try {
-                        const res = await fetch(`/api/admin/surat/${id}`, {
+                        const res = await fetchAPI(`/api/admin/surat/${id}`, {
                             headers: { Accept: "application/json" }
                         });
                         const it = await res.json();
@@ -2124,7 +2260,7 @@
                         document.getElementById("asAlamat").value = `${it.user?.alamat || ""} RT ${it.user?.rt || "-"}/RW ${it.user?.rw || "-"}`;
                         document.getElementById("asKeperluan").value = it.keperluan || "";
                         document.getElementById("asStatus").value = (it.status || "menunggu").toLowerCase();
-                        document.getElementById("asCatatan").value = it.catatanAdmin || "";
+                        document.getElementById("asCatatan").value = it.catatan_staf ?? it.catatanAdmin ?? "";
 
                         const sub = document.getElementById("adminSuratModalSub");
                         if (sub) sub.textContent = `ID: ${it.id}`;
@@ -2203,16 +2339,17 @@
                 if (save) {
                     const id = document.getElementById("asId").value;
                     const status = document.getElementById("asStatus").value;
+                    const catatan = document.getElementById("asCatatan").value?.trim() || "";
 
                     try {
-                        const res = await fetch(`/api/admin/surat/${id}`, {
+                        const res = await fetchAPI(`/api/admin/surat/${id}`, {
                             method: "PUT",
                             headers: {
                                 "Content-Type": "application/json",
                                 "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
                                 Accept: "application/json",
                             },
-                            body: JSON.stringify({ status })
+                            body: JSON.stringify({ status, catatan })
                         });
                         if (res.ok) {
                             alert("Status surat berhasil disimpan");
@@ -2237,7 +2374,7 @@
         if (!btnSave) return;
 
         async function loadData() {
-            const response = await fetch("/api/admin/setting");
+            const response = await fetchAPI("/api/admin/setting");
 
             if (!response.ok) return;
 
@@ -2278,14 +2415,14 @@
                     profil: document.getElementById("sNote").value,
                 };
 
-                const current = await fetch("/api/admin/setting");
+                const current = await fetchAPI("/api/admin/setting");
 
                 const setting = await current.json();
 
                 let response;
 
                 if (setting?.id) {
-                    response = await fetch(`/api/admin/setting/${setting.id}`, {
+                    response = await fetchAPI(`/api/admin/setting/${setting.id}`, {
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json",
@@ -2294,7 +2431,7 @@
                         body: JSON.stringify(payload),
                     });
                 } else {
-                    response = await fetch("/api/admin/setting", {
+                    response = await fetchAPI("/api/admin/setting", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -2317,14 +2454,22 @@
         }
     }
     document.addEventListener("click", async (e) => {
+        // --- GLOBAL CLOSE MODAL ---
+        const btnCloseModal = e.target.closest("[data-action='closeModal']");
+        if (btnCloseModal) {
+            closeModal();
+            return;
+        }
+
         // --- BERITA ---
         const btnDeleteBerita = e.target.closest("[data-action='deleteBerita']");
         if (btnDeleteBerita) {
             const id = btnDeleteBerita.dataset.id;
             if (!confirm("Hapus berita ini?")) return;
             try {
-                await fetch(`/api/admin/berita/${id}`, {
+                await fetchAPI(`/api/admin/berita/${id}`, {
                     method: "DELETE",
+                    credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
                         "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
@@ -2341,7 +2486,12 @@
         if (btnEditBerita) {
             const id = btnEditBerita.dataset.id;
             try {
-                const response = await fetch(`/api/admin/berita/${id}`);
+                const response = await fetchAPI(`/api/admin/berita/${id}`, {
+                    credentials: "same-origin",
+                    headers: {
+                        Accept: "application/json",
+                    }
+                });
                 const item = await response.json();
                 if (document.getElementById("adminModalTitle")) {
                     document.getElementById("adminModalTitle").textContent = "Edit Berita";
@@ -2359,8 +2509,9 @@
             const id = btnDeleteAgenda.dataset.id;
             if (!confirm("Hapus agenda ini?")) return;
             try {
-                await fetch(`/api/admin/agenda/${id}`, {
+                await fetchAPI(`/api/admin/agenda/${id}`, {
                     method: "DELETE",
+                    credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
                         "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
@@ -2377,7 +2528,12 @@
         if (btnEditAgenda) {
             const id = btnEditAgenda.dataset.id;
             try {
-                const response = await fetch(`/api/admin/agenda/${id}`);
+                const response = await fetchAPI(`/api/admin/agenda/${id}`, {
+                    credentials: "same-origin",
+                    headers: {
+                        Accept: "application/json",
+                    }
+                });
                 const item = await response.json();
                 if (document.getElementById("adminModalTitle")) {
                     document.getElementById("adminModalTitle").textContent = "Edit Agenda";
@@ -2395,8 +2551,9 @@
             const id = btnDeletePengumuman.dataset.id;
             if (!confirm("Hapus pengumuman ini?")) return;
             try {
-                await fetch(`/api/admin/pengumuman/${id}`, {
+                await fetchAPI(`/api/admin/pengumuman/${id}`, {
                     method: "DELETE",
+                    credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
                         "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
@@ -2413,7 +2570,12 @@
         if (btnEditPengumuman) {
             const id = btnEditPengumuman.dataset.id;
             try {
-                const response = await fetch(`/api/admin/pengumuman/${id}`);
+                const response = await fetchAPI(`/api/admin/pengumuman/${id}`, {
+                    credentials: "same-origin",
+                    headers: {
+                        Accept: "application/json",
+                    }
+                });
                 const item = await response.json();
                 if (document.getElementById("adminModalTitle")) {
                     document.getElementById("adminModalTitle").textContent = "Edit Pengumuman";
@@ -2432,7 +2594,7 @@
         if (!tbody) return;
 
         async function loadData() {
-            const response = await fetch("/api/admin/rtrw");
+            const response = await fetchAPI("/api/admin/rtrw");
             const data = await response.json();
             console.log("BERITA RESPONSE =", data);
             console.log("BERITA ARRAY =", Array.isArray(data));
@@ -2492,7 +2654,7 @@
                 let response;
 
                 if (id) {
-                    response = await fetch(`/api/admin/rtrw/${id}`, {
+                    response = await fetchAPI(`/api/admin/rtrw/${id}`, {
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json",
@@ -2501,7 +2663,7 @@
                         body: JSON.stringify(payload),
                     });
                 } else {
-                    response = await fetch("/api/admin/rtrw", {
+                    response = await fetchAPI("/api/admin/rtrw", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -2527,7 +2689,7 @@
         }
 
         window.editRtrw = async (id) => {
-            const response = await fetch(`/api/admin/rtrw/${id}`);
+            const response = await fetchAPI(`/api/admin/rtrw/${id}`);
 
             const item = await response.json();
 
@@ -2547,7 +2709,7 @@
         window.deleteRtrw = async (id) => {
             if (!confirm("Hapus data ini?")) return;
 
-            await fetch(`/api/admin/rtrw/${id}`, {
+            await fetchAPI(`/api/admin/rtrw/${id}`, {
                 method: "DELETE",
             });
 
@@ -2562,7 +2724,7 @@
         if (!tbody) return;
 
         async function loadData() {
-            const response = await fetch("/api/admin/faq");
+            const response = await fetchAPI("/api/admin/faq");
             const data = await response.json();
 
             console.log("FAQ RESPONSE =", data);
@@ -2617,7 +2779,7 @@
                 let response;
 
                 if (id) {
-                    response = await fetch(`/api/admin/faq/${id}`, {
+                    response = await fetchAPI(`/api/admin/faq/${id}`, {
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json",
@@ -2626,7 +2788,7 @@
                         body: JSON.stringify(payload),
                     });
                 } else {
-                    response = await fetch("/api/admin/faq", {
+                    response = await fetchAPI("/api/admin/faq", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -2652,7 +2814,7 @@
         }
 
         window.editFaq = async (id) => {
-            const response = await fetch(`/api/admin/faq/${id}`);
+            const response = await fetchAPI(`/api/admin/faq/${id}`);
 
             const item = await response.json();
 
@@ -2670,7 +2832,7 @@
         window.deleteFaq = async (id) => {
             if (!confirm("Hapus FAQ ini?")) return;
 
-            await fetch(`/api/admin/faq/${id}`, {
+            await fetchAPI(`/api/admin/faq/${id}`, {
                 method: "DELETE",
             });
 
@@ -2699,7 +2861,7 @@
 
         async function loadData() {
             try {
-                const response = await fetch("/api/admin/lembaga");
+                const response = await fetchAPI("/api/admin/lembaga");
                 const data = await response.json();
 
                 console.log("LEMBAGA RESPONSE =", data);
@@ -2759,7 +2921,7 @@
                 let response;
 
                 if (id) {
-                    response = await fetch(`/api/admin/lembaga/${id}`, {
+                    response = await fetchAPI(`/api/admin/lembaga/${id}`, {
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json",
@@ -2768,7 +2930,7 @@
                         body: JSON.stringify(payload),
                     });
                 } else {
-                    response = await fetch("/api/admin/lembaga", {
+                    response = await fetchAPI("/api/admin/lembaga", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -2812,7 +2974,7 @@
         });
 
         window.editLembaga = async function (id) {
-            const response = await fetch(`/api/admin/lembaga/${id}`);
+            const response = await fetchAPI(`/api/admin/lembaga/${id}`);
             const item = await response.json();
 
             document.getElementById("fLembagaId").value = item.id;
@@ -2832,7 +2994,7 @@
         window.deleteLembaga = async function (id) {
             if (!confirm("Hapus data lembaga ini?")) return;
 
-            await fetch(`/api/admin/lembaga/${id}`, {
+            await fetchAPI(`/api/admin/lembaga/${id}`, {
                 method: "DELETE",
             });
 
@@ -2848,19 +3010,43 @@
         const form = document.getElementById("ukForm");
         const formCard = document.getElementById("ukFormCard");
 
+        function toDateTime(iso) {
+            const d = iso ? new Date(iso) : null;
+            if (!d || isNaN(d.getTime())) return "-";
+            return d.toLocaleString("id-ID", {
+                year: "numeric",
+                month: "short",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        }
+
         async function loadData() {
-            const response = await fetch("/api/admin/unit-kerja");
+            const response = await fetchAPI("/api/admin/unit-kerja");
             const data = await response.json();
-            console.log("BERITA RESPONSE =", data);
-            console.log("BERITA ARRAY =", Array.isArray(data));
             tbody.innerHTML = data
                 .map(
                     (item) => `
             <tr>
-                <td>${item.nama_unit ?? "-"}</td>
-                <td>${item.nama_pimpinan ?? "-"}</td>
-                <td>${item.kontak ?? "-"}</td>
-                <td>${item.updated_at ?? "-"}</td>
+                <td>
+                    <div style="font-weight:bold">${item.nama_unit ?? "-"}</div>
+                    <div class="muted" style="font-size:12px">${item.jenis ?? ""}</div>
+                </td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <img src="${item.foto_pimpinan ? '/storage/' + item.foto_pimpinan : 'assets/images/avatar-placeholder.svg'}" style="width:30px;height:30px;border-radius:50%;object-fit:cover" />
+                        <div>
+                            <div style="font-weight:bold">${item.nama_pimpinan ?? "-"}</div>
+                            <div class="muted" style="font-size:11px">${item.jabatan_pimpinan ?? "-"}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div>${item.kontak ?? "-"}</div>
+                    <div class="muted" style="font-size:12px">${item.email ?? ""}</div>
+                </td>
+                <td>${toDateTime(item.updated_at)}</td>
                 <td class="text-right">
 
                     <button
@@ -2882,13 +3068,47 @@
                 .join("");
         }
 
+        function addStaffRow(staff = {}) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><input type="text" class="input staff-nama" value="${staff.nama ?? ""}" placeholder="Nama..." required /></td>
+                <td><input type="text" class="input staff-jabatan" value="${staff.jabatan ?? ""}" placeholder="Jabatan..." required /></td>
+                <td><input type="text" class="input staff-nip" value="${staff.nip ?? ""}" placeholder="NIP..." /></td>
+                <td class="text-right">
+                    <button type="button" class="btn btn-danger btn-sm remove-staff-row"><i class="fa-solid fa-trash-can"></i></button>
+                </td>
+            `;
+            tr.querySelector(".remove-staff-row").onclick = () => tr.remove();
+            document.getElementById("ukTimTbody").appendChild(tr);
+        }
+
+        function resetForm() {
+            if (form) form.reset();
+            document.getElementById("ukId").value = "";
+            document.getElementById("ukFotoPreview").src = "assets/images/avatar-placeholder.svg";
+            document.getElementById("ukTimTbody").innerHTML = "";
+        }
+
+        // Preview uploaded image
+        document.getElementById("ukFotoPimpinan")?.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById("ukFotoPreview").src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById("ukAddStaffBtn")?.addEventListener("click", () => {
+            addStaffRow();
+        });
+
         await loadData();
 
         document.getElementById("ukAddBtn")?.addEventListener("click", () => {
-            form.reset();
-
-            document.getElementById("ukId").value = "";
-
+            resetForm();
             formCard.hidden = false;
         });
 
@@ -2915,100 +3135,109 @@
                 e.preventDefault();
 
                 const id = document.getElementById("ukId").value;
+                const formData = new FormData();
 
-                const payload = {
-                    jenis: document.getElementById("ukJenis").value,
+                formData.append("jenis", document.getElementById("ukJenis").value);
+                formData.append("nama_unit", document.getElementById("ukNamaUnit").value);
+                formData.append("nama_pimpinan", document.getElementById("ukNamaPimpinan").value);
+                formData.append("jabatan_pimpinan", document.getElementById("ukJabatanPimpinan").value);
+                formData.append("nip_pimpinan", document.getElementById("ukNipPimpinan").value);
+                formData.append("pendidikan_pimpinan", document.getElementById("ukPendidikanPimpinan").value);
+                formData.append("kontak", document.getElementById("ukKontak").value);
+                formData.append("email", document.getElementById("ukEmail").value);
+                formData.append("alamat", document.getElementById("ukAlamat").value);
+                formData.append("riwayat_jabatan", document.getElementById("ukRiwayatJabatan").value);
+                formData.append("tugas", document.getElementById("ukTugas").value);
+                formData.append("kewenangan", document.getElementById("ukKewenangan").value);
 
-                    nama_unit: document.getElementById("ukNamaUnit").value,
+                // Collect dynamic staff rows
+                const staff = [];
+                document.querySelectorAll("#ukTimTbody tr").forEach((tr) => {
+                    const nama = tr.querySelector(".staff-nama")?.value.trim();
+                    const jabatan = tr.querySelector(".staff-jabatan")?.value.trim();
+                    const nip = tr.querySelector(".staff-nip")?.value.trim();
+                    if (nama || jabatan) {
+                        staff.push({ nama, jabatan, nip });
+                    }
+                });
+                formData.append("tim_pegawai", JSON.stringify(staff));
 
-                    nama_pimpinan:
-                        document.getElementById("ukNamaPimpinan").value,
-
-                    jabatan_pimpinan:
-                        document.getElementById("ukJabatanPimpinan").value,
-
-                    kontak: document.getElementById("ukKontak").value,
-
-                    email: document.getElementById("ukEmail").value,
-
-                    alamat: document.getElementById("ukAlamat").value,
-
-                    tugas: document.getElementById("ukTugas").value,
-
-                    kewenangan: document.getElementById("ukKewenangan").value,
-                };
-
-                let response;
-
-                if (id) {
-                    response = await fetch(`/api/admin/unit-kerja/${id}`, {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Accept: "application/json",
-                        },
-                        body: JSON.stringify(payload),
-                    });
-                } else {
-                    response = await fetch("/api/admin/unit-kerja", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Accept: "application/json",
-                        },
-                        body: JSON.stringify(payload),
-                    });
+                const photoFile = document.getElementById("ukFotoPimpinan").files[0];
+                if (photoFile) {
+                    formData.append("foto_pimpinan", photoFile);
                 }
+
+                let url = "/api/admin/unit-kerja";
+                if (id) {
+                    url = `/api/admin/unit-kerja/${id}`;
+                    formData.append("_method", "PUT"); // Laravel method spoofing
+                }
+
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                const response = await fetchAPI(url, {
+                    method: "POST", // Always POST for FormData upload with spoofing
+                    headers: {
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: formData,
+                });
 
                 if (!response.ok) {
                     alert("Gagal menyimpan Unit Kerja");
                     return;
                 }
 
-                form.reset();
-
+                resetForm();
                 formCard.hidden = true;
-
                 await loadData();
             });
         }
 
         window.editUnitKerja = async function (id) {
-            const response = await fetch(`/api/admin/unit-kerja/${id}`);
-
+            const response = await fetchAPI(`/api/admin/unit-kerja/${id}`);
             const item = await response.json();
 
+            resetForm();
+
             document.getElementById("ukId").value = item.id;
-
             document.getElementById("ukJenis").value = item.jenis ?? "";
-
             document.getElementById("ukNamaUnit").value = item.nama_unit ?? "";
-
-            document.getElementById("ukNamaPimpinan").value =
-                item.nama_pimpinan ?? "";
-
-            document.getElementById("ukJabatanPimpinan").value =
-                item.jabatan_pimpinan ?? "";
-
+            document.getElementById("ukNamaPimpinan").value = item.nama_pimpinan ?? "";
+            document.getElementById("ukJabatanPimpinan").value = item.jabatan_pimpinan ?? "";
+            document.getElementById("ukNipPimpinan").value = item.nip_pimpinan ?? "";
+            document.getElementById("ukPendidikanPimpinan").value = item.pendidikan_pimpinan ?? "";
             document.getElementById("ukKontak").value = item.kontak ?? "";
-
             document.getElementById("ukEmail").value = item.email ?? "";
-
             document.getElementById("ukAlamat").value = item.alamat ?? "";
-
+            document.getElementById("ukRiwayatJabatan").value = item.riwayat_jabatan ?? "";
             document.getElementById("ukTugas").value = item.tugas ?? "";
+            document.getElementById("ukKewenangan").value = item.kewenangan ?? "";
 
-            document.getElementById("ukKewenangan").value =
-                item.kewenangan ?? "";
+            if (item.foto_pimpinan) {
+                document.getElementById("ukFotoPreview").src = `/storage/${item.foto_pimpinan}`;
+            } else {
+                document.getElementById("ukFotoPreview").src = "assets/images/avatar-placeholder.svg";
+            }
+
+            // Populate staff table
+            const staffList = Array.isArray(item.tim_pegawai) ? item.tim_pegawai : [];
+            staffList.forEach(st => addStaffRow(st));
 
             formCard.hidden = false;
+            formCard.scrollIntoView({ behavior: "smooth", block: "start" });
         };
 
         window.deleteUnitKerja = async function (id) {
             if (!confirm("Hapus Unit Kerja ini?")) return;
 
-            await fetch(`/api/admin/unit-kerja/${id}`, {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            await fetchAPI(`/api/admin/unit-kerja/${id}`, {
                 method: "DELETE",
+                headers: {
+                    "X-CSRF-TOKEN": csrf,
+                    Accept: "application/json",
+                }
             });
 
             await loadData();
@@ -3031,150 +3260,358 @@
             modal?.classList.remove("open");
         };
 
-        function renderArrayEditor(containerId, items = []) {
-            const container = document.getElementById(containerId);
+        let draftSyarat = [];
+        let draftSteps = [];
+        let draftFields = [];
 
+        function renderSyarat() {
+            const container = document.getElementById("fSrvSyaratList");
             if (!container) return;
-
-            container.innerHTML = items
-                .map(
-                    (item) => `
+            container.innerHTML = draftSyarat.map((item, idx) => `
                 <div class="array-row" style="display:flex;gap:8px;margin-bottom:8px">
-                    <input
-                        class="input array-input"
-                        value="${item ?? ""}">
-                    <button
-                        type="button"
-                        class="btn btn-danger btn-sm remove-array-item">
-                        Hapus
-                    </button>
+                    <input class="input syarat-input" value="${item ?? ""}" placeholder="Tulis persyaratan..." required>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeSyarat(${idx})">Hapus</button>
                 </div>
-            `,
-                )
-                .join("");
-
-            container.querySelectorAll(".remove-array-item").forEach((btn) => {
-                btn.addEventListener("click", () => {
-                    btn.closest(".array-row")?.remove();
-                });
-            });
+            `).join("") || '<div class="muted" style="padding: 10px 0;">Belum ada persyaratan.</div>';
         }
 
-        function getArrayValues(containerId) {
-            const container = document.getElementById(containerId);
+        window.removeSyarat = (idx) => {
+            syncDrafts();
+            draftSyarat.splice(idx, 1);
+            renderSyarat();
+        };
 
-            if (!container) return [];
-
-            return [...container.querySelectorAll(".array-input")]
-                .map((el) => el.value.trim())
-                .filter(Boolean);
-        }
-
-        function addArrayItem(containerId) {
-            const container = document.getElementById(containerId);
-
+        function renderSteps() {
+            const container = document.getElementById("fSrvStepList");
             if (!container) return;
+            container.innerHTML = draftSteps.map((item, idx) => `
+                <div class="array-row" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;border:1px solid var(--border);padding:12px;border-radius:10px;background:#f8fafc;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <strong>Langkah ${idx + 1}</strong>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removeStep(${idx})">Hapus</button>
+                    </div>
+                    <input class="input step-judul" value="${item.judul ?? ""}" placeholder="Judul langkah (contoh: Isi Form Online)..." required>
+                    <textarea class="input step-desc" rows="2" placeholder="Deskripsi detail langkah..." required>${item.deskripsi ?? ""}</textarea>
+                </div>
+            `).join("") || '<div class="muted" style="padding: 10px 0;">Belum ada tahapan proses.</div>';
+        }
 
-            const row = document.createElement("div");
+        window.removeStep = (idx) => {
+            syncDrafts();
+            draftSteps.splice(idx, 1);
+            renderSteps();
+        };
 
-            row.className = "array-row";
-            row.style.cssText = "display:flex;gap:8px;margin-bottom:8px";
+        function renderFields() {
+            const container = document.getElementById("fSrvFormList");
+            if (!container) return;
+            const typeOptions = [
+                ["text", "Text Box (Teks Satu Baris)"],
+                ["textarea", "Text Area (Teks Multi Baris)"],
+                ["select", "Dropdown (Pilihan)"],
+                ["date", "Date Picker (Tanggal)"],
+                ["checkbox", "Checkbox (Centang)"],
+                ["radio", "Radio Button (Pilihan Tunggal)"],
+                ["number", "Number Input (Angka)"],
+                ["file", "File Upload (Unggah File)"],
+            ];
+            container.innerHTML = draftFields.map((item, idx) => {
+                const optionsStr = Array.isArray(item.options) ? item.options.join(", ") : (item.options || "");
+                const typeOpts = typeOptions.map(([val, label]) => `
+                    <option value="${val}" ${item.type === val ? "selected" : ""}>${label}</option>
+                `).join("");
+                return `
+                <div class="array-row" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;border:1px solid var(--border);padding:12px;border-radius:10px;background:#f8fafc;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <strong>Field Input Dinamis ${idx + 1}</strong>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removeField(${idx})">Hapus</button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div>
+                            <label style="font-size:11px;font-weight:bold;margin-bottom:4px;display:block;">Label Field</label>
+                            <input class="input field-label" value="${item.label ?? ""}" placeholder="Contoh: Nama Usaha" required>
+                        </div>
+                        <div>
+                            <label style="font-size:11px;font-weight:bold;margin-bottom:4px;display:block;">Tipe Field</label>
+                            <select class="input field-type">${typeOpts}</select>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 100px;gap:10px;align-items:center;margin-top:6px;">
+                        <div>
+                            <label style="font-size:11px;font-weight:bold;margin-bottom:4px;display:block;">Pilihan Opsi (pisahkan dengan koma)</label>
+                            <input class="input field-options" value="${optionsStr}" placeholder="Pilihan 1, Pilihan 2 (khusus Dropdown/Radio)">
+                        </div>
+                        <label style="display:flex;align-items:center;gap:6px;margin-top:18px;font-weight:bold;cursor:pointer;">
+                            <input type="checkbox" class="field-required" ${item.required ? "checked" : ""}> Wajib Diisi
+                        </label>
+                    </div>
+                </div>
+                `;
+            }).join("") || '<div class="muted" style="padding: 10px 0;">Belum ada field tambahan.</div>';
+        }
 
-            row.innerHTML = `
-            <input class="input array-input">
-            <button
-                type="button"
-                class="btn btn-danger btn-sm remove-array-item">
-                Hapus
-            </button>
-        `;
+        window.removeField = (idx) => {
+            syncDrafts();
+            draftFields.splice(idx, 1);
+            renderFields();
+        };
 
-            container.appendChild(row);
-
-            row.querySelector(".remove-array-item")?.addEventListener(
-                "click",
-                () => {
-                    row.remove();
-                },
-            );
+        function syncDrafts() {
+            // Syarat
+            const syaratContainer = document.getElementById("fSrvSyaratList");
+            if (syaratContainer) {
+                draftSyarat = [...syaratContainer.querySelectorAll(".syarat-input")].map(el => el.value.trim());
+            }
+            // Langkah
+            const stepContainer = document.getElementById("fSrvStepList");
+            if (stepContainer) {
+                draftSteps = [...stepContainer.querySelectorAll(".array-row")].map(row => {
+                    return {
+                        judul: row.querySelector(".step-judul")?.value.trim() || "",
+                        deskripsi: row.querySelector(".step-desc")?.value.trim() || "",
+                    };
+                });
+            }
+            // Fields
+            const fieldsContainer = document.getElementById("fSrvFormList");
+            if (fieldsContainer) {
+                draftFields = [...fieldsContainer.querySelectorAll(".array-row")].map(row => {
+                    const label = row.querySelector(".field-label")?.value.trim() || "";
+                    const type = row.querySelector(".field-type")?.value || "text";
+                    const optionsRaw = row.querySelector(".field-options")?.value || "";
+                    const options = optionsRaw.split(",").map(s => s.trim()).filter(Boolean);
+                    const required = !!row.querySelector(".field-required")?.checked;
+                    const key = label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/(^_|_$)/g, "") || "field_" + Math.random().toString(36).slice(2, 6);
+                    return { key, label, type, required, options };
+                });
+            }
         }
 
         async function loadData() {
             try {
-                const response = await fetch("/api/admin/pelayanan");
-
+                const response = await fetchAPI("/api/admin/pelayanan");
                 const data = await response.json();
-                console.log("BERITA RESPONSE =", data);
-                console.log("BERITA ARRAY =", Array.isArray(data));
                 tbody.innerHTML = data
                     .map(
                         (item) => `
                     <tr>
-                        <td>${item.nama ?? "-"}</td>
-                        <td>${item.slug ?? "-"}</td>
+                        <td><b>${item.nama ?? "-"}</b></td>
+                        <td><code>${item.slug ?? "-"}</code></td>
                         <td>
-                            ${item.online ? "Online" : "Offline"}
+                            <span class="badge ${item.online ? "badge-done" : "badge-wait"}">
+                                ${item.online ? "Online" : "Offline"}
+                            </span>
                         </td>
-
                         <td class="text-right">
-
                             <button
+                                type="button"
                                 class="btn btn-warning btn-sm"
                                 onclick="editPelayanan(${item.id})">
                                 Edit
                             </button>
-
                             <button
+                                type="button"
                                 class="btn btn-danger btn-sm"
                                 onclick="deletePelayanan(${item.id})">
                                 Hapus
                             </button>
-
                         </td>
                     </tr>
                 `,
                     )
-                    .join("");
+                    .join("") || `<tr><td colspan="4" class="muted" style="text-align:center;padding:24px;">Belum ada pelayanan dikonfigurasi.</td></tr>`;
             } catch (error) {
                 console.error("Pelayanan Load Error:", error);
             }
         }
 
+        // VISUAL WORD EDITOR INITIALIZATION
+        const editorCanvas = document.getElementById("fSrvTemplateEditor");
+        const varDropdownMenu = document.getElementById("varDropdownMenu");
+        const btnInsertVar = document.getElementById("btnInsertVar");
+
+        // 1. Setup formatting commands
+        document.querySelectorAll(".word-editor-toolbar .toolbar-btn").forEach(btn => {
+            btn.addEventListener("click", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const cmd = this.dataset.cmd;
+                document.execCommand(cmd, false, null);
+                editorCanvas.focus();
+            });
+        });
+
+        // 2. Formatting dropdown listeners
+        document.getElementById("editorStyle")?.addEventListener("change", function(e) {
+            document.execCommand("formatBlock", false, this.value);
+            editorCanvas.focus();
+        });
+
+        document.getElementById("editorFont")?.addEventListener("change", function(e) {
+            document.execCommand("fontName", false, this.value);
+            editorCanvas.focus();
+        });
+
+        document.getElementById("editorSize")?.addEventListener("change", function(e) {
+            document.execCommand("fontSize", false, this.value);
+            editorCanvas.focus();
+        });
+
+        // 3. Toggle variables dropdown
+        btnInsertVar?.addEventListener("click", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const isVisible = varDropdownMenu.style.display === "block";
+            varDropdownMenu.style.display = isVisible ? "none" : "block";
+        });
+
+        document.addEventListener("click", function() {
+            if (varDropdownMenu) {
+                varDropdownMenu.style.display = "none";
+            }
+        });
+
+        // 4. Cursor/selection visual placeholder insertion
+        function insertPlaceholderAtCursor(placeholder) {
+            editorCanvas.focus();
+            const sel = window.getSelection();
+            if (sel.getRangeAt && sel.rangeCount) {
+                let range = sel.getRangeAt(0);
+                
+                // Ensure selection range falls inside the editor canvas
+                let node = range.commonAncestorContainer;
+                let isInside = false;
+                while (node) {
+                    if (node === editorCanvas) {
+                        isInside = true;
+                        break;
+                    }
+                    node = node.parentNode;
+                }
+                
+                if (!isInside) {
+                    // Force caret at the end of the canvas
+                    range = document.createRange();
+                    range.selectNodeContents(editorCanvas);
+                    range.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+                
+                range.deleteContents();
+                const textNode = document.createTextNode(placeholder);
+                range.insertNode(textNode);
+                
+                // Set caret after the inserted tag
+                range.setStartAfter(textNode);
+                range.setEndAfter(textNode);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else {
+                editorCanvas.innerHTML += placeholder;
+            }
+        }
+
+        // 5. Build dynamic variables dropdown
+        function updateVariableDropdown() {
+            if (!varDropdownMenu) return;
+            let html = `
+                <div class="dropdown-header">Profil Warga (Pemohon)</div>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="nama">Nama Lengkap ({{nama}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="nik">NIK ({{nik}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="no_kk">Nomor KK ({{no_kk}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="tempat_lahir">Tempat Lahir ({{tempat_lahir}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="tgl_lahir">Tanggal Lahir ({{tgl_lahir}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="jenis_kelamin">Jenis Kelamin ({{jenis_kelamin}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="agama">Agama ({{agama}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="status_nikah">Status Pernikahan ({{status_nikah}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="pekerjaan">Pekerjaan ({{pekerjaan}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="alamat">Alamat Lengkap ({{alamat}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="rt">RT ({{rt}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="rw">RW ({{rw}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="telp">No. Telepon ({{telp}})</a>
+                
+                <div class="dropdown-header">Sistem & Pejabat</div>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="nomor_surat">Nomor Surat ({{nomor_surat}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="tanggal">Tanggal Hari Ini ({{tanggal}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="lurah_name">Nama Lurah ({{lurah_name}})</a>
+                <a class="dropdown-item btn-insert-var-item" href="#" data-var="lurah_nip">NIP Lurah ({{lurah_nip}})</a>
+            `;
+
+            const validFields = draftFields.filter(f => f.label && f.key);
+            if (validFields.length > 0) {
+                html += `<div class="dropdown-header">Variabel Form Pengajuan</div>`;
+                validFields.forEach(f => {
+                    html += `<a class="dropdown-item btn-insert-var-item" href="#" data-var="${f.key}">${f.label} ({{${f.key}}})</a>`;
+                });
+            }
+
+            varDropdownMenu.innerHTML = html;
+
+            varDropdownMenu.querySelectorAll(".btn-insert-var-item").forEach(item => {
+                item.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    insertPlaceholderAtCursor(`{{${this.dataset.var}}}`);
+                    varDropdownMenu.style.display = "none";
+                });
+            });
+        }
+
+        // Hook renderFields to update dropdown list in real-time
+        const originalRenderFields = renderFields;
+        renderFields = function() {
+            originalRenderFields();
+            const container = document.getElementById("fSrvFormList");
+            if (container) {
+                setTimeout(() => {
+                    const labelInputs = container.querySelectorAll(".field-label");
+                    labelInputs.forEach(input => {
+                        input.addEventListener("input", () => {
+                            syncDrafts();
+                            updateVariableDropdown();
+                        });
+                    });
+                }, 0);
+            }
+            updateVariableDropdown();
+        };
+
         await loadData();
 
         document.getElementById("btnAddSrv")?.addEventListener("click", () => {
             form.reset();
-
             document.getElementById("fSrvId").value = "";
-
-            renderArrayEditor("fSrvSyaratList", []);
-
-            renderArrayEditor("fSrvStepList", []);
-
-            renderArrayEditor("fSrvFormList", []);
-
+            document.getElementById("fSrvTemplate").value = "";
+            if (editorCanvas) editorCanvas.innerHTML = "";
+            draftSyarat = [];
+            draftSteps = [];
+            draftFields = [];
+            renderSyarat();
+            renderSteps();
+            renderFields();
             openModal();
         });
 
-        document
-            .getElementById("btnAddSyarat")
-            ?.addEventListener("click", () => {
-                addArrayItem("fSrvSyaratList");
-            });
-
-        document.getElementById("btnAddStep")?.addEventListener("click", () => {
-            addArrayItem("fSrvStepList");
+        document.getElementById("btnAddSyarat")?.addEventListener("click", () => {
+            syncDrafts();
+            draftSyarat.push("");
+            renderSyarat();
         });
 
-        document
-            .getElementById("btnAddField")
-            ?.addEventListener("click", () => {
-                addArrayItem("fSrvFormList");
-            });
+        document.getElementById("btnAddStep")?.addEventListener("click", () => {
+            syncDrafts();
+            draftSteps.push({ judul: "", deskripsi: "" });
+            renderSteps();
+        });
 
-        document
-            .getElementById("srvRefreshBtn")
-            ?.addEventListener("click", loadData);
+        document.getElementById("btnAddField")?.addEventListener("click", () => {
+            syncDrafts();
+            draftFields.push({ key: "", label: "", type: "text", required: false, options: [] });
+            renderFields();
+        });
+
+        document.getElementById("srvRefreshBtn")?.addEventListener("click", loadData);
 
         document.addEventListener("click", (e) => {
             if (e.target.closest("[data-action='closeSrvModal']")) {
@@ -3187,49 +3624,48 @@
 
             form.addEventListener("submit", async (e) => {
                 e.preventDefault();
+                syncDrafts();
+
+                if (editorCanvas) {
+                    document.getElementById("fSrvTemplate").value = editorCanvas.innerHTML;
+                }
 
                 const id = document.getElementById("fSrvId").value;
-
                 const payload = {
                     nama: document.getElementById("fSrvNama").value,
-
                     slug: document.getElementById("fSrvPage").value,
-
                     estimasi: document.getElementById("fSrvEstimasi").value,
-
                     biaya: document.getElementById("fSrvBiaya").value,
-
                     online: document.getElementById("fSrvOnline").checked,
-
-                    syarat: getArrayValues("fSrvSyaratList"),
-
-                    langkah: getArrayValues("fSrvStepList"),
-
-                    form_fields: getArrayValues("fSrvFormList"),
-
+                    syarat: draftSyarat.filter(Boolean),
+                    langkah: draftSteps.filter(s => s.judul || s.deskripsi),
+                    form_fields: draftFields.filter(f => f.label),
                     jam_pelayanan: document.getElementById("fSrvJam").value,
-
                     lokasi: document.getElementById("fSrvLokasi").value,
-
                     catatan: document.getElementById("fSrvCatatan").value,
+                    template_html: document.getElementById("fSrvTemplate").value,
+                    teks_tombol: document.getElementById("fSrvTombol").value,
                 };
 
                 let response;
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
 
                 if (id) {
-                    response = await fetch(`/api/admin/pelayanan/${id}`, {
+                    response = await fetchAPI(`/api/admin/pelayanan/${id}`, {
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": csrf,
                             Accept: "application/json",
                         },
                         body: JSON.stringify(payload),
                     });
                 } else {
-                    response = await fetch("/api/admin/pelayanan", {
+                    response = await fetchAPI("/api/admin/pelayanan", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": csrf,
                             Accept: "application/json",
                         },
                         body: JSON.stringify(payload),
@@ -3238,53 +3674,53 @@
 
                 if (!response.ok) {
                     alert("Gagal menyimpan pelayanan");
-
                     return;
                 }
 
                 closeModal();
-
                 await loadData();
             });
         }
 
         window.editPelayanan = async function (id) {
-            const response = await fetch(`/api/admin/pelayanan/${id}`);
-
+            const response = await fetchAPI(`/api/admin/pelayanan/${id}`);
             const item = await response.json();
 
             document.getElementById("fSrvId").value = item.id;
-
             document.getElementById("fSrvNama").value = item.nama ?? "";
-
             document.getElementById("fSrvPage").value = item.slug ?? "";
-
             document.getElementById("fSrvEstimasi").value = item.estimasi ?? "";
-
             document.getElementById("fSrvBiaya").value = item.biaya ?? "";
-
             document.getElementById("fSrvOnline").checked = !!item.online;
-
             document.getElementById("fSrvJam").value = item.jam_pelayanan ?? "";
-
             document.getElementById("fSrvLokasi").value = item.lokasi ?? "";
-
             document.getElementById("fSrvCatatan").value = item.catatan ?? "";
+            document.getElementById("fSrvTemplate").value = item.template?.konten_html ?? "";
+            if (editorCanvas) {
+                editorCanvas.innerHTML = item.template?.konten_html ?? "";
+            }
+            document.getElementById("fSrvTombol").value = item.teks_tombol ?? "";
 
-            renderArrayEditor("fSrvSyaratList", item.syarat ?? []);
+            draftSyarat = item.syarat ?? [];
+            draftSteps = item.langkah ?? [];
+            draftFields = item.form_fields ?? [];
 
-            renderArrayEditor("fSrvStepList", item.langkah ?? []);
-
-            renderArrayEditor("fSrvFormList", item.form_fields ?? []);
+            renderSyarat();
+            renderSteps();
+            renderFields();
 
             openModal();
         };
 
         window.deletePelayanan = async function (id) {
             if (!confirm("Hapus pelayanan ini?")) return;
-
-            await fetch(`/api/admin/pelayanan/${id}`, {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            await fetchAPI(`/api/admin/pelayanan/${id}`, {
                 method: "DELETE",
+                headers: {
+                    "X-CSRF-TOKEN": csrf,
+                    Accept: "application/json",
+                }
             });
 
             await loadData();
@@ -3299,7 +3735,7 @@
         if (!btnSave) return;
 
         async function loadData() {
-            const response = await fetch("/api/admin/setting");
+            const response = await fetchAPI("/api/admin/setting");
 
             if (!response.ok) return;
 
@@ -3340,14 +3776,14 @@
                     profil: document.getElementById("sNote").value,
                 };
 
-                const current = await fetch("/api/admin/setting");
+                const current = await fetchAPI("/api/admin/setting");
 
                 const setting = await current.json();
 
                 let response;
 
                 if (setting?.id) {
-                    response = await fetch(`/api/admin/setting/${setting.id}`, {
+                    response = await fetchAPI(`/api/admin/setting/${setting.id}`, {
                         method: "PUT",
                         headers: {
                             "Content-Type": "application/json",
@@ -3356,7 +3792,7 @@
                         body: JSON.stringify(payload),
                     });
                 } else {
-                    response = await fetch("/api/admin/setting", {
+                    response = await fetchAPI("/api/admin/setting", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -3384,7 +3820,7 @@
 
         async function loadData() {
             try {
-                const response = await fetch("/api/admin/users");
+                const response = await fetchAPI("/api/admin/users");
 
                 const users = await response.json();
 
@@ -3487,7 +3923,7 @@
                     'meta[name="csrf-token"]',
                 )?.content;
 
-                const response = await fetch(`/api/admin/users/${id}`, {
+                const response = await fetchAPI(`/api/admin/users/${id}`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
@@ -3511,7 +3947,7 @@
         }
 
         window.editUser = async function (id) {
-            const response = await fetch(`/api/admin/users/${id}`);
+            const response = await fetchAPI(`/api/admin/users/${id}`);
             const user = await response.json();
 
             document.getElementById("userId").value = user.id;
@@ -3530,7 +3966,7 @@
                 'meta[name="csrf-token"]',
             )?.content;
 
-            const response = await fetch(`/api/admin/users/${id}`, {
+            const response = await fetchAPI(`/api/admin/users/${id}`, {
                 method: "DELETE",
                 headers: {
                     "X-CSRF-TOKEN": csrf,
@@ -3597,6 +4033,7 @@
         if (name === "admin/pelayanan") initPelayananLaravel();
         if (name === "admin/users") initUsersLaravel();
         if (name === "admin/struktur-organisasi") initStrukturOrganisasi();
+        if (name === "admin/laporan") initLaporan();
 
     });
 })();

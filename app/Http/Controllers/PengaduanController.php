@@ -91,10 +91,24 @@ class PengaduanController extends Controller
     {
         $request->validate([
             'status' => 'required|in:menunggu,diproses,selesai,ditolak',
+            'foto_tindak_lanjut' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
         $pengaduan = Pengaduan::findOrFail($id);
-        $pengaduan->update(['status' => $request->status]);
+        
+        $data = [
+            'status' => $request->status,
+        ];
+
+        if ($request->hasFile('foto_tindak_lanjut')) {
+            // Delete old follow up photo if exists
+            if ($pengaduan->foto_tindak_lanjut) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($pengaduan->foto_tindak_lanjut);
+            }
+            $data['foto_tindak_lanjut'] = $request->file('foto_tindak_lanjut')->store('pengaduan_tindak_lanjut', 'public');
+        }
+
+        $pengaduan->update($data);
 
         return response()->json($pengaduan);
     }

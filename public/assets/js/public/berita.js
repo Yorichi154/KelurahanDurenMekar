@@ -30,7 +30,7 @@ async function loadBerita() {
 
                 ${
                     item.image
-                        ? `<img src="${item.image}" alt="${item.title}" class="berita-thumb">`
+                        ? `<img src="${item.image}" alt="${item.title}" class="berita-thumb" onerror="this.style.display='none';">`
                         : ""
                 }
 

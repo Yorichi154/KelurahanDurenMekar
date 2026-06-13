@@ -301,32 +301,53 @@
       
       let all = [];
       try {
-        const response = await fetch("/api/public/lembaga", {
+        const response = await fetch("/api/public/rtrw", {
           credentials: "include"
         });
         if (response.ok) {
           all = await response.json();
         }
       } catch (error) {
-        console.error("Gagal memuat kontak lembaga:", error);
+        console.error("Gagal memuat kontak RT/RW:", error);
       }
 
-      let items = all.filter((x) => (x.jenis || "").toLowerCase() === jenis);
+      let items = [];
+      if (jenis === "rt") {
+        items = all.filter(x => {
+          const rtVal = String(x.rt || "").trim();
+          return rtVal && rtVal !== "00" && rtVal !== "000" && rtVal !== "0" && rtVal !== "-";
+        });
+      } else {
+        items = all.filter(x => {
+          const rtVal = String(x.rt || "").trim();
+          return !rtVal || rtVal === "00" || rtVal === "000" || rtVal === "0" || rtVal === "-";
+        });
+      }
+
       if (q) {
-        items = items.filter((x) => `${x.nama || ""} ${x.jabatan || ""} ${x.wilayah || ""} ${x.kontak || ""}`.toLowerCase().includes(q));
+        items = items.filter((x) => 
+          `${x.ketua || ""} ${x.rt || ""} ${x.rw || ""} ${x.telepon || ""} ${x.alamat || ""}`
+            .toLowerCase()
+            .includes(q)
+        );
       }
 
       lkTbody.innerHTML =
         items
           .map((x) => {
-            const wilayah = x.wilayah || "-";
-            const rawKontak = x.kontak || "";
+            const wilayah = jenis === "rt" 
+              ? `RT ${x.rt} / RW ${x.rw}`
+              : `RW ${x.rw}`;
+            const jabatan = jenis === "rt"
+              ? `Ketua RT ${x.rt}`
+              : `Ketua RW ${x.rw}`;
+            const rawKontak = x.telepon || "";
             const waUrl = rawKontak ? makeWaUrl(rawKontak, wilayah, jenis) : "";
             const label = rawKontak ? String(rawKontak) : "-";
             return `
             <tr>
-              <td>${x.nama || "-"}</td>
-              <td>${x.jabatan || "-"}</td>
+              <td>${x.ketua || "-"}</td>
+              <td>${jabatan}</td>
               <td>${wilayah}</td>
               <td>
                 ${waUrl

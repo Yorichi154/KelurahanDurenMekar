@@ -25,8 +25,10 @@ function arsipFmtDate(d) {
 }
 
 function arsipStatusBadge(status) {
-  const map = { menunggu: 'badge-wait', diproses: 'badge-proses', selesai: 'badge-done', ditolak: 'badge-reject' };
-  return `<span class="badge ${map[status] || 'badge-neutral'}">${status}</span>`;
+  const map = { menunggu: 'badge-wait', diproses: 'badge-proses', selesai: 'badge-done', siap_diambil: 'badge-done', ditolak: 'badge-reject' };
+  const textMap = { siap_diambil: 'Siap Diambil' };
+  const label = textMap[status] || status;
+  return `<span class="badge ${map[status] || 'badge-neutral'}">${label}</span>`;
 }
 
 async function fetchArsip(page = 1) {

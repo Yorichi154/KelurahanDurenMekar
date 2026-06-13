@@ -25,6 +25,8 @@ class Pengaduan extends Model
 
         'status',
 
+        'foto_tindak_lanjut',
+
     ];
 
     public function user()

@@ -19,6 +19,16 @@
             </div>
         </header>
 
+        <!-- NOTICE GUEST (hanya muncul jika belum login dan layanan = online) -->
+        <section class="service-offline-notice" id="srvOnlineGuestNotice" style="display:none;">
+            <div class="card card-warning" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px;">
+                <div class="card-body" style="color: #d97706; padding: 16px;">
+                    <p style="margin:0 0 6px 0; font-weight: 800;"><i class="fa-solid fa-circle-exclamation"></i> Layanan ini dapat diajukan secara online setelah login.</p>
+                    <p style="margin:0; font-size:13px; font-weight:700;">Silakan login terlebih dahulu menggunakan akun Warga untuk melakukan pengajuan secara online.</p>
+                </div>
+            </div>
+        </section>
+
         <!-- NOTICE OFFLINE (hanya muncul kalau tipe = offline) -->
         <section class="service-offline-notice" id="srvOfflineNotice" style="display:none;">
             <div class="card card-warning">

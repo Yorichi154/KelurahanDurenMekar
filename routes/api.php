@@ -20,6 +20,8 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UnitKerjaController;
 use App\Http\Controllers\BuatSuratController;
 use App\Http\Controllers\StrukturOrganisasiController;
+use App\Http\Controllers\PengaduanChatController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +36,21 @@ Route::get('/test-auth', function () {
 
 })->middleware('auth');
 
+
+Route::get('/run-migration', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        return response()->json([
+            'status' => 'success',
+            'output' => \Illuminate\Support\Facades\Artisan::output(),
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -53,7 +70,9 @@ Route::get('/public/pelayanan', [PelayananController::class, 'index']);
 Route::get('/public/setting', [SettingController::class, 'index']);
 Route::get('/public/faq', [FaqController::class, 'index']);
 Route::get('/public/rtrw', [RtrwController::class, 'index']);
+Route::get('/public/galeri', [GaleriController::class, 'index']);
 Route::get('/public/struktur-organisasi', [StrukturOrganisasiController::class, 'index']);
+
 Route::get('/public/stats', function () {
     return response()->json([
         'total_warga' => \App\Models\User::where('role', 'warga')->count(),
@@ -107,6 +126,9 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
     Route::apiResource('struktur-organisasi', StrukturOrganisasiController::class);
 
     Route::get('/laporan', [LaporanController::class, 'index']);
+    Route::get('/laporan/export/csv', [LaporanController::class, 'exportCsv']);
+    Route::get('/laporan/export/pdf', [LaporanController::class, 'exportPdf']);
+    Route::get('/laporan/export/docx', [LaporanController::class, 'exportDocx']);
 
     Route::post(
         'surat/{surat}/upload',
@@ -137,6 +159,8 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
         Route::get('/pelayanan', [PelayananController::class, 'indexWarga']);
         Route::get('/profil', [ProfileController::class, 'showApi']);
         Route::put('/profil', [ProfileController::class, 'updateApi']);
+        Route::get('/pengaduan/{id}/chats', [PengaduanChatController::class, 'getChatsWarga']);
+        Route::post('/pengaduan/{id}/chats', [PengaduanChatController::class, 'sendChatWarga']);
     });
 
     // ==================== STAF API ====================
@@ -149,7 +173,7 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
         Route::get('/surat/{surat}', [SuratController::class, 'show']);
         Route::put('/surat/{id}/status', [SuratController::class, 'updateStatus']);
         Route::post('/surat/{id}/upload-hasil', [SuratController::class, 'uploadHasil']);
-        Route::delete('/surat/{id}', [SuratController::class, 'destroy']);
+        Route::delete('/surat/{surat}', [SuratController::class, 'destroy']);
         Route::get('/profil', [ProfileController::class, 'showApi']);
         Route::put('/profil', [ProfileController::class, 'updateApi']);
 
@@ -159,5 +183,7 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
         Route::post('/buat-surat', [BuatSuratController::class, 'store']);
         Route::get('/buat-surat/{id}/download', [BuatSuratController::class, 'download']);
         Route::get('/arsip-surat', [BuatSuratController::class, 'indexArsip']);
+        Route::get('/pengaduan/{id}/chats', [PengaduanChatController::class, 'getChatsStaf']);
+        Route::post('/pengaduan/{id}/chats', [PengaduanChatController::class, 'sendChatStaf']);
     });
 });

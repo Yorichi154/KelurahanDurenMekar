@@ -20,31 +20,136 @@ Render public pages dari API Laravel (BUKAN localStorage)
     };
 
     // ==========================
-    // SETTINGS (masih dari localStorage untuk sementara)
+    // SETTINGS (diambil dari API database dengan fallback)
     // ==========================
-    function applySettings() {
-        if (!window.KelurahanStore) return;
-        const { Data } = window.KelurahanStore;
-        const s = Data.settings();
+    let _activeSettings = null;
+
+    async function fetchSettings() {
+        if (_activeSettings) return _activeSettings;
+        try {
+            const res = await fetch('/api/public/setting', { Accept: 'application/json' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.id) {
+                    _activeSettings = data;
+                    return _activeSettings;
+                }
+            }
+        } catch (e) {
+            console.error("Gagal fetch settings dari API:", e);
+        }
+
+        if (window.KelurahanStore) {
+            const ls = window.KelurahanStore.Data.settings();
+            _activeSettings = {
+                site_name: ls.siteName,
+                address: ls.address,
+                phone: ls.phone,
+                email: ls.email,
+                instagram: ls.instagram,
+                profil: ls.note,
+                lurah_name: ls.lurahName,
+                kecamatan: ls.kecamatan,
+                kota: ls.kota,
+                provinsi: ls.provinsi,
+                kodepos: ls.kodepos,
+                maps: ls.maps,
+                jam_pelayanan: ls.jamPelayanan,
+                visi: ls.visi,
+                misi: ls.misi,
+                luas_wilayah: ls.luas_wilayah,
+                jumlah_penduduk: ls.jumlah_penduduk,
+                jumlah_rt: ls.jumlah_rt,
+                jumlah_rw: ls.jumlah_rw,
+            };
+        }
+        return _activeSettings;
+    }
+
+    async function applySettings() {
+        const s = await fetchSettings();
+        if (!s) return;
 
         const h1 = document.querySelector(".logo-text h1");
         const p = document.querySelector(".logo-text p");
         if (h1)
-            h1.innerHTML = `<i class="fa-solid fa-landmark"></i> ${s.siteName || "Kelurahan"}`;
+            h1.innerHTML = `<i class="fa-solid fa-landmark"></i> ${s.site_name || "Kelurahan"}`;
         if (p)
             p.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${s.address || ""}`;
 
         const footer = document.querySelector(".footer");
         if (!footer) return;
 
-        const footNews = document.getElementById("footerNews");
-        if (footNews) {
-            const berita = Data.list("berita")
-                .filter((b) => b.status === "published")
-                .slice(0, 3);
-            footNews.innerHTML =
-                berita.map((b) => `<li>${b.title}</li>`).join("") ||
-                footNews.innerHTML;
+        // Dynamic footer about section
+        const footerAbout = document.getElementById("footerAbout");
+        if (footerAbout) {
+            footerAbout.textContent = s.profil || `Website resmi ${s.site_name || "Kelurahan Duren Mekar"} untuk menyediakan informasi dan layanan kepada masyarakat secara online.`;
+        }
+
+        // Dynamic footer social section
+        const fbLink = document.querySelector(".footer-social a[aria-label='Facebook']");
+        const xLink = document.querySelector(".footer-social a[aria-label='X']");
+        const instagramLink = document.querySelector(".footer-social a[aria-label='Instagram']");
+        if (fbLink) fbLink.style.display = "none";
+        if (xLink) xLink.style.display = "none";
+        if (instagramLink) {
+            if (s.instagram) {
+                instagramLink.href = s.instagram.startsWith("http") ? s.instagram : `https://instagram.com/${s.instagram.replace("@", "")}`;
+                instagramLink.style.display = "inline-flex";
+            } else {
+                instagramLink.style.display = "none";
+            }
+        }
+
+        // Dynamic footer contact info
+        const footerAddress = document.getElementById("footerAddress");
+        if (footerAddress) {
+            footerAddress.querySelector("span").textContent = s.address || "-";
+        }
+        const footerPhone = document.getElementById("footerPhone");
+        if (footerPhone) {
+            footerPhone.querySelector("span").textContent = s.phone || "-";
+        }
+        const footerEmail = document.getElementById("footerEmail");
+        if (footerEmail) {
+            footerEmail.querySelector("span").textContent = s.email || "-";
+        }
+
+        // Dynamic footer copyright
+        const footerCopyright = document.getElementById("footerCopyright");
+        if (footerCopyright) {
+            footerCopyright.textContent = `© 2026 ${s.site_name || "Kelurahan Duren Mekar"}. Hak Cipta Dilindungi.`;
+        }
+
+        // Dynamic footer recent news list
+        const footNewsList = document.getElementById("footerNewsList");
+        if (footNewsList) {
+            try {
+                const response = await fetch("/api/public/berita");
+                if (response.ok) {
+                    const all = await response.json();
+                    const published = all.filter((b) => b.status === "published").slice(0, 3);
+                    if (published.length > 0) {
+                        footNewsList.innerHTML = published.map((b) => `
+                            <li>
+                                <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                                <a href="#berita" data-news-id="${b.id}">${b.title}</a>
+                            </li>
+                        `).join("");
+                        
+                        footNewsList.querySelectorAll("a").forEach(a => {
+                            a.addEventListener("click", () => {
+                                const newsId = a.getAttribute("data-news-id");
+                                sessionStorage.setItem("autoOpenNewsId", newsId);
+                            });
+                        });
+                    } else {
+                        footNewsList.innerHTML = `<li class="muted">Belum ada berita.</li>`;
+                    }
+                }
+            } catch (err) {
+                console.error("Gagal memuat berita untuk footer:", err);
+            }
         }
     }
 
@@ -112,7 +217,7 @@ Render public pages dari API Laravel (BUKAN localStorage)
                                     item.image
                                         ? `
                                     <a class="news-thumb">
-                                        <img src="${item.image}" alt="${item.title}">
+                                        <img src="${item.image}" alt="${item.title}" onerror="this.parentNode.style.display='none';">
                                     </a>
                                 `
                                         : ""
@@ -171,6 +276,80 @@ Render public pages dari API Laravel (BUKAN localStorage)
                 agendaList.innerHTML = `<div class="agenda-item">Gagal memuat agenda.</div>`;
             }
         }
+
+        // Hero Slider Integration
+        const heroSlider = document.getElementById("heroSlider");
+        const track = document.getElementById("heroSlidesTrack");
+        if (heroSlider && track) {
+            try {
+                const response = await fetch("/api/public/galeri", {
+                    credentials: "include",
+                });
+                if (response.ok) {
+                    const galeri = await response.json();
+                    if (galeri && galeri.length > 0) {
+                        // Build slides
+                        track.innerHTML = galeri.map((g) => `
+                            <div class="hero-slide">
+                                <img src="${g.image}" alt="${g.title}" loading="lazy">
+                                <div class="hero-slide-caption">${g.title}</div>
+                            </div>
+                        `).join("");
+
+                        // Build pagination dots
+                        let dotsContainer = document.getElementById("heroSliderDots");
+                        if (!dotsContainer) {
+                            dotsContainer = document.createElement("div");
+                            dotsContainer.className = "hero-slider-dots";
+                            dotsContainer.id = "heroSliderDots";
+                            heroSlider.appendChild(dotsContainer);
+                        }
+                        dotsContainer.innerHTML = galeri.map((_, idx) => `
+                            <button class="hero-slider-dot ${idx === 0 ? 'active' : ''}" data-index="${idx}"></button>
+                        `).join("");
+
+                        let currentSlide = 0;
+                        const slides = track.querySelectorAll(".hero-slide");
+                        const dots = dotsContainer.querySelectorAll(".hero-slider-dot");
+
+                        const goToSlide = (idx) => {
+                            currentSlide = idx;
+                            track.style.transform = `translateX(-${currentSlide * 100}%)`;
+                            dots.forEach((dot, dIdx) => {
+                                dot.classList.toggle("active", dIdx === currentSlide);
+                            });
+                        };
+
+                        // Dot click listeners
+                        dots.forEach((dot) => {
+                            dot.addEventListener("click", () => {
+                                const idx = parseInt(dot.dataset.index);
+                                goToSlide(idx);
+                            });
+                        });
+
+                        // Auto rotation timer (e.g. 7 seconds)
+                        if (slides.length > 1) {
+                            if (window.heroSliderInterval) {
+                                clearInterval(window.heroSliderInterval);
+                            }
+                            window.heroSliderInterval = setInterval(() => {
+                                const sliderEl = document.getElementById("heroSlider");
+                                if (!sliderEl) {
+                                    clearInterval(window.heroSliderInterval);
+                                    window.heroSliderInterval = null;
+                                    return;
+                                }
+                                const nextSlide = (currentSlide + 1) % slides.length;
+                                goToSlide(nextSlide);
+                            }, 7000);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Gagal memuat galeri untuk slider hero:", error);
+            }
+        }
     }
 
     // ==========================
@@ -178,6 +357,8 @@ Render public pages dari API Laravel (BUKAN localStorage)
     // ==========================
     async function renderBerita() {
         const grid = document.getElementById("beritaContainer");
+        const tabsWrap = document.getElementById("beritaTabs");
+        const searchInput = document.getElementById("beritaSearch");
         if (!grid) return;
 
         try {
@@ -188,26 +369,156 @@ Render public pages dari API Laravel (BUKAN localStorage)
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
             const all = await response.json();
+            const published = all.filter((b) => b.status === "published");
 
-            grid.innerHTML = all
-                .filter((b) => b.status === "published")
-                .map(
-                    (b) => `
-                    <article class="berita-card">
-                        <h3>${b.title}</h3>
-                        <p>${b.excerpt || ""}</p>
-                        <div class="berita-meta">
-                            ${b.category || ""} • ${fmtDate(b.created_at)}
-                        </div>
-                    </article>
-                `,
-                )
-                .join("");
+            // Extract dynamic categories
+            const categories = Array.from(
+                new Set(published.map((x) => x.category).filter(Boolean)),
+            );
+            const tabs = ["Semua", ...categories];
+
+            let activeCategory = "Semua";
+            let searchQuery = "";
+
+            const draw = () => {
+                const query = searchQuery.toLowerCase().trim();
+                const filtered = published.filter((b) => {
+                    const matchCategory =
+                        activeCategory === "Semua" ||
+                        b.category === activeCategory;
+
+                    const matchSearch =
+                        !query ||
+                        (b.title && b.title.toLowerCase().includes(query)) ||
+                        (b.content && b.content.toLowerCase().includes(query)) ||
+                        (b.excerpt && b.excerpt.toLowerCase().includes(query));
+
+                    return matchCategory && matchSearch;
+                });
+
+                grid.innerHTML = filtered
+                    .map(
+                        (b) => `
+                        <article class="berita-card" style="cursor: pointer; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s;" data-id="${b.id}">
+                            ${b.image ? `<img src="${b.image}" alt="${b.title}" class="berita-thumb" style="width:100%; aspect-ratio:16/10; object-fit:cover; border-bottom:1px solid var(--border);" onerror="this.style.display='none';">` : ""}
+                            <div class="berita-content" style="padding: 16px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1;">
+                                <span class="berita-category" style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--primary);">${b.category || "Umum"}</span>
+                                <h3 style="font-size: 16px; font-weight: 900; margin: 0; line-height: 1.3; color: var(--text);">${b.title}</h3>
+                                <small class="muted">${fmtDate(b.date || b.created_at)}</small>
+                                <p style="font-size: 13px; color: var(--muted); margin: 4px 0 12px; line-height: 1.5;">${b.excerpt || ""}</p>
+                                <button class="btn-read-more" style="align-self: flex-start; margin-top: auto; font-weight: 700; color: var(--primary); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0;">Baca Selengkapnya <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
+                        </article>
+                    `,
+                    )
+                    .join("") || `<div class="muted" style="grid-column: span 3; text-align: center; padding: 24px;">Tidak ada berita yang cocok.</div>`;
+
+                // Click listener for details modal
+                grid.querySelectorAll(".berita-card").forEach((card) => {
+                    card.addEventListener("click", () => {
+                        const id = card.getAttribute("data-id");
+                        const b = published.find((x) => String(x.id) === String(id));
+                        if (b) {
+                            document.getElementById("publicBeritaTitle").textContent = b.title;
+                            document.getElementById("publicBeritaHeadline").textContent = b.title;
+                            document.getElementById("publicBeritaCategory").textContent = b.category || "Berita";
+                            document.getElementById("publicBeritaDate").textContent = fmtDate(b.date || b.created_at);
+                            document.getElementById("publicBeritaContent").textContent = b.content || "";
+                            
+                            const img = document.getElementById("publicBeritaImage");
+                            if (b.image) {
+                                img.src = b.image;
+                                img.style.display = "block";
+                            } else {
+                                img.removeAttribute("src");
+                                img.style.display = "none";
+                            }
+                            
+                            document.getElementById("publicBeritaModal").classList.add("open");
+                        }
+                    });
+                });
+
+                // Toggle active class on buttons
+                if (tabsWrap) {
+                    tabsWrap.querySelectorAll(".tab").forEach((btn) => {
+                        btn.classList.toggle("active", btn.dataset.filter === activeCategory);
+                    });
+                }
+            };
+
+            // Dynamically render filter tabs
+            if (tabsWrap) {
+                tabsWrap.innerHTML = tabs
+                    .map(
+                        (tab) => `
+                        <button class="tab ${tab === activeCategory ? "active" : ""}" data-filter="${tab}">
+                            ${tab}
+                        </button>
+                    `,
+                    )
+                    .join("");
+
+                tabsWrap.addEventListener("click", (e) => {
+                    const btn = e.target.closest(".tab");
+                    if (!btn) return;
+                    activeCategory = btn.dataset.filter;
+                    draw();
+                });
+            }
+
+            // Bind search query listener
+            if (searchInput) {
+                searchInput.value = "";
+                searchInput.addEventListener("input", (e) => {
+                    searchQuery = e.target.value;
+                    draw();
+                });
+            }
+
+            draw();
+
+            // Auto open news item if requested from footer
+            const autoOpenId = sessionStorage.getItem("autoOpenNewsId");
+            if (autoOpenId) {
+                sessionStorage.removeItem("autoOpenNewsId");
+                const card = grid.querySelector(`.berita-card[data-id="${autoOpenId}"]`);
+                if (card) {
+                    card.click();
+                } else {
+                    const b = published.find((x) => String(x.id) === String(autoOpenId));
+                    if (b) {
+                        document.getElementById("publicBeritaTitle").textContent = b.title;
+                        document.getElementById("publicBeritaHeadline").textContent = b.title;
+                        document.getElementById("publicBeritaCategory").textContent = b.category || "Berita";
+                        document.getElementById("publicBeritaDate").textContent = fmtDate(b.date || b.created_at);
+                        document.getElementById("publicBeritaContent").textContent = b.content || "";
+                        
+                        const img = document.getElementById("publicBeritaImage");
+                        if (b.image) {
+                            img.src = b.image;
+                            img.style.display = "block";
+                        } else {
+                            img.removeAttribute("src");
+                            img.style.display = "none";
+                        }
+                        
+                        document.getElementById("publicBeritaModal").classList.add("open");
+                    }
+                }
+            }
         } catch (error) {
             console.error("Gagal memuat berita:", error);
             grid.innerHTML = `<p>Gagal memuat berita.</p>`;
         }
     }
+
+    // Modal close listener
+    document.addEventListener("click", (e) => {
+        if (e.target.closest("#closePublicBeritaModalBtn") || e.target.matches("#publicBeritaModal")) {
+            document.getElementById("publicBeritaModal")?.classList.remove("open");
+        }
+    });
 
     // ==========================
     // HALAMAN AGENDA PENUH
@@ -254,69 +565,76 @@ Render public pages dari API Laravel (BUKAN localStorage)
     // ==========================
     // GALERI (masih dari localStorage untuk sementara)
     // ==========================
-    function renderGaleri() {
-        if (!window.KelurahanStore) return;
-        const { Data } = window.KelurahanStore;
-
-        const grid = document.getElementById("galleryGrid");
-        const filterWrap = document.getElementById("galleryFilter");
+    async function renderGaleri() {
+        const grid = document.getElementById("galeriGrid");
+        const filterWrap = document.getElementById("galeriFilter");
         if (!grid || !filterWrap) return;
 
-        const items = Data.list("galeri");
-        const categories = Array.from(
-            new Set(items.map((x) => x.category).filter(Boolean)),
-        );
-        const filters = ["Semua", ...categories];
-
-        let active = "Semua";
-
-        const draw = () => {
-            const filtered =
-                active === "Semua"
-                    ? items
-                    : items.filter((x) => x.category === active);
-
-            grid.innerHTML =
-                filtered
-                    .map(
-                        (g) => `
-                        <article class="gallery-card">
-                            <img src="${g.image || ""}" alt="${g.title}" onerror="this.style.display='none'">
-                            <div class="gallery-body">
-                                <h3>${g.title}</h3>
-                                <p>${g.content || ""}</p>
-                                <div class="muted" style="font-size:12px;margin-top:8px">
-                                    ${g.category || ""} • ${fmtDate(g.date)}
-                                </div>
-                            </div>
-                        </article>
-                    `,
-                    )
-                    .join("") || `<div class="muted">Belum ada foto.</div>`;
-
-            filterWrap.querySelectorAll(".filter-btn").forEach((b) => {
-                b.classList.toggle("active", b.dataset.filter === active);
+        try {
+            const response = await fetch("/api/public/galeri", {
+                credentials: "include",
             });
-        };
+            if (!response.ok) throw new Error("Gagal memuat galeri");
+            const items = await response.json();
 
-        filterWrap.innerHTML = filters
-            .map(
-                (f) => `
-                <button class="filter-btn ${f === active ? "active" : ""}" data-filter="${f}">
-                    ${f}
-                </button>
-            `,
-            )
-            .join("");
+            const categories = Array.from(
+                new Set(items.map((x) => x.category).filter(Boolean)),
+            );
+            const filters = ["Semua", ...categories];
 
-        filterWrap.addEventListener("click", (e) => {
-            const btn = e.target.closest(".filter-btn");
-            if (!btn) return;
-            active = btn.dataset.filter;
+            let active = "Semua";
+
+            const draw = () => {
+                const filtered =
+                    active === "Semua"
+                        ? items
+                        : items.filter((x) => x.category === active);
+
+                grid.innerHTML =
+                    filtered
+                        .map(
+                            (g) => `
+                            <article class="gallery-card" style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s;">
+                                ${g.image ? `<img src="${g.image}" alt="${g.title}" style="width:100%; aspect-ratio:4/3; object-fit:cover; border-bottom:1px solid var(--border);" onerror="this.style.display='none'">` : ""}
+                                <div class="gallery-body" style="padding:16px; display:flex; flex-direction:column; gap:6px; flex-grow:1;">
+                                    <h3 style="font-size: 15px; font-weight: 800; color: var(--text); margin:0;">${g.title}</h3>
+                                    <p style="font-size: 13px; color: var(--muted); margin:0;">${g.content || ""}</p>
+                                    <div class="muted" style="font-size:11px; margin-top:auto; font-weight:700;">
+                                        ${g.category || "Umum"} • ${fmtDate(g.date || g.created_at)}
+                                    </div>
+                                </div>
+                            </article>
+                        `,
+                        )
+                        .join("") || `<div class="muted" style="grid-column: span 3; text-align: center; padding: 24px;">Belum ada foto galeri.</div>`;
+
+                filterWrap.querySelectorAll(".filter-btn").forEach((b) => {
+                    b.classList.toggle("active", b.dataset.filter === active);
+                });
+            };
+
+            filterWrap.innerHTML = filters
+                .map(
+                    (f) => `
+                    <button class="filter-btn ${f === active ? "active" : ""}" data-filter="${f}">
+                        ${f}
+                    </button>
+                `,
+                )
+                .join("");
+
+            filterWrap.addEventListener("click", (e) => {
+                const btn = e.target.closest(".filter-btn");
+                if (!btn) return;
+                active = btn.dataset.filter;
+                draw();
+            });
+
             draw();
-        });
-
-        draw();
+        } catch (error) {
+            console.error("Gagal memuat galeri:", error);
+            grid.innerHTML = `<div class="error-card" style="grid-column: span 3; text-align: center; padding: 24px;">Gagal memuat galeri.</div>`;
+        }
     }
 
     // ==========================
@@ -336,14 +654,9 @@ Render public pages dari API Laravel (BUKAN localStorage)
     // PENGUMUMAN (dari API publik)
     // ==========================
     async function renderPengumuman() {
-        const listEl = document.getElementById("pengumuman-list");
-        const emptyEl = document.getElementById("pengumuman-empty");
-        const filterKategori = document.getElementById(
-            "filter-pengumuman-kategori",
-        );
-        const filterSearch = document.getElementById(
-            "filter-pengumuman-search",
-        );
+        const listEl = document.getElementById("pengumumanList");
+        const filterKategori = document.getElementById("filterKategori");
+        const filterSearch = document.getElementById("filterCari");
 
         if (!listEl) return;
 
@@ -361,12 +674,23 @@ Render public pages dari API Laravel (BUKAN localStorage)
             console.error("Gagal memuat pengumuman:", error);
         }
 
+        // Dynamically populate categories dropdown if empty
+        if (filterKategori && filterKategori.options.length <= 1) {
+            const uniqueKats = Array.from(new Set(data.map(item => item.kategori).filter(Boolean)));
+            uniqueKats.forEach(kat => {
+                const opt = document.createElement("option");
+                opt.value = kat;
+                opt.textContent = kat.charAt(0).toUpperCase() + kat.slice(1);
+                filterKategori.appendChild(opt);
+            });
+        }
+
         function render() {
-            const kat = filterKategori ? filterKategori.value : "all";
+            const kat = filterKategori ? filterKategori.value : "";
             const q = (filterSearch ? filterSearch.value : "").toLowerCase();
 
             let items = [...data].filter((item) => {
-                if (kat !== "all" && (item.kategori || "info") !== kat) return false;
+                if (kat && (item.kategori || "") !== kat) return false;
                 if (!q) return true;
                 return (
                     (item.title || "").toLowerCase().includes(q) ||
@@ -382,44 +706,200 @@ Render public pages dari API Laravel (BUKAN localStorage)
             listEl.innerHTML = "";
 
             if (!items.length) {
-                if (emptyEl) emptyEl.style.display = "block";
+                listEl.innerHTML = `<div class="empty-card" style="padding: 24px; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: var(--radius); width: 100%;">Belum ada pengumuman...</div>`;
                 return;
             }
-            if (emptyEl) emptyEl.style.display = "none";
 
             items.forEach((item) => {
                 const card = document.createElement("article");
                 card.className = "announcement-card";
                 card.innerHTML = `
-                    <div class="announcement-meta">
-                        <span class="badge badge-${item.kategori || "info"}">
+                    <div class="announcement-meta" style="display: flex; gap: 8px; align-items: center; font-size: 12px; margin-bottom: 8px;">
+                        <span class="badge badge-${item.kategori || "info"}" style="font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 800; background: var(--primary-light); color: var(--primary);">
                             ${(item.kategori || "Info").toUpperCase()}
                         </span>
-                        <span class="announcement-date">${fmtDate(item.date) || "-"}</span>
+                        <span class="announcement-date" style="color: var(--muted);">${fmtDate(item.date || item.created_at) || "-"}</span>
                     </div>
-                    <h3 class="announcement-title">${item.title || "(Tanpa judul)"}</h3>
-                    <p class="announcement-summary">
-                        ${(item.ringkasan || item.content || "").slice(0, 160)}${
-                            (item.ringkasan || item.content || "").length > 160
-                                ? "..."
-                                : ""
-                        }
+                    <h3 class="announcement-title" style="margin: 0 0 6px 0; font-size: 18px; font-weight: 900; color: var(--text);">${item.title || "(Tanpa judul)"}</h3>
+                    <p class="announcement-summary" style="margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5;">
+                        ${item.content || ""}
                     </p>
                 `;
                 listEl.appendChild(card);
             });
         }
 
-        if (filterKategori) filterKategori.addEventListener("change", render);
-        if (filterSearch) filterSearch.addEventListener("input", render);
+        if (filterKategori && !filterKategori.dataset.listenerBound) {
+            filterKategori.dataset.listenerBound = "true";
+            filterKategori.addEventListener("change", render);
+        }
+        if (filterSearch && !filterSearch.dataset.listenerBound) {
+            filterSearch.dataset.listenerBound = "true";
+            filterSearch.addEventListener("input", render);
+        }
 
         render();
+    }
+
+    async function initStrukturOrganisasiPublic() {
+        const treeEl = document.getElementById("soTree");
+        const emptyEl = document.getElementById("soEmpty");
+        if (!treeEl || !emptyEl) return;
+
+        treeEl.innerHTML = "";
+        emptyEl.style.display = "none";
+
+        try {
+            const res = await fetch("/api/public/struktur-organisasi", {
+                headers: { Accept: "application/json" },
+            });
+            if (!res.ok) throw new Error("Gagal mengambil data");
+            const data = await res.json();
+            const items = Array.isArray(data) ? data : (data?.data ?? []);
+
+            if (!items.length) {
+                emptyEl.style.display = "block";
+                return;
+            }
+
+            // Build hierarchical tree map
+            const byJabatan = {};
+            items.forEach(it => {
+                byJabatan[it.jabatan] = {
+                    ...it,
+                    children: []
+                };
+            });
+
+            const roots = [];
+            items.forEach(it => {
+                const node = byJabatan[it.jabatan];
+                const parent = it.parent_jabatan ? byJabatan[it.parent_jabatan] : null;
+                if (parent) {
+                    parent.children.push(node);
+                } else {
+                    roots.push(node);
+                }
+            });
+
+            function makeCard(it, isTop = false) {
+                const photo = it.foto
+                    ? `<img src="/storage/${it.foto}" alt="${it.nama}" />`
+                    : `<i class="fa-solid fa-user so-icon"></i>`;
+                return `
+                    <div class="so-pub-card${isTop ? ' so-top' : ''}">
+                        <div class="so-pub-photo">${photo}</div>
+                        <div class="so-pub-nama">${it.nama}</div>
+                        <div class="so-pub-jabatan">${it.jabatan}</div>
+                    </div>`;
+            }
+
+            function renderNode(node) {
+                const isTop = !node.parent_jabatan || node.children.length > 0;
+                const cardHtml = makeCard(node, isTop);
+
+                if (node.children && node.children.length > 0) {
+                    node.children.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
+                    const childrenHtml = node.children.map(child => renderNode(child)).join("");
+                    return `<li>${cardHtml}<ul>${childrenHtml}</ul></li>`;
+                } else {
+                    return `<li>${cardHtml}</li>`;
+                }
+            }
+
+            if (roots.length > 0) {
+                roots.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
+                const treeHtml = `<ul>${roots.map(r => renderNode(r)).join("")}</ul>`;
+                treeEl.innerHTML = treeHtml;
+                emptyEl.style.display = "none";
+            } else {
+                emptyEl.style.display = "block";
+            }
+        } catch (e) {
+            console.error("Gagal memuat struktur organisasi", e);
+            emptyEl.style.display = "block";
+        }
+    }
+
+    async function initProfilPublic() {
+        const s = await fetchSettings();
+        if (!s) return;
+
+        const pVisi = document.getElementById("pVisi");
+        const pMisi = document.getElementById("pMisi");
+        const pWilayah = document.getElementById("pWilayah");
+        const pPenduduk = document.getElementById("pPenduduk");
+        const pRtrw = document.getElementById("pRtrw");
+
+        if (pVisi) pVisi.textContent = s.visi || "Terwujudnya kelurahan yang maju, sejahtera, dan berbudaya dengan pelayanan prima kepada masyarakat.";
+        
+        if (pMisi) {
+            if (s.misi) {
+                const lines = s.misi.split("\n").map(l => l.trim()).filter(Boolean);
+                if (lines.length > 0) {
+                    pMisi.innerHTML = lines.map(line => `
+                        <li>
+                            <i class="fa-solid fa-check" aria-hidden="true"></i>
+                            <span>${line}</span>
+                        </li>
+                    `).join("");
+                }
+            } else {
+                pMisi.innerHTML = `
+                    <li>
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <span>Meningkatkan kualitas pelayanan publik yang cepat dan transparan.</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <span>Memberdayakan masyarakat secara ekonomi dan sosial.</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <span>Mewujudkan tata kelola pemerintahan yang baik dan bersih.</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <span>Meningkatkan partisipasi masyarakat dalam pembangunan.</span>
+                    </li>
+                `;
+            }
+        }
+
+        if (pWilayah) pWilayah.textContent = s.luas_wilayah || "24,5 km²";
+        if (pPenduduk) pPenduduk.textContent = s.jumlah_penduduk || "8.542";
+        if (pRtrw) {
+            const rt = s.jumlah_rt || "45";
+            const rw = s.jumlah_rw || "9";
+            pRtrw.textContent = `${rt} / ${rw}`;
+        }
+    }
+
+    async function initPetaWilayahPublic() {
+        const s = await fetchSettings();
+        if (!s) return;
+        const mWilayah = document.getElementById("mWilayah");
+        const mPenduduk = document.getElementById("mPenduduk");
+        const mRtrw = document.getElementById("mRtrw");
+
+        if (mWilayah) mWilayah.textContent = s.luas_wilayah || "24,5 km²";
+        if (mPenduduk) mPenduduk.textContent = s.jumlah_penduduk || "8.542";
+        if (mRtrw) {
+            const rt = s.jumlah_rt || "45";
+            const rw = s.jumlah_rw || "9";
+            mRtrw.textContent = `${rt} / ${rw}`;
+        }
     }
 
     // ==========================
     // ROUTER HOOK
     // ==========================
     window.addEventListener("page:loaded", (e) => {
+        if (window.heroSliderInterval) {
+            clearInterval(window.heroSliderInterval);
+            window.heroSliderInterval = null;
+        }
+
         applySettings();
 
         const name = e.detail?.name;
@@ -430,6 +910,14 @@ Render public pages dari API Laravel (BUKAN localStorage)
         if (name === "galeri") renderGaleri();
         if (name === "kontak") initFAQ();
         if (name === "pengumuman") renderPengumuman();
+        if (name === "struktur-organisasi") initStrukturOrganisasiPublic();
+        if (name === "peta-wilayah") initPetaWilayahPublic();
+        if (name === "profil") initProfilPublic();
+    });
+
+    window.addEventListener("settings:changed", () => {
+        _activeSettings = null;
+        applySettings();
     });
 
     document.addEventListener("DOMContentLoaded", applySettings);

@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/staf.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/warga.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/responsive.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/enhance.css') }}">
 
     <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">

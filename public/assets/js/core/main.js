@@ -136,15 +136,23 @@ async function fetchFirstOk(urls) {
 }
 
 function normalizePage(raw) {
+    let clean = (raw || "").split("?")[0];
+    if (clean.startsWith("#")) {
+        clean = clean.substring(1);
+    }
+    clean = clean.split("#")[0];
     return (
-        (raw || "")
-            .replace(/^#/, "")
+        clean
             .replace(/^[?/]+/, "")
             .trim() || "home"
     );
 }
 
 function getPageFromHash() {
+    const path = window.location.pathname;
+    if (path.includes('/reset-password/')) {
+        return 'reset-password';
+    }
     return normalizePage(window.location.hash);
 }
 
@@ -252,11 +260,11 @@ async function loadPageHtml(page) {
 
     if (page === "home") {
         candidates = [`pages/public/home.html`, `pages/home.html`];
-    } else if (page === "login") {
+    } else if (page === "login" || page === "register" || page === "forgot-password" || page === "verify-otp" || page === "reset-password") {
         candidates = [
-            `pages/auth/login.html`,
-            `pages/public/login.html`,
-            `pages/login.html`,
+            `pages/auth/${page}.html`,
+            `pages/public/${page}.html`,
+            `pages/${page}.html`,
         ];
     } else if (page.startsWith("admin/")) {
         candidates = [`pages/${page}.html`];
@@ -269,6 +277,8 @@ async function loadPageHtml(page) {
             `pages/public/lembaga-kemasyarakatan/${page}.html`,
             `pages/public/${page}.html`,
         ];
+    } else if (page === "unit-kerja") {
+        candidates = [`pages/public/unit-kerja.html`, `pages/unit-kerja.html`];
     } else if (!page.includes("/") && page.startsWith("unit-")) {
         candidates = [
             `pages/public/unit-kerja/${page}.html`,
@@ -293,6 +303,12 @@ async function loadPageHtml(page) {
             "galeri",
             "pelayanan",
             "profil-kelurahan",
+            "lembaga",
+            "struktur-organisasi",
+            "peta-wilayah",
+            "profil",
+            "about",
+            "layanan",
         ].includes(page)
     ) {
         candidates = [`pages/public/${page}.html`, `pages/${page}.html`];
@@ -649,40 +665,6 @@ function setupMobileMenu() {
     setOpen(false);
 }
 
-// ==============================
-// LOGOUT HANDLER
-// ==============================
-document.addEventListener("click", async (e) => {
-    const logoutBtn = e.target.closest('[data-action="logout"]');
-    if (!logoutBtn) return;
-    e.preventDefault();
-
-    try {
-        const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-        await fetch("/logout", {
-            method: "POST",
-            headers: {
-                "X-CSRF-TOKEN": csrf,
-                "X-Requested-With": "XMLHttpRequest",
-                Accept: "application/json",
-            },
-            credentials: "include",
-        });
-    } catch (err) {
-        console.error("Logout API error:", err);
-    }
-
-    if (
-        window.KelurahanGuard &&
-        typeof window.KelurahanGuard.clearSession === "function"
-    ) {
-        window.KelurahanGuard.clearSession();
-    } else {
-        sessionStorage.clear();
-    }
-
-    window.location.hash = "#login";
-});
 
 // ==============================
 // SESSION CHANGE LISTENERS
@@ -739,4 +721,120 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.COMPONENTS_LOADED) return;
     window.COMPONENTS_LOADED = true;
     loadComponents();
+});
+
+// ==============================================
+// AUTOMATIC 3D BUTTONS ENHANCEMENTS
+// ==============================================
+document.addEventListener("DOMContentLoaded", () => {
+    if (window.BUTTONS_3D_OBS_BOUND) return;
+    window.BUTTONS_3D_OBS_BOUND = true;
+
+    const enhanceButton = (btn) => {
+        if (btn.dataset.enhanced3d) return;
+
+        // Skip non-interactive buttons or toggles
+        if (btn.classList.contains('hero-slider-dot') || 
+            btn.classList.contains('group-toggle') || 
+            btn.closest('.navbar') || 
+            btn.closest('.admin-side')) {
+            return;
+        }
+
+        btn.dataset.enhanced3d = 'true';
+        btn.classList.add('btn-3d');
+
+        // Extract text nodes
+        let text = '';
+        const childNodes = Array.from(btn.childNodes);
+        childNodes.forEach((child) => {
+            if (child.nodeType === Node.TEXT_NODE) {
+                text += child.textContent;
+                child.remove();
+            }
+        });
+        text = text.trim();
+
+        // Autocomplete text for small table action buttons if empty
+        if (!text) {
+            if (btn.classList.contains('btn-warning') || btn.getAttribute('data-action')?.toLowerCase().includes('edit')) {
+                text = 'Edit';
+            } else if (btn.classList.contains('btn-danger') || btn.getAttribute('data-action')?.toLowerCase().includes('delete')) {
+                text = 'Hapus';
+            }
+        }
+
+        // Add the wrapper span
+        let hasTextSpan = btn.querySelector('.btn-text');
+        if (!hasTextSpan && text) {
+            const span = document.createElement('span');
+            span.className = 'btn-text';
+            span.textContent = text;
+            btn.prepend(span);
+        }
+
+        // Handle icons and sub-helper classes
+        if (btn.classList.contains('btn-warning')) {
+            btn.classList.add('btn-edit');
+            if (!btn.querySelector('i') && !btn.querySelector('svg')) {
+                const i = document.createElement('i');
+                i.className = 'fa-solid fa-pen';
+                btn.appendChild(i);
+            }
+        } else if (btn.classList.contains('btn-danger')) {
+            btn.classList.add('btn-hapus');
+            if (!btn.querySelector('i') && !btn.querySelector('svg')) {
+                const i = document.createElement('i');
+                i.className = 'fa-solid fa-trash';
+                btn.appendChild(i);
+            }
+        } else if (btn.classList.contains('btn-primary') || btn.classList.contains('btn-solid')) {
+            btn.classList.add('btn-tambah-data');
+            if (!btn.querySelector('i') && !btn.querySelector('svg')) {
+                const i = document.createElement('i');
+                i.className = 'fa-solid fa-plus';
+                btn.appendChild(i);
+            }
+        } else if (btn.classList.contains('btn-light')) {
+            if (text.toLowerCase().includes('foto')) {
+                btn.classList.add('btn-pilih-foto');
+                if (!btn.querySelector('i') && !btn.querySelector('svg')) {
+                    const i = document.createElement('i');
+                    i.className = 'fa-solid fa-camera';
+                    btn.appendChild(i);
+                }
+            }
+        }
+
+        // Move existing icons to the end of the button for consistent sliding transition
+        const existingIcon = btn.querySelector('i, svg');
+        if (existingIcon && btn.lastChild !== existingIcon) {
+            btn.appendChild(existingIcon);
+        }
+    };
+
+    // Process initially loaded elements
+    document.querySelectorAll('.btn-warning, .btn-danger, .btn-primary, .btn-solid, .btn-light').forEach(enhanceButton);
+
+    // Watch for dynamically added buttons
+    const mo = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (!mutation.addedNodes) return;
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType !== Node.ELEMENT_NODE) return;
+                
+                let targets = [];
+                if (node.matches && node.matches('.btn-warning, .btn-danger, .btn-primary, .btn-solid, .btn-light')) {
+                    targets.push(node);
+                }
+                if (node.querySelectorAll) {
+                    targets.push(...node.querySelectorAll('.btn-warning, .btn-danger, .btn-primary, .btn-solid, .btn-light'));
+                }
+                
+                targets.forEach(enhanceButton);
+            });
+        });
+    });
+
+    mo.observe(document.body, { childList: true, subtree: true });
 });

@@ -22,5 +22,12 @@ class Setting extends Model
         'kodepos',
         'profil',
         'maps',
+        'jam_pelayanan',
+        'visi',
+        'misi',
+        'luas_wilayah',
+        'jumlah_penduduk',
+        'jumlah_rt',
+        'jumlah_rw',
     ];
 }

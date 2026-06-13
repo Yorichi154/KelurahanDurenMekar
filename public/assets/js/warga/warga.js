@@ -52,11 +52,16 @@
             ditinjau: "blue",
             diproses: "blue",
             selesai: "green",
+            siap_diambil: "green",
             ditolak: "red",
             baru: "yellow",
         };
+        const textMap = {
+            siap_diambil: "Siap Diambil",
+        };
         const cls = map[s] || "";
-        return `<span class="pill ${cls}">${s || "-"}</span>`;
+        const label = textMap[s] || s;
+        return `<span class="pill ${cls}">${label || "-"}</span>`;
     }
 
     const esc = (v) =>
@@ -301,6 +306,27 @@
 
             let html = "";
 
+            if (item?.status === 'siap_diambil' && item?.pickup) {
+                const p = item.pickup;
+                html += `
+                    <div class="card" style="margin-bottom:15px; border-left: 5px solid #10b981; background: #f0fdf4;">
+                        <div class="card-body" style="padding:16px">
+                            <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                                <i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 20px;"></i>
+                                <span style="font-weight:1000; color: #14532d; font-size:15px;">Pengajuan Surat Disetujui & Siap Diambil</span>
+                            </div>
+                            <p style="font-size:13px; color:#14532d; margin-bottom:12px;">
+                                Silakan datang ke Kelurahan Duren Mekar untuk pengambilan surat dengan membawa dokumen asli: <b>KTP Asli</b> dan <b>KK Asli</b>.
+                            </p>
+                            <div style="background:#fff; border:1px solid #dcfce7; padding:12px; border-radius:6px; font-size:13px; display:flex; flex-direction:column; gap:6px;">
+                                <div><b>Nomor Surat:</b> ${esc(p.nomor_surat || '-')}</div>
+                                <div><b>Nomor Antrian:</b> <span class="pill green" style="font-weight:bold; font-size:12px;">${esc(p.nomor_antrian || '-')}</span></div>
+                                <div><b>Tanggal Pengambilan:</b> ${esc(fmtDate(p.tanggal_pengambilan))}</div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
             if (fileSurat) {
                 const fileUrl = `/storage/${fileSurat}`;
                 html += `
@@ -348,7 +374,7 @@
                             </div>
                         </div>
                     </div>`;
-            } else {
+            } else if (item?.status !== 'siap_diambil') {
                 html += `<div class="muted" style="margin-bottom:10px">Hasil surat belum tersedia. Silakan menunggu proses dari petugas.</div>`;
             }
 
@@ -567,6 +593,83 @@
             });
         }
 
+        const drawServicesGrid = async () => {
+            const grid = document.getElementById("wargaServicesGrid");
+            if (!grid) return;
+
+            try {
+                const res = await fetch("/api/public/pelayanan", { credentials: "include" });
+                if (!res.ok) throw new Error("Gagal mengambil pelayanan");
+                const services = await res.json();
+
+                if (!services || !services.length) {
+                    grid.innerHTML = `<div class="muted" style="grid-column: 1/-1; text-align: center; padding: 20px;">Belum ada pelayanan tersedia.</div>`;
+                    return;
+                }
+
+                grid.innerHTML = services.map(x => {
+                    const isOnline = !!x.online;
+                    const badgeClass = isOnline ? "badge-success" : "badge-warning";
+                    const badgeText = isOnline ? "Bisa Online" : "Harus Datang Langsung";
+                    const estimasi = x.estimasi || (isOnline ? "1 hari kerja" : "1-3 hari kerja");
+                    const biaya = x.biaya || "Gratis";
+                    const iconClass = isOnline ? "fa-file-signature" : "fa-building-columns";
+
+                    let actionBtn = "";
+                    if (isOnline) {
+                        actionBtn = `<button class="btn btn-primary btn-sm srv-apply-btn" data-id="${x.id}" style="width:100%; text-align:center; font-weight:bold;">
+                            <i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i> ${x.teks_tombol || "Ajukan Sekarang"}
+                        </button>`;
+                    } else {
+                        actionBtn = `<div class="muted" style="text-align:center; font-size:12px; font-weight:bold; padding: 6px; border: 1px dashed var(--border); border-radius: 6px; background: rgba(148,163,184,0.05);">
+                            <i class="fa-solid fa-circle-info" style="margin-right:6px; color:var(--warning);"></i> Silakan datang langsung
+                        </div>`;
+                    }
+
+                    return `
+                        <div class="warga-card" style="border: 1px solid var(--border); border-radius: 12px; padding: 16px; background:#fff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: none;">
+                            <div>
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:12px;">
+                                    <div style="background: var(--primary-soft); color: var(--primary); width:40px; height:40px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; font-size:16px;">
+                                        <i class="fa-solid ${iconClass}"></i>
+                                    </div>
+                                    <span class="badge ${badgeClass}" style="font-size: 10px; padding: 2px 6px; border-radius: 6px;">${badgeText}</span>
+                                </div>
+                                <h3 style="margin: 0 0 6px 0; font-size: 15px; font-weight:800; color: var(--text);">${esc(x.nama)}</h3>
+                                <div style="display:flex; gap:12px; font-size:11px; margin-bottom:12px;" class="muted">
+                                    <span><i class="fa-regular fa-clock"></i> ${esc(estimasi)}</span>
+                                    <span><i class="fa-solid fa-rupiah-sign"></i> ${esc(biaya)}</span>
+                                </div>
+                            </div>
+                            <div style="margin-top:12px;">
+                                ${actionBtn}
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+
+                // Add click listener
+                grid.querySelectorAll(".srv-apply-btn").forEach(btn => {
+                    btn.addEventListener("click", () => {
+                        const id = btn.getAttribute("data-id");
+                        if (window.KelurahanStore?.Storage?.set) {
+                            window.KelurahanStore.Storage.set("pelayananSelected", id);
+                        }
+                        sessionStorage.setItem("pelayananSelected", id);
+                        if (typeof window.navigateTo === "function") {
+                            window.navigateTo("pengajuan-online");
+                        } else {
+                            window.location.hash = "#pengajuan-online";
+                        }
+                    });
+                });
+            } catch (err) {
+                console.error(err);
+                grid.innerHTML = `<div class="muted" style="grid-column: 1/-1; text-align: center; padding: 20px; color: var(--danger);">Gagal memuat daftar pelayanan.</div>`;
+            }
+        };
+
+        drawServicesGrid();
         draw();
     }
 
@@ -623,11 +726,107 @@
                                     <td>${p.kategori || "-"} <div class="muted" style="font-size:12px">${p.lokasi || ""}</div></td>
                                     <td>${fmtDate(p.created_at || p.tanggal)}</td>
                                     <td>${pill(p.status)}</td>
-                                    <td>-</td>
+                                    <td><button class="btn btn-ghost btn-sm btn-warga-review" data-id="${p.id}"><i class="fa-solid fa-eye"></i> Review</button></td>
                                 </tr>`,
                         )
                         .join("") ||
                     `<tr><td colspan="5" class="muted">Belum ada pengaduan.</td></tr>`;
+
+                // Attach click listeners to Review buttons
+                tbody.querySelectorAll(".btn-warga-review").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        const id = btn.getAttribute("data-id");
+                        const p = items.find((x) => String(x.id) === String(id));
+                        if (p) {
+                            document.getElementById("wargaDetailJudul").textContent = p.judul || "-";
+                            document.getElementById("wargaDetailKategori").textContent = p.kategori || "-";
+                            document.getElementById("wargaDetailTanggal").textContent = fmtDate(p.created_at || p.tanggal);
+                            document.getElementById("wargaDetailLokasi").textContent = p.lokasi || "-";
+                            document.getElementById("wargaDetailIsi").textContent = p.isi || "";
+                            document.getElementById("wargaDetailStatus").innerHTML = pill(p.status);
+
+                            // Handle staff resolution follow up photo
+                            const hasilContainer = document.getElementById("wargaDetailTindakLanjutContainer");
+                            const hasilImg = document.getElementById("wargaDetailHasilImg");
+                            if (hasilContainer && hasilImg) {
+                                if (p.foto_tindak_lanjut) {
+                                    const hasilUrl = p.foto_tindak_lanjut.startsWith("data:") || p.foto_tindak_lanjut.startsWith("http")
+                                        ? p.foto_tindak_lanjut
+                                        : "/storage/" + p.foto_tindak_lanjut;
+                                    hasilImg.src = hasilUrl;
+                                    hasilContainer.style.display = "block";
+                                } else {
+                                    hasilImg.src = "";
+                                    hasilContainer.style.display = "none";
+                                }
+                            }
+
+                            const img = document.getElementById("wargaDetailImg");
+                            const pdfLink = document.getElementById("wargaDetailPdf");
+                            const noLampiran = document.getElementById("wargaDetailNoLampiran");
+
+                            img.style.display = "none";
+                            pdfLink.style.display = "none";
+                            noLampiran.style.display = "none";
+
+                            if (p.lampiran) {
+                                const fileUrl = p.lampiran.startsWith("data:") || p.lampiran.startsWith("http")
+                                    ? p.lampiran
+                                    : "/storage/" + p.lampiran;
+                                
+                                if (p.lampiran.toLowerCase().endsWith(".pdf")) {
+                                    pdfLink.href = fileUrl;
+                                    pdfLink.style.display = "inline-block";
+                                } else {
+                                    img.src = fileUrl;
+                                    img.style.display = "block";
+                                }
+                            } else {
+                                noLampiran.style.display = "inline";
+                            }
+
+                            document.getElementById("wargaPengaduanDetailModal").classList.add("open");
+                        }
+                    });
+                });
+
+                // Global Close modal listener for review modals
+                if (!window._wargaModalsBound) {
+                    window._wargaModalsBound = true;
+                    document.addEventListener("click", (e) => {
+                        if (e.target.closest("#closeWargaPengaduanDetailBtn") || e.target.matches("#wargaPengaduanDetailModal")) {
+                            document.getElementById("wargaPengaduanDetailModal")?.classList.remove("open");
+                        }
+                        if (e.target.closest("#closeImageZoomBtn") || e.target.matches("#imageZoomModal")) {
+                            document.getElementById("imageZoomModal")?.classList.remove("open");
+                        }
+                    });
+
+                    // Image zoom click
+                    const detailImg = document.getElementById("wargaDetailImg");
+                    if (detailImg) {
+                        detailImg.onclick = () => {
+                            const zoomModal = document.getElementById("imageZoomModal");
+                            const zoomedImg = document.getElementById("zoomedImg");
+                            if (zoomModal && zoomedImg) {
+                                zoomedImg.src = detailImg.src;
+                                zoomModal.classList.add("open");
+                            }
+                        };
+                    }
+
+                    const hasilImg = document.getElementById("wargaDetailHasilImg");
+                    if (hasilImg) {
+                        hasilImg.onclick = () => {
+                            const zoomModal = document.getElementById("imageZoomModal");
+                            const zoomedImg = document.getElementById("zoomedImg");
+                            if (zoomModal && zoomedImg) {
+                                zoomedImg.src = hasilImg.src;
+                                zoomModal.classList.add("open");
+                            }
+                        };
+                    }
+                }
             } catch (error) {
                 console.error("Gagal memuat pengaduan:", error);
                 tbody.innerHTML = `<tr><td colspan="4" class="muted" style="color:red">Gagal memuat data pengaduan.</td></tr>`;
@@ -722,24 +921,188 @@
         draw();
     }
 
-    // =========================
-    // CHAT - DINONAKTIFKAN
-    // =========================
+    let chatPollInterval = null;
     function initChat() {
-        console.warn(
-            "️ Chat belum terhubung backend. Fitur ini dinonaktifkan sementara.",
-        );
-
+        const threadListEl = document.getElementById("wargaThreadList");
         const msgEl = document.getElementById("wargaChatMessages");
-        if (msgEl) {
-            msgEl.innerHTML = `
-                <div class="muted" style="padding:20px;text-align:center">
-                    <i class="fa-solid fa-info-circle" style="font-size:24px;margin-bottom:10px"></i>
-                    <p>Fitur chat sedang dalam pengembangan.</p>
-                    <p>Silakan gunakan pengaduan untuk komunikasi dengan petugas.</p>
-                </div>
-            `;
+        const inputEl = document.getElementById("wargaChatInput");
+        const sendBtn = document.getElementById("wargaChatSend");
+        const subEl = document.getElementById("wargaChatSub");
+
+        if (!threadListEl || !msgEl) return;
+
+        // Reset state
+        let activeThreadId = null;
+        if (chatPollInterval) {
+            clearInterval(chatPollInterval);
+            chatPollInterval = null;
         }
+
+        msgEl.innerHTML = `
+            <div class="muted" style="padding:40px;text-align:center">
+                <i class="fa-solid fa-comments" style="font-size:32px;margin-bottom:10px;color:var(--primary);"></i>
+                <p style="font-weight:700">Ruang Obrolan Pengaduan</p>
+                <p style="font-size:13px">Pilih salah satu thread pengaduan di sebelah kiri untuk berdiskusi dengan petugas.</p>
+            </div>
+        `;
+
+        async function loadThreads() {
+            try {
+                const res = await fetch("/api/warga/pengaduan", { credentials: "include" });
+                if (!res.ok) throw new Error("Gagal memuat pengaduan");
+                const items = await res.json();
+                
+                threadListEl.innerHTML = items.map(p => `
+                    <div class="thread-item warga-chat-thread" data-id="${p.id}" style="padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: all 0.2s;" id="thread-item-${p.id}">
+                        <div style="font-weight: 800; font-size: 14px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.judul}</div>
+                        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Kategori: ${p.kategori || "-"}</div>
+                        <div style="font-size: 11px; display: flex; justify-content: space-between; margin-top: 6px; align-items: center;">
+                            <span class="muted">${fmtDate(p.created_at || p.tanggal)}</span>
+                            <span>${pill(p.status)}</span>
+                        </div>
+                    </div>
+                `).join("") || `<div class="muted" style="padding: 20px; text-align: center;">Belum ada pengaduan. Silakan kirim pengaduan terlebih dahulu di menu Pengaduan Saya.</div>`;
+
+                // Bind click to threads
+                threadListEl.querySelectorAll(".warga-chat-thread").forEach(el => {
+                    el.addEventListener("click", () => {
+                        const id = el.getAttribute("data-id");
+                        selectThread(id);
+                    });
+                });
+
+                if (activeThreadId) {
+                    const activeEl = document.getElementById(`thread-item-${activeThreadId}`);
+                    if (activeEl) activeEl.style.background = "rgba(31, 95, 224, 0.08)";
+                }
+            } catch (err) {
+                console.error(err);
+                threadListEl.innerHTML = `<div class="muted" style="color:red">Gagal memuat daftar percakapan.</div>`;
+            }
+        }
+
+        async function loadMessages(silent = false) {
+            if (!activeThreadId) return;
+            // Check if user has left the page
+            if (!document.getElementById("wargaChatMessages")) {
+                if (chatPollInterval) {
+                    clearInterval(chatPollInterval);
+                    chatPollInterval = null;
+                }
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/warga/pengaduan/${activeThreadId}/chats`, { credentials: "include" });
+                if (!res.ok) throw new Error("Gagal mengambil pesan");
+                const chats = await res.json();
+                
+                const session = Guard?.getSession();
+                const userId = session ? session.id : null;
+
+                const originalScrollHeight = msgEl.scrollHeight;
+                const originalScrollTop = msgEl.scrollTop;
+                const isNearBottom = originalScrollTop + msgEl.clientHeight >= originalScrollHeight - 60;
+
+                msgEl.innerHTML = chats.map(c => {
+                    const isSelf = String(c.user_id) === String(userId);
+                    const senderName = isSelf ? "Anda" : (c.user?.name || "Petugas");
+                    const alignment = isSelf ? "align-self: flex-end; background: var(--primary); color: white;" : "align-self: flex-start; background: #f1f5f9; color: var(--text);";
+                    const alignContainer = isSelf ? "justify-content: flex-end;" : "justify-content: flex-start;";
+                    
+                    return `
+                        <div style="display: flex; ${alignContainer} width: 100%; margin-bottom: 10px;">
+                            <div style="max-width: 75%; padding: 10px 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-sm); ${alignment}">
+                                <div style="font-size: 11px; font-weight: 800; opacity: 0.85;">${senderName}</div>
+                                <div style="font-size: 13px; line-height: 1.4; white-space: pre-wrap;">${c.pesan}</div>
+                                <div style="font-size: 9px; align-self: flex-end; opacity: 0.7;">${fmtDate(c.created_at)}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join("") || `<div class="muted" style="padding: 40px; text-align: center;">Belum ada pesan. Kirim pesan pertama untuk memulai diskusi.</div>`;
+
+                if (!silent || isNearBottom) {
+                    msgEl.scrollTop = msgEl.scrollHeight;
+                }
+            } catch (err) {
+                console.error("Gagal memuat pesan:", err);
+                if (!silent) {
+                    msgEl.innerHTML = `<div class="muted" style="color:red; text-align:center; padding:20px;">Gagal memuat pesan.</div>`;
+                }
+            }
+        }
+
+        async function selectThread(id) {
+            activeThreadId = id;
+            
+            // Highlight selected
+            threadListEl.querySelectorAll(".warga-chat-thread").forEach(el => {
+                const elId = el.getAttribute("data-id");
+                el.style.background = elId === String(id) ? "rgba(31, 95, 224, 0.08)" : "transparent";
+                el.style.borderColor = elId === String(id) ? "var(--primary)" : "var(--border)";
+            });
+
+            // Update header
+            try {
+                const res = await fetch(`/api/warga/pengaduan`, { credentials: "include" });
+                const items = await res.json();
+                const thread = items.find(x => String(x.id) === String(id));
+                if (thread && subEl) {
+                    subEl.innerHTML = `Diskusi Tindak Lanjut: <b>${thread.judul}</b> (${pill(thread.status)})`;
+                }
+            } catch (_) {}
+
+            msgEl.innerHTML = `<div class="muted" style="padding:40px; text-align:center;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; margin-bottom:10px;"></i><p>Memuat percakapan...</p></div>`;
+            await loadMessages();
+
+            // Set polling interval
+            if (chatPollInterval) clearInterval(chatPollInterval);
+            chatPollInterval = setInterval(() => loadMessages(true), 4000);
+        }
+
+        async function sendMessage() {
+            if (!activeThreadId) {
+                alert("Pilih thread pengaduan terlebih dahulu.");
+                return;
+            }
+            const pesan = inputEl.value.trim();
+            if (!pesan) return;
+
+            sendBtn.disabled = true;
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                const res = await fetch(`/api/warga/pengaduan/${activeThreadId}/chats`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json"
+                    },
+                    body: JSON.stringify({ pesan })
+                });
+
+                if (!res.ok) throw new Error("Gagal mengirim pesan");
+                inputEl.value = "";
+                await loadMessages();
+            } catch (err) {
+                console.error(err);
+                alert("Gagal mengirim pesan.");
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        // Bind events
+        sendBtn.onclick = sendMessage;
+        inputEl.onkeydown = (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        };
+
+        // Initialize threads
+        loadThreads();
     }
 
     // =========================

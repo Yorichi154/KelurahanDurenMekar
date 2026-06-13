@@ -5,7 +5,7 @@
 const CSRF = () => document.querySelector('meta[name="csrf-token"]')?.content;
 
 // ── Konfigurasi Jenis Surat & Field Form ──────────────────────────
-const SURAT_CONFIG = {
+let SURAT_CONFIG = {
   SKTM: {
     kode: 'SKTM', nama: 'Surat Keterangan Tidak Mampu', icon: 'fa-hand-holding-heart', color: '#ef4444',
     checklist: ['Fotokopi KTP', 'Fotokopi KK', 'Surat RT/RW', 'Keterangan penghasilan'],
@@ -252,6 +252,68 @@ const SURAT_CONFIG = {
   },
 };
 
+const iconMap = {
+  SKTM: { icon: 'fa-hand-holding-heart', color: '#ef4444' },
+  SKDOM: { icon: 'fa-house-chimney', color: '#3b82f6' },
+  SKDM: { icon: 'fa-location-dot', color: '#06b6d4' },
+  SKKEHIDUPAN: { icon: 'fa-heart-pulse', color: '#22c55e' },
+  SKBELUMNIK: { icon: 'fa-id-card', color: '#f59e0b' },
+  SKWIRASWASTA: { icon: 'fa-store', color: '#8b5cf6' },
+  SKPINDAH: { icon: 'fa-truck-moving', color: '#f97316' },
+  SKKEMATIAN: { icon: 'fa-book', color: '#64748b' },
+  SKKELAHIRAN: { icon: 'fa-baby', color: '#ec4899' },
+  SKGAJISWASTA: { icon: 'fa-wallet', color: '#22c55e' },
+  SKGAJIPNS: { icon: 'fa-building-columns', color: '#3b82f6' },
+  SKPEMILIKAN: { icon: 'fa-map-location-dot', color: '#a855f7' },
+  N1: { icon: 'fa-rings-wedding', color: '#f43f5e' },
+  N2: { icon: 'fa-family', color: '#f43f5e' },
+  N4: { icon: 'fa-people-roof', color: '#f43f5e' },
+  PENGANTARSKCK: { icon: 'fa-shield-heart', color: '#dc2626' },
+  PENGANTAR: { icon: 'fa-envelope-open-text', color: '#6b7280' },
+};
+
+async function loadSuratConfigFromApi() {
+  try {
+    const res = await fetch("/api/staf/buat-surat/jenis", {
+      headers: { Accept: "application/json" }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      // Clear properties of SURAT_CONFIG
+      for (let prop in SURAT_CONFIG) {
+        delete SURAT_CONFIG[prop];
+      }
+      data.forEach(item => {
+        const kode = item.kode_surat || item.kode;
+        const mapping = iconMap[kode] || { icon: 'fa-file-signature', color: '#6366f1' };
+        const fieldsRaw = item.form_fields || item.fields || [];
+        const mappedFields = fieldsRaw.map(f => ({
+          id: f.key || f.id,
+          label: f.label,
+          type: f.type,
+          required: !!f.required,
+          options: f.options || [],
+          placeholder: f.placeholder || ''
+        }));
+
+        SURAT_CONFIG[kode] = {
+          kode: kode,
+          nama: item.nama_surat || item.nama,
+          icon: mapping.icon,
+          color: mapping.color,
+          checklist: item.syarat || [],
+          fields: [
+            ...fieldsPemohon(kode !== 'SKBELUMNIK'),
+            ...mappedFields
+          ]
+        };
+      });
+    }
+  } catch (err) {
+    console.error("Gagal memuat jenis surat dari API:", err);
+  }
+}
+
 // ── Helper: Common Pemohon Fields ─────────────────────────────────
 function fieldsPemohon(includeNIK = true) {
   const base = [
@@ -465,6 +527,7 @@ async function sisGenerate() {
         data_surat: { ...sisState.formData, catatan_staf: catatanStaf },
         keperluan,
         ukuran_kertas: ukuran,
+        surat_id: sisState.suratId || null,
       }),
     });
 
@@ -495,10 +558,61 @@ async function sisGenerate() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────
-function initBuatSurat() {
-  sisState = { step: 1, selectedKode: null, formData: {} };
+async function initBuatSurat() {
+  await loadSuratConfigFromApi();
+  sisState = { step: 1, selectedKode: null, formData: {}, suratId: null };
   sisGoStep(1);
   sisRenderJenisGrid();
+
+  // Prefill logic from online application
+  const prefillRaw = sessionStorage.getItem('prefill_surat');
+  if (prefillRaw) {
+    try {
+      const prefillObj = JSON.parse(prefillRaw);
+      sessionStorage.removeItem('prefill_surat'); // consume once
+
+      if (prefillObj && prefillObj.jenis_surat) {
+        const nameOrKode = prefillObj.jenis_surat;
+        let matchedKode = null;
+
+        // Try direct match
+        if (SURAT_CONFIG[nameOrKode.toUpperCase()]) {
+          matchedKode = nameOrKode.toUpperCase();
+        } else {
+          // Fuzzy match on config name
+          for (const [k, cfg] of Object.entries(SURAT_CONFIG)) {
+            if (cfg.nama.toLowerCase() === nameOrKode.toLowerCase() ||
+                cfg.nama.toLowerCase().includes(nameOrKode.toLowerCase()) ||
+                nameOrKode.toLowerCase().includes(cfg.nama.toLowerCase())) {
+              matchedKode = k;
+              break;
+            }
+          }
+        }
+
+        if (matchedKode) {
+          sisState.selectedKode = matchedKode;
+          sisState.suratId = prefillObj.id;
+
+          const dataSurat = (prefillObj.data_surat && typeof prefillObj.data_surat === 'object') ? prefillObj.data_surat : {};
+          sisState.formData = {
+            nama: prefillObj.user?.name || "",
+            nik: prefillObj.user?.nik || "",
+            telp: prefillObj.user?.telp || "",
+            rt: prefillObj.user?.rt || "",
+            rw: prefillObj.user?.rw || "",
+            alamat: prefillObj.user?.alamat || "",
+            keperluan: prefillObj.keperluan || "",
+            ...dataSurat
+          };
+
+          sisRenderStep2(matchedKode);
+        }
+      }
+    } catch (e) {
+      console.error("Gagal memproses prefill data:", e);
+    }
+  }
 
   // Events
   const grid = document.getElementById('sisJenisGrid');
@@ -515,7 +629,10 @@ function initBuatSurat() {
   }
 
   const backBtn = document.getElementById('sisBackBtn');
-  if (backBtn) backBtn.addEventListener('click', () => sisGoStep(1));
+  if (backBtn) backBtn.addEventListener('click', () => {
+    sisState.suratId = null; // Reset linked online request when returning to list
+    sisGoStep(1);
+  });
 
   const previewBtn = document.getElementById('sisPreviewBtn');
   if (previewBtn) previewBtn.addEventListener('click', sisShowPreview);
@@ -531,7 +648,7 @@ function initBuatSurat() {
 
   const buatLagiBtn = document.getElementById('sisBuatLagiBtn');
   if (buatLagiBtn) buatLagiBtn.addEventListener('click', () => {
-    sisState = { step: 1, selectedKode: null, formData: {} };
+    sisState = { step: 1, selectedKode: null, formData: {}, suratId: null };
     sisGoStep(1);
     sisRenderJenisGrid();
   });

@@ -21,6 +21,13 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda sudah login.',
+                        'redirect' => RouteServiceProvider::HOME
+                    ]);
+                }
                 return redirect(RouteServiceProvider::HOME);
             }
         }

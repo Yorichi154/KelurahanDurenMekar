@@ -75,5 +75,94 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modal Review Pengaduan (Staf) -->
+        <div class="modal" id="stafPengaduanDetailModal" aria-hidden="true">
+            <div class="modal-panel" style="max-width: 600px; width: 90%; border-radius: var(--radius); overflow: hidden;">
+                <div class="modal-head">
+                    <h3 style="margin: 0;">Detail Pengaduan Warga</h3>
+                    <button class="btn btn-ghost" id="closeStafPengaduanDetailBtn">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px; max-height: 75vh; overflow-y: auto;">
+                    <div>
+                        <label style="font-weight: 800; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Pelapor</label>
+                        <div id="stafDetailPelapor" style="font-size: 14px; font-weight: 700; margin-top: 4px; color: var(--text);"></div>
+                    </div>
+                    <div>
+                        <label style="font-weight: 800; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Judul</label>
+                        <div id="stafDetailJudul" style="font-size: 16px; font-weight: 700; margin-top: 4px; color: var(--text);"></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="font-weight: 800; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Kategori</label>
+                            <div id="stafDetailKategori" style="margin-top: 4px; font-weight: 600;"></div>
+                        </div>
+                        <div>
+                            <label style="font-weight: 800; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Tanggal</label>
+                            <div id="stafDetailTanggal" style="margin-top: 4px;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="font-weight: 800; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Lokasi</label>
+                        <div id="stafDetailLokasi" style="margin-top: 4px;"></div>
+                    </div>
+                    <div>
+                        <label style="font-weight: 800; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Deskripsi / Isi Laporan</label>
+                        <div id="stafDetailIsi" style="margin-top: 4px; line-height: 1.5; white-space: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border); color: #334155;"></div>
+                    </div>
+                    <div>
+                        <label style="font-weight: 800; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Status Saat Ini</label>
+                        <div id="stafDetailStatus" style="margin-top: 4px;"></div>
+                    </div>
+                    <div>
+                        <label style="font-weight: 800; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Lampiran / Bukti</label>
+                        <div id="stafDetailLampiranContainer" style="margin-top: 8px;">
+                            <img id="stafDetailImg" src="" alt="Lampiran" style="max-width: 100%; max-height: 250px; border-radius: 8px; cursor: zoom-in; border: 1px solid var(--border); display: none; object-fit: contain;">
+                            <a id="stafDetailPdf" href="" target="_blank" class="btn btn-ghost btn-sm" style="display: none;"><i class="fa-solid fa-file-pdf"></i> Lihat PDF Lampiran</a>
+                            <span id="stafDetailNoLampiran" class="muted" style="display: none; font-size: 13px;">Tidak ada lampiran</span>
+                        </div>
+                    </div>
+
+                    <hr style="border: 0; border-top: 1px solid var(--border); margin: 10px 0;">
+
+                    <form id="stafPengaduanStatusForm" style="display: flex; flex-direction: column; gap: 14px;">
+                        <input type="hidden" id="stafModalId" />
+                        <div>
+                            <label style="font-weight: 800; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Update Status Tindak Lanjut</label>
+                            <select id="stafModalStatus" class="input" style="width: 100%; margin-top: 6px;" required>
+                                <option value="menunggu">Menunggu</option>
+                                <option value="diproses">Diproses</option>
+                                <option value="selesai">Selesai</option>
+                                <option value="ditolak">Ditolak</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-weight: 800; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Upload Foto Tindak Lanjut / Bukti Hasil</label>
+                            <input type="file" id="stafModalFotoTindakLanjut" accept=".jpg,.jpeg,.png" style="width: 100%; margin-top: 6px;">
+                            <div style="margin-top: 8px;">
+                                <img id="stafModalFotoPreview" src="" alt="Preview Tindak Lanjut" style="max-width: 100%; max-height: 180px; border-radius: 8px; border: 1px solid var(--border); display: none; object-fit: contain; cursor: zoom-in;">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button type="submit" class="btn btn-solid" style="background: var(--primary); color: white; border: none; font-weight: 800; border-radius: 8px; padding: 10px 16px; cursor: pointer;">
+                                <i class="fa-solid fa-floppy-disk"></i> Simpan Tindak Lanjut
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Detail Zoom Modal (Staf) -->
+        <div class="modal" id="stafImageZoomModal" aria-hidden="true" style="z-index: 3000; background: rgba(0,0,0,0.85);">
+            <div class="modal-panel" style="background: transparent; box-shadow: none; border: none; max-width: 90%; max-height: 90%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+                <button class="btn btn-ghost" id="closeStafImageZoomBtn" style="position: absolute; top: -40px; right: 0; color: white; font-size: 24px;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <img id="stafZoomedImg" src="" alt="Zoomed" style="max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+            </div>
+        </div>
     </div>
 </section>

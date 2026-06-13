@@ -229,23 +229,29 @@
             unitName: rawUnit.nama_unit,
             name: rawUnit.nama_pimpinan,
             position: rawUnit.jabatan_pimpinan,
-            nip: "-",
+            nip: rawUnit.nip_pimpinan || "-",
             email: rawUnit.email,
             phone: rawUnit.kontak,
-            photo: "assets/images/avatar-placeholder.png",
-            pendidikan: "-",
-            riwayat: [],
+            photo: rawUnit.foto_pimpinan ? '/storage/' + rawUnit.foto_pimpinan : 'assets/images/avatar-placeholder.png',
+            pendidikan: rawUnit.pendidikan_pimpinan || "-",
+            riwayat: typeof rawUnit.riwayat_jabatan === "string"
+                ? rawUnit.riwayat_jabatan.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+                : (Array.isArray(rawUnit.riwayat_jabatan) ? rawUnit.riwayat_jabatan : []),
             tugas: typeof rawUnit.tugas === "string" 
                 ? rawUnit.tugas.split(/\r?\n/).map(s => s.trim()).filter(Boolean) 
                 : (Array.isArray(rawUnit.tugas) ? rawUnit.tugas : []),
             kewenangan: typeof rawUnit.kewenangan === "string" 
                 ? rawUnit.kewenangan.split(/\r?\n/).map(s => s.trim()).filter(Boolean) 
                 : (Array.isArray(rawUnit.kewenangan) ? rawUnit.kewenangan : []),
+            tim_pegawai: Array.isArray(rawUnit.tim_pegawai)
+                ? rawUnit.tim_pegawai
+                : (typeof rawUnit.tim_pegawai === "string" ? JSON.parse(rawUnit.tim_pegawai) : []),
         };
 
         const profilEl = document.getElementById("unitProfil");
         const tugasEl = document.getElementById("unitTugas");
         const kewenanganEl = document.getElementById("unitKewenangan");
+        const timSectionEl = document.getElementById("unitTimSection");
         const headerTitle = document.querySelector(".page-title");
         const headerLead = document.querySelector(".page-lead");
 
@@ -266,7 +272,7 @@
               <div class="unit-leader-main">
                 <h3 class="unit-leader-name">${unit.name || "-"}</h3>
                 <p class="unit-leader-position">${unit.position || ""}</p>
-
+ 
                 <div class="unit-leader-meta">
                   <div class="meta-item">
                     <i class="fa-regular fa-id-card" aria-hidden="true"></i>
@@ -277,7 +283,7 @@
                     <span>${unit.email || "-"}</span>
                   </div>
                 </div>
-
+ 
                 <div class="unit-leader-meta">
                   <div class="meta-item">
                     <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
@@ -290,7 +296,7 @@
                 </div>
               </div>
             </div>
-
+ 
             <div class="unit-history">
               <h4>Riwayat Jabatan:</h4>
               <ul class="bullets">
@@ -347,6 +353,41 @@
             </ul>
           </div>
         </div>`;
+        }
+
+        if (timSectionEl) {
+            const timList = Array.isArray(unit.tim_pegawai) ? unit.tim_pegawai : [];
+            if (timList.length > 0) {
+                timSectionEl.innerHTML = `
+                    <h2 class="section-title">Tim ${unit.unitName || ""}</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-wrapper">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nama</th>
+                                            <th>Jabatan</th>
+                                            <th>NIP</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${timList.map(st => `
+                                            <tr>
+                                                <td data-label="Nama"><b>${st.nama || "-"}</b></td>
+                                                <td data-label="Jabatan">${st.jabatan || "-"}</td>
+                                                <td data-label="NIP">${st.nip || "-"}</td>
+                                            </tr>
+                                        `).join("")}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                timSectionEl.innerHTML = "";
+            }
         }
     }
 

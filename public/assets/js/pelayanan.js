@@ -32,7 +32,8 @@ async function loadPelayananApi() {
                     ...x,
                     tipe: isOnline ? "online" : "offline",
                     page: `pelayanan-${x.slug}`,
-                    online: isOnline
+                    online: isOnline,
+                    formFields: x.form_fields || []
                 };
             });
             return servicesCache;
@@ -579,6 +580,20 @@ async function loadPelayananApi() {
 
         // ---------- LAYANAN ONLINE ----------
         if (layanan.tipe === "online") {
+            const userSession = window.KelurahanGuard?.getSession();
+            const isWarga = userSession && userSession.role === "warga";
+            const guestNotice = el("srvOnlineGuestNotice");
+
+            if (guestNotice) {
+                guestNotice.style.display = isWarga ? "none" : "block";
+            }
+
+            const buttonText = isWarga ? (layanan.tombol || "Ajukan Surat Online") : "Login untuk Mengajukan";
+            const buttonAction = isWarga ? goWizard : () => {
+                if (window.navigateTo) window.navigateTo("login");
+                else window.location.hash = "#login";
+            };
+
             // tombol di bawah judul
             if (action) {
                 const btnTop = document.createElement("button");
@@ -587,9 +602,9 @@ async function loadPelayananApi() {
                 btnTop.className = "btn btn-solid btn-service-online";
                 btnTop.innerHTML = `
           <i class="fa-regular fa-file-lines"></i>
-          ${layanan.tombol || "Ajukan Surat Online"}
+          ${buttonText}
         `;
-                btnTop.addEventListener("click", goWizard);
+                btnTop.addEventListener("click", buttonAction);
                 action.appendChild(btnTop);
             }
 
@@ -598,9 +613,8 @@ async function loadPelayananApi() {
                 bottomCta.style.display = "block";
                 bottomBtn.id = "srvApplyBottom";
                 bottomBtn.classList.add("btn-service-online");
-                bottomText.textContent =
-                    layanan.tombol || "Ajukan Surat Online";
-                bottomBtn.onclick = goWizard;
+                bottomText.textContent = buttonText;
+                bottomBtn.onclick = buttonAction;
             }
 
             if (offlineNotice) offlineNotice.style.display = "none";
@@ -1401,6 +1415,49 @@ function initWizardPage() {
             </select>
           </div>`;
                 }
+                if (f.type === "checkbox") {
+                    if (Array.isArray(f.options) && f.options.length) {
+                        const cbs = f.options.map((o, oIdx) => `
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:normal; margin-bottom: 6px;">
+                                <input type="checkbox" id="${id}_${oIdx}" value="${escapeHtml(o)}" data-extra-key="${escapeHtml(f.key)}" style="width:auto;" />
+                                <span>${escapeHtml(o)}</span>
+                            </label>
+                        `).join("");
+                        return `
+                          <div class="field">
+                            <label>${label}${mark}</label>
+                            <div style="margin-top:6px;">${cbs}</div>
+                          </div>`;
+                    } else {
+                        return `
+                          <div class="field" style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+                            <input type="checkbox" id="${id}" data-extra-key="${escapeHtml(f.key)}" ${req} style="width:auto; margin:0;" />
+                            <label for="${id}" style="margin:0; cursor:pointer; font-weight:normal;">${label}${mark}</label>
+                          </div>`;
+                    }
+                }
+                if (f.type === "radio") {
+                    const opts = (Array.isArray(f.options) ? f.options : [])
+                        .map((o, oIdx) => `
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:normal; margin-bottom: 6px;">
+                                <input type="radio" name="${id}" id="${id}_${oIdx}" value="${escapeHtml(o)}" ${req} style="width:auto;" />
+                                <span>${escapeHtml(o)}</span>
+                            </label>
+                        `).join("");
+                    return `
+                      <div class="field">
+                        <label>${label}${mark}</label>
+                        <div style="margin-top:6px;">${opts}</div>
+                      </div>`;
+                }
+                if (f.type === "file") {
+                    return `
+                      <div class="field">
+                        <label for="${id}">${label}${mark}</label>
+                        <input id="${id}" type="file" class="input" data-extra-key="${escapeHtml(f.key)}" ${req} />
+                        <small class="muted">Unggah dokumen pendukung</small>
+                      </div>`;
+                }
                 const typeMap = { number: "number", date: "date" };
                 const type = typeMap[f.type] || "text";
                 return `
@@ -1466,6 +1523,18 @@ function initWizardPage() {
             .join("");
     }
 
+    const readFileInput = (el) => new Promise((resolve) => {
+        const file = el.files?.[0];
+        if (!file) {
+            resolve("");
+            return;
+        }
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result || ""));
+        r.onerror = () => resolve("");
+        r.readAsDataURL(file);
+    });
+
     function validateStep2() {
         const required = [
             { el: inNama, label: "Nama Lengkap" },
@@ -1483,15 +1552,53 @@ function initWizardPage() {
             }
         }
         // validasi extra fields yang wajib
-        if (extraFieldsWrap) {
-            const reqExtra = Array.from(
-                extraFieldsWrap.querySelectorAll("[required]"),
-            );
-            for (const el of reqExtra) {
-                if (!String(el.value || "").trim()) {
-                    alert("Ada field tambahan yang wajib diisi.");
-                    el.focus();
-                    return false;
+        const layanan = getSelected();
+        if (layanan && Array.isArray(layanan.formFields)) {
+            for (const f of layanan.formFields) {
+                if (f.required) {
+                    const id = `wizExtra_${f.key}`;
+                    if (f.type === "checkbox") {
+                        if (Array.isArray(f.options) && f.options.length) {
+                            let checked = false;
+                            f.options.forEach((o, oIdx) => {
+                                const cb = document.getElementById(`${id}_${oIdx}`);
+                                if (cb && cb.checked) checked = true;
+                            });
+                            if (!checked) {
+                                alert(`Field ${f.label} wajib dicentang minimal salah satu.`);
+                                return false;
+                            }
+                        } else {
+                            const cb = document.getElementById(id);
+                            if (!cb || !cb.checked) {
+                                alert(`Field ${f.label} wajib dicentang.`);
+                                return false;
+                            }
+                        }
+                    } else if (f.type === "radio") {
+                        const radios = document.getElementsByName(id);
+                        let checked = false;
+                        for (const r of radios) {
+                            if (r.checked) checked = true;
+                        }
+                        if (!checked) {
+                            alert(`Pilihan ${f.label} wajib dipilih.`);
+                            return false;
+                        }
+                    } else if (f.type === "file") {
+                        const fileEl = document.getElementById(id);
+                        if (!fileEl || !fileEl.files?.length) {
+                            alert(`File ${f.label} wajib diunggah.`);
+                            return false;
+                        }
+                    } else {
+                        const el = document.getElementById(id);
+                        if (!el || !el.value.trim()) {
+                            alert(`Field ${f.label} wajib diisi.`);
+                            if (el) el.focus();
+                            return false;
+                        }
+                    }
                 }
             }
         }
@@ -1614,7 +1721,6 @@ function initWizardPage() {
     });
 
     submitBtn?.addEventListener("click", async () => {
-        // ✅ TAMBAHKAN 'async' DI SINI
         if (!validateStep2()) {
             goStep(2);
             return;
@@ -1623,50 +1729,57 @@ function initWizardPage() {
 
         const layanan = getSelected();
         const { rt, rw } = parseRtRw(inRtRw?.value);
+        
+        // Collect dynamic form answers based on formFields definition
         const extra = {};
-        extraFieldsWrap?.querySelectorAll("[data-extra-key]").forEach((el) => {
-            extra[el.dataset.extraKey] = String(el.value || "").trim();
-        });
-
-        const now = new Date();
-        const record = {
-            id: `SR-${now.getTime()}`,
-            jenis: layanan.nama,
-            layananId: layanan.id,
-            page: layanan.page,
-            estimasi: layanan.estimasi,
-            biaya: layanan.biaya,
-            tanggal: now.toISOString().slice(0, 10),
-            status: "menunggu",
-
-            email: session?.email || "",
-            nama: inNama?.value?.trim() || session?.name || "",
-            nik: inNik?.value?.trim() || "",
-            telp: inTelp?.value?.trim() || "",
-            rt,
-            rw,
-            alamat: inAlamat?.value?.trim() || "",
-            keperluan: inKeperluan?.value?.trim() || "",
-
-            extra,
-            berkas: uploadedItems,
-            berkasUrl: uploadedItems.length
-                ? `${uploadedItems.length} berkas`
-                : "-",
-            catatan: "",
-        };
+        if (layanan.formFields) {
+            for (const f of layanan.formFields) {
+                const key = f.key;
+                const id = `wizExtra_${key}`;
+                if (f.type === "checkbox") {
+                    if (Array.isArray(f.options) && f.options.length) {
+                        const checkedVals = [];
+                        f.options.forEach((o, oIdx) => {
+                            const cb = document.getElementById(`${id}_${oIdx}`);
+                            if (cb && cb.checked) {
+                                checkedVals.push(o);
+                            }
+                        });
+                        extra[key] = checkedVals.join(", ");
+                    } else {
+                        const cb = document.getElementById(id);
+                        extra[key] = cb && cb.checked ? "Ya" : "Tidak";
+                    }
+                } else if (f.type === "radio") {
+                    const radios = document.getElementsByName(id);
+                    let val = "";
+                    for (const r of radios) {
+                        if (r.checked) {
+                            val = r.value;
+                            break;
+                        }
+                    }
+                    extra[key] = val;
+                } else if (f.type === "file") {
+                    const fileEl = document.getElementById(id);
+                    if (fileEl && fileEl.files?.length) {
+                        const base64 = await readFileInput(fileEl);
+                        extra[key] = base64;
+                    } else {
+                        extra[key] = "";
+                    }
+                } else {
+                    const el = document.getElementById(id);
+                    extra[key] = el ? String(el.value || "").trim() : "";
+                }
+            }
+        }
 
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-        // ✅ AMBIL USER DARI Guard
         const user = window.KelurahanGuard?.getSession();
         const userId = user?.id;
 
-        // ⚠️ CATATAN PENTING:
-        // Anda memanggil "/api/admin/surat" padahal user yang login adalah "warga".
-        // Jika backend Anda memproteksi route admin, ini akan gagal (403 Forbidden).
-        // Seharusnya mungkin: "/api/warga/surat"
         const response = await fetch("/api/warga/surat", {
-            // ✅ DIGANTI KE ENDPOINT WARGA
             method: "POST",
             credentials: "include",
             headers: {
@@ -1675,10 +1788,20 @@ function initWizardPage() {
                 "X-CSRF-TOKEN": csrf,
             },
             body: JSON.stringify({
-                user_id: userId,
                 jenis_surat: layanan.nama,
                 keperluan: inKeperluan?.value?.trim(),
-                berkas: uploadedItems, // ✅ SEND BERKAS LIST
+                berkas: uploadedItems,
+                data_surat: {
+                    user_id: userId,
+                    nama: inNama?.value?.trim() || session?.name || "",
+                    nik: inNik?.value?.trim() || "",
+                    telp: inTelp?.value?.trim() || "",
+                    rt,
+                    rw,
+                    alamat: inAlamat?.value?.trim() || "",
+                    keperluan: inKeperluan?.value?.trim() || "",
+                    ...extra
+                }
             }),
         });
 

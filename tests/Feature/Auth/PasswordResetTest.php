@@ -3,9 +3,10 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
+use App\Models\PasswordResetOtp;
+use App\Mail\SendOtpMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
@@ -19,55 +20,80 @@ class PasswordResetTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_reset_password_link_can_be_requested(): void
+    public function test_reset_password_otp_can_be_requested(): void
     {
-        Notification::fake();
+        Mail::fake();
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $response = $this->post('/forgot-password', ['email' => $user->email]);
 
-        Notification::assertSentTo($user, ResetPassword::class);
-    }
+        // Check if OTP record was created
+        $this->assertDatabaseHas('password_reset_otps', [
+            'email' => $user->email,
+        ]);
 
-    public function test_reset_password_screen_can_be_rendered(): void
-    {
-        Notification::fake();
-
-        $user = User::factory()->create();
-
-        $this->post('/forgot-password', ['email' => $user->email]);
-
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
-            $response = $this->get('/reset-password/'.$notification->token);
-
-            $response->assertStatus(200);
-
-            return true;
+        // Assert mail was sent
+        Mail::assertSent(SendOtpMail::class, function ($mail) use ($user) {
+            return $mail->hasTo($user->email);
         });
     }
 
-    public function test_password_can_be_reset_with_valid_token(): void
+    public function test_otp_can_be_verified(): void
     {
-        Notification::fake();
-
         $user = User::factory()->create();
+        $otp = '123456';
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        PasswordResetOtp::create([
+            'email' => $user->email,
+            'otp' => $otp,
+            'expires_at' => now()->addMinutes(15),
+        ]);
 
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
-            $response = $this->post('/reset-password', [
-                'token' => $notification->token,
-                'email' => $user->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
+        $response = $this->post('/verify-otp', [
+            'email' => $user->email,
+            'otp' => $otp,
+        ]);
+
+        $response->assertJson([
+            'success' => true,
+            'message' => 'Kode OTP valid.',
+        ]);
+    }
+
+    public function test_password_can_be_reset_with_valid_otp(): void
+    {
+        $user = User::factory()->create();
+        $otp = '123456';
+
+        PasswordResetOtp::create([
+            'email' => $user->email,
+            'otp' => $otp,
+            'expires_at' => now()->addMinutes(15),
+        ]);
+
+        $response = $this->post('/reset-password', [
+            'token' => $otp,
+            'email' => $user->email,
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ]);
+
+        // Since it's a JSON/web request, it might redirect or return JSON
+        if ($response->status() === 302) {
+            $response->assertRedirect(route('login'));
+        } else {
+            $response->assertJson([
+                'success' => true,
             ]);
+        }
 
-            $response
-                ->assertSessionHasNoErrors()
-                ->assertRedirect(route('login'));
+        // Verify password was changed
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('new-password', $user->fresh()->password));
 
-            return true;
-        });
+        // Verify OTP was deleted
+        $this->assertDatabaseMissing('password_reset_otps', [
+            'email' => $user->email,
+        ]);
     }
 }

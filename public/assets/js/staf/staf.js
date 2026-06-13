@@ -81,9 +81,26 @@ function fmtDate(date) {
     });
 }
 function statusBadge(status) {
+    const s = String(status || "").toLowerCase();
+    const map = {
+        menunggu: "badge-wait",
+        diproses: "badge-proses",
+        selesai: "badge-done",
+        siap_diambil: "badge-done",
+        ditolak: "badge-reject",
+    };
+    const textMap = {
+        menunggu: "Menunggu",
+        diproses: "Diproses",
+        selesai: "Selesai",
+        ditolak: "Ditolak",
+        siap_diambil: "Siap Diambil",
+    };
+    const cls = map[s] || "badge-neutral";
+    const label = textMap[s] || status;
     return `
-        <span class="badge badge-${status}">
-            ${status}
+        <span class="badge ${cls}">
+            ${label}
         </span>
     `;
 }
@@ -105,6 +122,8 @@ const fmtSize = (bytes) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 };
 
+let currentDetailSurat = null;
+
 async function openStafSuratDetail(id) {
     try {
         const res = await fetch(`/api/staf/surat/${id}`, {
@@ -112,6 +131,7 @@ async function openStafSuratDetail(id) {
         });
         const surat = await res.json();
         if (!surat) return;
+        currentDetailSurat = surat;
 
         const modal = document.getElementById("suratDetailModal");
         const title = document.getElementById("suratDetailTitle");
@@ -131,9 +151,44 @@ async function openStafSuratDetail(id) {
         } else if (surat.status === "selesai") {
             statusText = "Selesai";
             statusPillClass = "badge-done";
+        } else if (surat.status === "siap_diambil") {
+            statusText = "Siap Diambil";
+            statusPillClass = "badge-done";
         } else if (surat.status === "ditolak") {
             statusText = "Ditolak";
             statusPillClass = "badge-reject";
+        }
+
+        let extraFieldsHtml = "";
+        const dataSurat = (surat.data_surat && typeof surat.data_surat === "object") ? surat.data_surat : {};
+        const standardKeys = ["user_id", "nama", "nik", "telp", "rt", "rw", "alamat", "keperluan"];
+        const customEntries = Object.entries(dataSurat).filter(([k]) => !standardKeys.includes(k));
+
+        if (customEntries.length > 0) {
+            extraFieldsHtml = `
+            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border);">
+              <h5 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 1000; color: var(--primary);">Detail Form Pengajuan</h5>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px;">
+                ${customEntries.map(([key, val]) => {
+                    const formattedLabel = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+                    let valHtml = "";
+                    if (typeof val === "string" && val.startsWith("data:image/")) {
+                        valHtml = `<img src="${val}" style="max-width:100%; max-height:150px; border-radius:8px; display:block; margin-top:4px; border:1px solid var(--border);" />`;
+                    } else if (typeof val === "string" && val.startsWith("data:application/pdf")) {
+                        valHtml = `<a href="${val}" target="_blank" class="btn btn-light btn-sm" style="margin-top:4px; font-weight:bold; font-size:11px; padding:4px 8px; border:1px solid var(--border); border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> Buka Dokumen PDF</a>`;
+                    } else {
+                        valHtml = `<div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(val)}</div>`;
+                    }
+                    return `
+                      <div>
+                        <label style="font-size: 11px; color: var(--muted); font-weight: 900; text-transform: uppercase;">${esc(formattedLabel)}</label>
+                        ${valHtml}
+                      </div>
+                    `;
+                }).join("")}
+              </div>
+            </div>
+            `;
         }
 
         let bodyHtml = `
@@ -173,6 +228,7 @@ async function openStafSuratDetail(id) {
             <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(surat.keperluan || '-')}</div>
           </div>
         </div>
+        ${extraFieldsHtml}
       </div>
     </div>
     
@@ -521,11 +577,26 @@ document.addEventListener("click", async (e) => {
         return;
     }
 
+    const reviewBtn = e.target.closest(".btn-staf-review");
+    if (reviewBtn) {
+        const id = reviewBtn.dataset.id;
+        openStafPengaduanDetail(id);
+        return;
+    }
+
     const acceptBtn = e.target.closest(".accept-surat");
     if (acceptBtn) {
         const id = acceptBtn.dataset.id;
         if (confirm("Setujui dan proses pengajuan surat ini?")) {
             await updateStafSuratStatus(id, "diproses");
+            if (currentDetailSurat && String(currentDetailSurat.id) === String(id)) {
+                sessionStorage.setItem('prefill_surat', JSON.stringify(currentDetailSurat));
+                if (window.navigateTo) {
+                    window.navigateTo("staf/buat-surat");
+                } else {
+                    window.location.hash = "#staf/buat-surat";
+                }
+            }
         }
         return;
     }
@@ -703,6 +774,75 @@ document.addEventListener("click", async (e) => {
         alert("Gagal menyimpan status pengaduan");
     }
 });
+
+async function openStafPengaduanDetail(id) {
+    try {
+        const res = await fetch(`/api/staf/pengaduan/${id}`, {
+            headers: { Accept: "application/json" }
+        });
+        const item = await res.json();
+        if (!item) return;
+
+        document.getElementById("stafDetailPelapor").textContent = item.user?.name || "-";
+        document.getElementById("stafDetailJudul").textContent = item.judul || "-";
+        document.getElementById("stafDetailKategori").textContent = item.kategori || "-";
+        document.getElementById("stafDetailTanggal").textContent = fmtDate(item.created_at);
+        document.getElementById("stafDetailLokasi").textContent = item.lokasi || "-";
+        document.getElementById("stafDetailIsi").textContent = item.isi || "";
+        document.getElementById("stafDetailStatus").innerHTML = statusBadge(item.status);
+
+        // Populate modal form
+        document.getElementById("stafModalId").value = item.id;
+        document.getElementById("stafModalStatus").value = item.status;
+        const fileInput = document.getElementById("stafModalFotoTindakLanjut");
+        if (fileInput) fileInput.value = "";
+
+        // Populate follow up preview
+        const modalPreview = document.getElementById("stafModalFotoPreview");
+        if (modalPreview) {
+            if (item.foto_tindak_lanjut) {
+                modalPreview.src = item.foto_tindak_lanjut.startsWith("data:") || item.foto_tindak_lanjut.startsWith("http")
+                    ? item.foto_tindak_lanjut
+                    : "/storage/" + item.foto_tindak_lanjut;
+                modalPreview.style.display = "block";
+            } else {
+                modalPreview.src = "";
+                modalPreview.style.display = "none";
+            }
+        }
+
+        const img = document.getElementById("stafDetailImg");
+        const pdfLink = document.getElementById("stafDetailPdf");
+        const noLampiran = document.getElementById("stafDetailNoLampiran");
+
+        if (img && pdfLink && noLampiran) {
+            img.style.display = "none";
+            pdfLink.style.display = "none";
+            noLampiran.style.display = "none";
+
+            if (item.lampiran) {
+                const fileUrl = item.lampiran.startsWith("data:") || item.lampiran.startsWith("http")
+                    ? item.lampiran
+                    : "/storage/" + item.lampiran;
+                
+                if (item.lampiran.toLowerCase().endsWith(".pdf")) {
+                    pdfLink.href = fileUrl;
+                    pdfLink.style.display = "inline-block";
+                } else {
+                    img.src = fileUrl;
+                    img.style.display = "block";
+                }
+            } else {
+                noLampiran.style.display = "inline";
+            }
+        }
+
+        document.getElementById("stafPengaduanDetailModal").classList.add("open");
+    } catch (error) {
+        console.error("Gagal memuat detail pengaduan:", error);
+    }
+}
+
 async function initStafPengaduanLaravel() {
     const tbody = document.getElementById("pengaduanTbody");
 
@@ -730,6 +870,7 @@ async function initStafPengaduanLaravel() {
                 <select
                     class="pengaduan-status"
                     data-id="${item.id}"
+                    style="padding: 6px; border-radius: 6px; border: 1px solid var(--border); background: #fff;"
                 >
                     <option value="menunggu" ${item.status === "menunggu" ? "selected" : ""}>Menunggu</option>
                     <option value="diproses" ${item.status === "diproses" ? "selected" : ""}>Diproses</option>
@@ -740,8 +881,17 @@ async function initStafPengaduanLaravel() {
                 <button
                     class="btn btn-primary save-pengaduan"
                     data-id="${item.id}"
+                    style="padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 12px; background: var(--primary); color: white; border: none; cursor: pointer;"
                 >
                     Simpan
+                </button>
+
+                <button
+                    class="btn btn-ghost btn-staf-review"
+                    data-id="${item.id}"
+                    style="margin-left: 5px; min-width: 60px; padding: 6px 12px; font-weight: 800; border-radius: 8px; cursor: pointer;"
+                >
+                    Review
                 </button>
 
             </td>
@@ -750,6 +900,113 @@ async function initStafPengaduanLaravel() {
     `,
         )
         .join("");
+
+    // Handle form submit in modal
+    const statusForm = document.getElementById("stafPengaduanStatusForm");
+    if (statusForm && !statusForm.dataset.listenerBound) {
+        statusForm.dataset.listenerBound = "true";
+        statusForm.addEventListener("submit", async (ev) => {
+            ev.preventDefault();
+            const id = document.getElementById("stafModalId").value;
+            const status = document.getElementById("stafModalStatus").value;
+            const fileInput = document.getElementById("stafModalFotoTindakLanjut");
+            const file = fileInput?.files?.[0] || null;
+
+            const submitBtn = statusForm.querySelector("button[type='submit']");
+            const origHtml = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+            try {
+                const formData = new FormData();
+                formData.append("status", status);
+                formData.append("_method", "PUT");
+                if (file) {
+                    formData.append("foto_tindak_lanjut", file);
+                }
+
+                const response = await fetch(`/api/staf/pengaduan/${id}/status`, {
+                    method: "POST", // POST with spoofing PUT
+                    headers: {
+                        "X-CSRF-TOKEN": csrfToken,
+                        Accept: "application/json",
+                    },
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.message || "Gagal memperbarui tindak lanjut");
+                }
+
+                alert("Tindak lanjut pengaduan berhasil disimpan");
+                document.getElementById("stafPengaduanDetailModal")?.classList.remove("open");
+                initStafPengaduanLaravel(); // Refresh table
+            } catch (err) {
+                console.error(err);
+                alert("Gagal memperbarui tindak lanjut: " + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origHtml;
+            }
+        });
+    }
+
+    // Modal file preview change listener
+    const stafModalFile = document.getElementById("stafModalFotoTindakLanjut");
+    if (stafModalFile && !stafModalFile.dataset.listenerBound) {
+        stafModalFile.dataset.listenerBound = "true";
+        stafModalFile.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            const preview = document.getElementById("stafModalFotoPreview");
+            if (file && preview) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    preview.src = event.target.result;
+                    preview.style.display = "block";
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Close modals
+    if (!window._stafModalsBound) {
+        window._stafModalsBound = true;
+        document.addEventListener("click", (e) => {
+            if (e.target.closest("#closeStafPengaduanDetailBtn") || e.target.matches("#stafPengaduanDetailModal")) {
+                document.getElementById("stafPengaduanDetailModal")?.classList.remove("open");
+            }
+            if (e.target.closest("#closeStafImageZoomBtn") || e.target.matches("#stafImageZoomModal")) {
+                document.getElementById("stafImageZoomModal")?.classList.remove("open");
+            }
+        });
+
+        // Image zoom click
+        const detailImg = document.getElementById("stafDetailImg");
+        if (detailImg) {
+            detailImg.onclick = () => {
+                const zoomModal = document.getElementById("stafImageZoomModal");
+                const zoomedImg = document.getElementById("stafZoomedImg");
+                if (zoomModal && zoomedImg) {
+                    zoomedImg.src = detailImg.src;
+                    zoomModal.classList.add("open");
+                }
+            };
+        }
+
+        const modalPreview = document.getElementById("stafModalFotoPreview");
+        if (modalPreview) {
+            modalPreview.onclick = () => {
+                const zoomModal = document.getElementById("stafImageZoomModal");
+                const zoomedImg = document.getElementById("stafZoomedImg");
+                if (zoomModal && zoomedImg) {
+                    zoomedImg.src = modalPreview.src;
+                    zoomModal.classList.add("open");
+                }
+            };
+        }
+    }
 }
 
 async function initStafPengumumanLaravel() {
@@ -967,4 +1224,192 @@ window.addEventListener("page:loaded", (e) => {
     if (page === 'staf/arsip-surat') {
         if (typeof window.initArsipSurat === 'function') window.initArsipSurat();
     }
+    if (page === 'staf/chat') {
+        initStafChatLaravel();
+    }
 });
+
+let stafChatPollInterval = null;
+async function initStafChatLaravel() {
+    const threadListEl = document.getElementById("chatThreadList");
+    const msgEl = document.getElementById("chatMessages");
+    const inputEl = document.getElementById("chatInput");
+    const formEl = document.getElementById("chatSendForm");
+    const headEl = document.getElementById("chatRoomHead");
+
+    if (!threadListEl || !msgEl) return;
+
+    let activeThreadId = null;
+    if (stafChatPollInterval) {
+        clearInterval(stafChatPollInterval);
+        stafChatPollInterval = null;
+    }
+
+    msgEl.innerHTML = `
+        <div class="muted" style="padding:40px;text-align:center">
+            <i class="fa-solid fa-comments" style="font-size:32px;margin-bottom:10px;color:var(--primary);"></i>
+            <p style="font-weight:700">Diskusi Obrolan Staf</p>
+            <p style="font-size:13px">Pilih salah satu thread pengaduan di sebelah kiri untuk melihat pesan dan merespons warga.</p>
+        </div>
+    `;
+
+    async function loadThreads() {
+        try {
+            const res = await fetch("/api/staf/pengaduan", { credentials: "include" });
+            if (!res.ok) throw new Error("Gagal memuat pengaduan");
+            const items = await res.json();
+
+            threadListEl.innerHTML = items.map(p => `
+                <div class="thread-item staf-chat-thread" data-id="${p.id}" style="padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: all 0.2s;" id="staf-thread-${p.id}">
+                    <div style="font-weight: 800; font-size: 14px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.judul}</div>
+                    <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Pelapor: <b>${p.user?.name || "-"}</b></div>
+                    <div style="font-size: 11px; display: flex; justify-content: space-between; margin-top: 6px; align-items: center;">
+                        <span class="muted">${fmtDate(p.created_at)}</span>
+                        <span>${statusBadge(p.status)}</span>
+                    </div>
+                </div>
+            `).join("") || `<div class="muted" style="padding: 20px; text-align: center;">Belum ada pengaduan warga.</div>`;
+
+            // Bind click to threads
+            threadListEl.querySelectorAll(".staf-chat-thread").forEach(el => {
+                el.addEventListener("click", () => {
+                    const id = el.getAttribute("data-id");
+                    selectThread(id);
+                });
+            });
+
+            if (activeThreadId) {
+                const activeEl = document.getElementById(`staf-thread-${activeThreadId}`);
+                if (activeEl) activeEl.style.background = "rgba(31, 95, 224, 0.08)";
+            }
+        } catch (err) {
+            console.error(err);
+            threadListEl.innerHTML = `<div class="muted" style="color:red">Gagal memuat daftar percakapan.</div>`;
+        }
+    }
+
+    async function loadMessages(silent = false) {
+        if (!activeThreadId) return;
+        // Check if user has left the page
+        if (!document.getElementById("chatMessages")) {
+            if (stafChatPollInterval) {
+                clearInterval(stafChatPollInterval);
+                stafChatPollInterval = null;
+            }
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/staf/pengaduan/${activeThreadId}/chats`, { credentials: "include" });
+            if (!res.ok) throw new Error("Gagal mengambil pesan");
+            const chats = await res.json();
+
+            const session = Guard?.getSession();
+            const userId = session ? session.id : null;
+
+            const originalScrollHeight = msgEl.scrollHeight;
+            const originalScrollTop = msgEl.scrollTop;
+            const isNearBottom = originalScrollTop + msgEl.clientHeight >= originalScrollHeight - 60;
+
+            msgEl.innerHTML = chats.map(c => {
+                const isSelf = String(c.user_id) === String(userId);
+                const senderName = isSelf ? "Anda (Staf)" : (c.user?.name || "Warga");
+                const alignment = isSelf ? "align-self: flex-end; background: var(--primary); color: white;" : "align-self: flex-start; background: #f1f5f9; color: var(--text);";
+                const alignContainer = isSelf ? "justify-content: flex-end;" : "justify-content: flex-start;";
+
+                return `
+                    <div style="display: flex; ${alignContainer} width: 100%; margin-bottom: 10px;">
+                        <div style="max-width: 75%; padding: 10px 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-sm); ${alignment}">
+                            <div style="font-size: 11px; font-weight: 800; opacity: 0.85;">${senderName}</div>
+                            <div style="font-size: 13px; line-height: 1.4; white-space: pre-wrap;">${c.pesan}</div>
+                            <div style="font-size: 9px; align-self: flex-end; opacity: 0.7;">${fmtDate(c.created_at)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join("") || `<div class="muted" style="padding: 40px; text-align: center;">Belum ada pesan. Kirim tanggapan untuk memulai obrolan.</div>`;
+
+            if (!silent || isNearBottom) {
+                msgEl.scrollTop = msgEl.scrollHeight;
+            }
+        } catch (err) {
+            console.error("Gagal memuat pesan:", err);
+            if (!silent) {
+                msgEl.innerHTML = `<div class="muted" style="color:red; text-align:center; padding:20px;">Gagal memuat pesan.</div>`;
+            }
+        }
+    }
+
+    async function selectThread(id) {
+        activeThreadId = id;
+
+        // Highlight selected
+        threadListEl.querySelectorAll(".staf-chat-thread").forEach(el => {
+            const elId = el.getAttribute("data-id");
+            el.style.background = elId === String(id) ? "rgba(31, 95, 224, 0.08)" : "transparent";
+            el.style.borderColor = elId === String(id) ? "var(--primary)" : "var(--border)";
+        });
+
+        // Update header
+        try {
+            const res = await fetch(`/api/staf/pengaduan/${id}`, { credentials: "include" });
+            const p = await res.json();
+            if (p && headEl) {
+                headEl.innerHTML = `
+                    <div style="font-weight: 1000; font-size: 16px;">${p.judul}</div>
+                    <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">
+                        Pelapor: <b>${p.user?.name || "-"}</b> • Status: ${statusBadge(p.status)}
+                    </div>
+                `;
+            }
+        } catch (_) {}
+
+        msgEl.innerHTML = `<div class="muted" style="padding:40px; text-align:center;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; margin-bottom:10px;"></i><p>Memuat percakapan...</p></div>`;
+        await loadMessages();
+
+        // Set polling interval
+        if (stafChatPollInterval) clearInterval(stafChatPollInterval);
+        stafChatPollInterval = setInterval(() => loadMessages(true), 4000);
+    }
+
+    async function sendMessage(e) {
+        if (e) e.preventDefault();
+
+        if (!activeThreadId) {
+            alert("Pilih percakapan pengaduan terlebih dahulu.");
+            return;
+        }
+        const pesan = inputEl.value.trim();
+        if (!pesan) return;
+
+        const btn = formEl.querySelector("button[type='submit']");
+        if (btn) btn.disabled = true;
+
+        try {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            const res = await fetch(`/api/staf/pengaduan/${activeThreadId}/chats`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": csrf,
+                    Accept: "application/json"
+                },
+                body: JSON.stringify({ pesan })
+            });
+
+            if (!res.ok) throw new Error("Gagal mengirim pesan");
+            inputEl.value = "";
+            await loadMessages();
+        } catch (err) {
+            console.error(err);
+            alert("Gagal mengirim pesan.");
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    // Bind events
+    if (formEl) formEl.onsubmit = sendMessage;
+
+    // Initialize threads
+    loadThreads();
+}

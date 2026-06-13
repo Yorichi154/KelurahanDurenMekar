@@ -52,9 +52,16 @@ class BuatSuratController extends Controller
      */
     public function indexJenis()
     {
+        $types = \App\Models\Pelayanan::get();
         $result = [];
-        foreach (self::$JENIS_CONFIG as $kode => $nama) {
-            $result[] = ['kode' => $kode, 'nama' => $nama];
+        foreach ($types as $t) {
+            $result[] = [
+                'kode'         => $t->kode_surat,
+                'nama'         => $t->nama_surat,
+                'form_fields'  => $t->form_fields,
+                'syarat'       => $t->syarat,
+                'metode_hasil' => $t->metode_hasil,
+            ];
         }
         return response()->json($result);
     }
@@ -92,6 +99,7 @@ class BuatSuratController extends Controller
             'data_surat'    => 'required|array',
             'keperluan'     => 'required|string',
             'ukuran_kertas' => 'nullable|string|in:A4,F4',
+            'surat_id'      => 'nullable|integer',
         ]);
 
         $kode    = $request->kode_jenis;
@@ -129,23 +137,60 @@ class BuatSuratController extends Controller
         $pdfContent = $pdf->output();
         \Storage::disk('public')->put($filename, $pdfContent);
 
-        // Create Surat record
-        $jenisNama = self::$JENIS_CONFIG[$kode] ?? $kode;
-        $surat = Surat::create([
-            'user_id'     => $userId,
-            'jenis_surat' => $jenisNama,
-            'nomor_surat' => $nomorSurat,
-            'keperluan'   => $request->keperluan,
-            'data_surat'  => $data,
-            'dibuat_oleh' => auth()->id(),
-            'file_surat'  => $filename,
-            'status'      => 'selesai',
-        ]);
+        // Determine status and type info
+        $pelayanan = \App\Models\Pelayanan::where('kode_surat', strtoupper($kode))
+            ->orWhere('kode_surat', $kode)
+            ->first();
+        $metodeHasil = $pelayanan ? $pelayanan->metode_hasil : 'download';
+        $status = ($metodeHasil === 'pickup') ? 'siap_diambil' : 'selesai';
+
+        // Determine if updating an existing record
+        $suratId = $request->surat_id ?? $data['surat_id'] ?? null;
+        $jenisNama = $pelayanan ? $pelayanan->nama_surat : (self::$JENIS_CONFIG[$kode] ?? $kode);
+
+        if ($suratId) {
+            $surat = Surat::findOrFail($suratId);
+            $surat->update([
+                'nomor_surat' => $nomorSurat,
+                'data_surat'  => $data,
+                'dibuat_oleh' => auth()->id(),
+                'file_surat'  => $filename,
+                'status'      => $status,
+            ]);
+        } else {
+            $surat = Surat::create([
+                'user_id'     => $userId,
+                'jenis_surat' => $jenisNama,
+                'nomor_surat' => $nomorSurat,
+                'keperluan'   => $request->keperluan,
+                'data_surat'  => $data,
+                'dibuat_oleh' => auth()->id(),
+                'file_surat'  => $filename,
+                'status'      => $status,
+            ]);
+        }
+
+        if ($status === 'siap_diambil') {
+            $todayCount = \App\Models\SuratPickup::whereDate('created_at', today())->count();
+            $nomorAntrian = 'A-' . sprintf('%03d', $todayCount + 1);
+
+            $surat->pickup()->updateOrCreate(
+                ['submission_id' => $surat->id],
+                [
+                    'nomor_surat' => $nomorSurat,
+                    'nomor_antrian' => $nomorAntrian,
+                    'tanggal_pengambilan' => now()->addDay()->toDateString(),
+                    'status_pengambilan' => 'menunggu',
+                ]
+            );
+        }
 
         return response()->json([
             'success'       => true,
             'surat_id'      => $surat->id,
             'nomor_surat'   => $nomorSurat,
+            'status'        => $status,
+            'pickup'        => $status === 'siap_diambil' ? $surat->pickup : null,
             'download_url'  => '/api/staf/buat-surat/' . $surat->id . '/download',
         ], 201);
     }
@@ -219,10 +264,60 @@ class BuatSuratController extends Controller
         $bulan   = $now->translatedFormat('F');
         $tahun   = $now->year;
 
-        // Common header & footer for all letters
+        // Fetch Pelayanan and see if it has a print template configured
+        $slug = strtolower($kode);
+        $pelayanan = \App\Models\Pelayanan::with('template')
+            ->where('kode_surat', $slug)
+            ->orWhere('kode_surat', 'pelayanan-' . $slug)
+            ->first();
+
         $header  = $this->buildHeader($nomor, $kode);
         $footer  = $this->buildFooter($d, $tglIndo);
-        $isi     = $this->buildIsi($kode, $d, $nomor, $tglIndo);
+
+        if ($pelayanan && $pelayanan->template && !empty($pelayanan->template->konten_html)) {
+            $konten = $pelayanan->template->konten_html;
+
+            // Variables mapping
+            $vars = [
+                'nomor_surat' => $nomor,
+                'tanggal'     => $tglIndo,
+                'lurah_name'  => 'H. MAHMUDIN, S.Sos',
+                'lurah_nip'   => '196805121990031005',
+            ];
+
+            // Resolve applicant user account details if present
+            $user = null;
+            if (isset($d['user_id'])) {
+                $user = \App\Models\User::find($d['user_id']);
+            }
+            if ($user) {
+                $vars['nama']   = $user->name;
+                $vars['nik']    = $user->nik;
+                $vars['telp']   = $user->telp;
+                $vars['alamat'] = $user->alamat;
+                $vars['rt']     = $user->rt;
+                $vars['rw']     = $user->rw;
+            }
+
+            // Overlay custom fields from payload
+            foreach ($d as $key => $value) {
+                if (is_array($value)) {
+                    $vars[$key] = json_encode($value);
+                } else {
+                    $vars[$key] = (string) $value;
+                }
+            }
+
+            // Perform template interpolation
+            foreach ($vars as $key => $value) {
+                $konten = str_replace('{{' . $key . '}}', htmlspecialchars($value, ENT_QUOTES, 'UTF-8'), $konten);
+                $konten = str_replace('{{ ' . $key . ' }}', htmlspecialchars($value, ENT_QUOTES, 'UTF-8'), $konten);
+            }
+
+            $isi = '<div class="custom-template-body" style="line-height: 1.5; text-align: justify; margin-top: 15px;">' . $konten . '</div>';
+        } else {
+            $isi = $this->buildIsi($kode, $d, $nomor, $tglIndo);
+        }
 
         // Page dimensions based on paper size
         if ($ukuran === 'F4') {
@@ -241,7 +336,7 @@ class BuatSuratController extends Controller
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   @page {
-    margin: 1cm 1.5cm;
+    margin: 1.5cm 2cm;
   }
   body {
     font-family: 'Times New Roman', Times, serif;
@@ -250,6 +345,11 @@ class BuatSuratController extends Controller
     background: #fff;
     margin: 0;
     padding: 0;
+  }
+  @media screen {
+    body {
+      padding: 1.5cm 2cm;
+    }
   }
   .page {
     width: 100%;
@@ -276,10 +376,10 @@ class BuatSuratController extends Controller
   .intro p { margin-bottom: 6px; word-wrap: break-word; }
 
   /* DATA TABLE */
-  .data-table { width: 100%; border-collapse: collapse; margin: 8px 0; table-layout: fixed; }
+  .data-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
   .data-table td { padding: 2px 0; vertical-align: top; font-size: 11pt; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word; }
-  .data-table td:first-child { width: 40%; padding-left: 20px; }
-  .data-table td.sep { width: 16px; text-align: center; }
+  .data-table td:first-child { width: 140px; padding-left: 10px; }
+  .data-table td.sep { width: 12px; text-align: center; }
   .data-table td:last-child { font-weight: normal; }
   .data-table .field-label { font-weight: normal; }
 
@@ -312,19 +412,28 @@ HTML;
 
     private function buildHeader(string $nomor, string $kode): string
     {
-        $judulSurat = self::$JENIS_CONFIG[$kode] ?? 'Surat Keterangan';
+        $pelayanan = \App\Models\Pelayanan::where('kode_surat', $kode)->first();
+        $judulSurat = $pelayanan ? $pelayanan->nama_surat : (self::$JENIS_CONFIG[$kode] ?? 'Surat Keterangan');
         $judulUpper = strtoupper($judulSurat);
+
+        $logoPath = public_path('assets/images/Lambang_Kota_Depok.png');
+        $logoBase64 = '';
+        if (file_exists($logoPath)) {
+            $logoData = file_get_contents($logoPath);
+            $logoBase64 = 'data:image/png;base64,' . base64_encode($logoData);
+        }
+        $logoHtml = $logoBase64 ? '<img src="' . $logoBase64 . '" alt="Logo">' : '<div class="no-logo">LOGO</div>';
 
         return <<<HTML
 <div class="kop">
   <div class="kop-logo">
-    <div class="no-logo">LOGO</div>
+    {$logoHtml}
   </div>
   <div class="kop-text">
     <div class="k1">PEMERINTAH KOTA DEPOK</div>
     <div class="k2">KECAMATAN BOJONGSARI</div>
     <div class="k3">KELURAHAN DUREN MEKAR</div>
-    <div class="k4">Jl. Raya Duren Mekar No. 1, Bojongsari, Kota Depok — Telp. (021) 7422123</div>
+    <div class="k4">Jl. Raya Duren Mekar No. 1, Bojongsari, Kota Depok - Telp. (021) 7422123</div>
   </div>
 </div>
 <div class="surat-title">
