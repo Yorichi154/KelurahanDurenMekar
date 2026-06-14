@@ -28,6 +28,7 @@ protected $fillable = [
     'alamat',
     'rt',
     'rw',
+    'last_seen_at',
 ];
 
     /**
@@ -48,5 +49,6 @@ protected $fillable = [
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'last_seen_at' => 'datetime',
     ];
 }

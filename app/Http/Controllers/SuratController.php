@@ -10,12 +10,14 @@ class SuratController extends Controller
 {
     // ==================== ADMIN METHODS ====================
 
-    public function index()
+    public function index(Request $request)
     {
         $this->checkMigration();
-        return Surat::with(['user', 'pickup'])
-            ->latest()
-            ->get();
+        $query = Surat::with(['user', 'pickup']);
+        if ($request->query('trashed') === 'true') {
+            $query->onlyTrashed();
+        }
+        return $query->latest()->get();
     }
 
     public function store(Request $request)
@@ -47,16 +49,41 @@ class SuratController extends Controller
 
     public function destroy(Surat $surat)
     {
-        // Delete associated files if any
-        if ($surat->berkas && \Illuminate\Support\Facades\Storage::disk('public')->exists($surat->berkas)) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($surat->berkas);
+        // For soft delete, we do NOT delete files from disk so they can be restored later.
+        $surat->delete();
+        return response()->json(['message' => 'Surat berhasil dihapus (soft delete)', 'success' => true]);
+    }
+
+    public function restore($id)
+    {
+        $surat = Surat::onlyTrashed()->findOrFail($id);
+        $surat->restore();
+        return response()->json(['message' => 'Surat berhasil dipulihkan', 'success' => true]);
+    }
+
+    public function forceDelete($id)
+    {
+        $surat = Surat::withTrashed()->findOrFail($id);
+        
+        // Delete physical files on force delete
+        if ($surat->berkas) {
+            if (is_array($surat->berkas)) {
+                foreach ($surat->berkas as $file) {
+                    if (is_string($file) && \Illuminate\Support\Facades\Storage::disk('public')->exists($file)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($file);
+                    }
+                }
+            } elseif (is_string($surat->berkas) && \Illuminate\Support\Facades\Storage::disk('public')->exists($surat->berkas)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($surat->berkas);
+            }
         }
-        if ($surat->file_surat && \Illuminate\Support\Facades\Storage::disk('public')->exists($surat->file_surat)) {
+
+        if ($surat->file_surat && is_string($surat->file_surat) && \Illuminate\Support\Facades\Storage::disk('public')->exists($surat->file_surat)) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($surat->file_surat);
         }
 
-        $surat->delete();
-        return response()->json(['message' => 'Surat berhasil dihapus', 'success' => true]);
+        $surat->forceDelete();
+        return response()->json(['message' => 'Surat berhasil dihapus permanen beserta berkasnya', 'success' => true]);
     }
 
     // ==================== WARGA METHODS ====================

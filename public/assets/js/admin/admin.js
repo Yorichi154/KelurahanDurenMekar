@@ -2141,7 +2141,9 @@
 
         async function loadData() {
             try {
-                const response = await fetchAPI("/api/admin/surat", {
+                const isTrashed = f?.value === 'trashed';
+                const url = isTrashed ? "/api/admin/surat?trashed=true" : "/api/admin/surat";
+                const response = await fetchAPI(url, {
                     credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
@@ -2149,7 +2151,6 @@
                 });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
-                // Handle both plain array and paginated response { data: [...] }
                 items = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
                 render();
             } catch (error) {
@@ -2171,7 +2172,7 @@
                         .includes(keyword),
                 );
             }
-            if (status) {
+            if (status && status !== 'trashed') {
                 filtered = filtered.filter(
                     (it) => (it.status || "").toLowerCase() == status,
                 );
@@ -2179,20 +2180,30 @@
 
             tbody.innerHTML = filtered
                 .map(
-                    (it) => `
-            <tr>
-                <td>${it.jenis_surat || "-"}</td>
-                <td>${it.user?.name || "-"}</td>
-                <td>${_fmtDate(it.created_at || it.tanggal)}</td>
-                <td>${_badge(it.status, "surat")}</td>
-                <td>
-                    <div class="row-actions">
-                        <button class="btn btn-ghost" data-action="suratDetailLaravel" data-id="${it.id}"><i class="fa-regular fa-eye"></i> Detail</button>
-                        <button class="btn btn-ghost" data-action="suratDeleteLaravel" data-id="${it.id}"><i class="fa-regular fa-trash-can"></i> Hapus</button>
-                    </div>
-                </td>
-            </tr>
-        `,
+                    (it) => {
+                        const isTrashed = f?.value === 'trashed';
+                        const actionButtons = isTrashed ? `
+                            <button class="btn btn-warning btn-sm" data-action="suratRestoreLaravel" data-id="${it.id}"><i class="fa-solid fa-trash-arrow-up"></i> Pulihkan</button>
+                            <button class="btn btn-danger btn-sm" data-action="suratForceDeleteLaravel" data-id="${it.id}"><i class="fa-regular fa-trash-can"></i> Hapus Permanen</button>
+                        ` : `
+                            <button class="btn btn-ghost" data-action="suratDetailLaravel" data-id="${it.id}"><i class="fa-regular fa-eye"></i> Detail</button>
+                            <button class="btn btn-ghost" data-action="suratDeleteLaravel" data-id="${it.id}"><i class="fa-regular fa-trash-can"></i> Hapus</button>
+                        `;
+
+                        return `
+                            <tr>
+                                <td>${it.jenis_surat || "-"}</td>
+                                <td>${it.user?.name || "-"}</td>
+                                <td>${_fmtDate(it.created_at || it.tanggal)}</td>
+                                <td>${_badge(it.status, "surat")}</td>
+                                <td>
+                                    <div class="row-actions">
+                                        ${actionButtons}
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }
                 )
                 .join("");
 
@@ -2202,7 +2213,7 @@
         await loadData();
 
         q?.addEventListener("input", render);
-        f?.addEventListener("change", render);
+        f?.addEventListener("change", loadData);
 
         if (!window._suratLaravelBound) {
             window._suratLaravelBound = true;
@@ -2210,6 +2221,8 @@
             document.addEventListener("click", async (e) => {
                 const detail = e.target.closest("[data-action='suratDetailLaravel']");
                 const del = e.target.closest("[data-action='suratDeleteLaravel']");
+                const restore = e.target.closest("[data-action='suratRestoreLaravel']");
+                const force = e.target.closest("[data-action='suratForceDeleteLaravel']");
                 const close = e.target.closest("[data-action='closeSuratModal']");
                 const save = e.target.closest("[data-action='saveSuratStatus']");
 
@@ -2218,9 +2231,57 @@
                     return;
                 }
 
+                if (restore) {
+                    const id = restore.dataset.id;
+                    if (!confirm("Pulihkan pengajuan surat ini?")) return;
+                    try {
+                        const response = await fetchAPI(`/api/admin/surat/${id}/restore`, {
+                            method: "POST",
+                            headers: {
+                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
+                                Accept: "application/json",
+                            },
+                        });
+                        if (response.ok) {
+                            alert("Pengajuan surat berhasil dipulihkan");
+                            loadData();
+                        } else {
+                            alert("Gagal memulihkan pengajuan surat");
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        alert("Gagal memulihkan pengajuan surat");
+                    }
+                    return;
+                }
+
+                if (force) {
+                    const id = force.dataset.id;
+                    if (!confirm("Hapus pengajuan surat ini secara PERMANEN beserta seluruh berkasnya? Tindakan ini tidak dapat dibatalkan!")) return;
+                    try {
+                        const response = await fetchAPI(`/api/admin/surat/${id}/force`, {
+                            method: "DELETE",
+                            headers: {
+                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
+                                Accept: "application/json",
+                            },
+                        });
+                        if (response.ok) {
+                            alert("Pengajuan surat berhasil dihapus secara permanen");
+                            loadData();
+                        } else {
+                            alert("Gagal menghapus permanen");
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        alert("Gagal menghapus permanen");
+                    }
+                    return;
+                }
+
                 if (del) {
                     const id = del.dataset.id;
-                    if (!confirm("Hapus pengajuan surat ini secara permanen?")) return;
+                    if (!confirm("Hapus pengajuan surat ini (Soft Delete)? Staf/warga tidak akan melihat surat ini, namun Admin dapat memulihkannya kembali."));
                     try {
                         const response = await fetchAPI(`/api/admin/surat/${id}`, {
                             method: "DELETE",
@@ -2230,14 +2291,14 @@
                             },
                         });
                         if (response.ok) {
-                            alert("Pengajuan surat berhasil dihapus");
+                            alert("Pengajuan surat berhasil dipindahkan ke tempat sampah");
                             loadData();
                         } else {
-                            alert("Gagal menghapus pengajuan surat");
+                            alert("Gagal memindahkan ke tempat sampah");
                         }
                     } catch (error) {
                         console.error(error);
-                        alert("Gagal menghapus pengajuan surat");
+                        alert("Gagal memindahkan ke tempat sampah");
                     }
                     return;
                 }
@@ -3402,6 +3463,11 @@
                                 ${item.online ? "Online" : "Offline"}
                             </span>
                         </td>
+                        <td>
+                            <span class="badge ${item.status === 'aktif' ? 'badge-done' : 'badge-wait'}" style="cursor: pointer" onclick="togglePelayananStatus(${item.id}, '${item.status}')">
+                                ${item.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
+                            </span>
+                        </td>
                         <td class="text-right">
                             <button
                                 type="button"
@@ -3419,7 +3485,7 @@
                     </tr>
                 `,
                     )
-                    .join("") || `<tr><td colspan="4" class="muted" style="text-align:center;padding:24px;">Belum ada pelayanan dikonfigurasi.</td></tr>`;
+                    .join("") || `<tr><td colspan="5" class="muted" style="text-align:center;padding:24px;">Belum ada pelayanan dikonfigurasi.</td></tr>`;
             } catch (error) {
                 console.error("Pelayanan Load Error:", error);
             }
@@ -3584,6 +3650,7 @@
             document.getElementById("fSrvId").value = "";
             document.getElementById("fSrvTemplate").value = "";
             if (editorCanvas) editorCanvas.innerHTML = "";
+            document.getElementById("fSrvStatus").checked = true;
             draftSyarat = [];
             draftSteps = [];
             draftFields = [];
@@ -3645,6 +3712,7 @@
                     catatan: document.getElementById("fSrvCatatan").value,
                     template_html: document.getElementById("fSrvTemplate").value,
                     teks_tombol: document.getElementById("fSrvTombol").value,
+                    status: document.getElementById("fSrvStatus").checked ? 'aktif' : 'nonaktif',
                 };
 
                 let response;
@@ -3700,6 +3768,7 @@
                 editorCanvas.innerHTML = item.template?.konten_html ?? "";
             }
             document.getElementById("fSrvTombol").value = item.teks_tombol ?? "";
+            document.getElementById("fSrvStatus").checked = (item.status === 'aktif');
 
             draftSyarat = item.syarat ?? [];
             draftSteps = item.langkah ?? [];
@@ -3710,6 +3779,50 @@
             renderFields();
 
             openModal();
+        };
+
+        window.togglePelayananStatus = async function (id, currentStatus) {
+            const nextStatus = currentStatus === 'aktif' ? 'nonaktif' : 'aktif';
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            try {
+                const getRes = await fetchAPI(`/api/admin/pelayanan/${id}`);
+                const item = await getRes.json();
+                
+                const payload = {
+                    nama: item.nama,
+                    slug: item.slug,
+                    estimasi: item.estimasi,
+                    biaya: item.biaya,
+                    online: item.online,
+                    syarat: item.syarat,
+                    langkah: item.langkah,
+                    form_fields: item.form_fields,
+                    jam_pelayanan: item.jam_pelayanan,
+                    lokasi: item.lokasi,
+                    catatan: item.catatan,
+                    template_html: item.template?.konten_html || '',
+                    teks_tombol: item.teks_tombol,
+                    status: nextStatus,
+                };
+
+                const response = await fetchAPI(`/api/admin/pelayanan/${id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                });
+                
+                if (response.ok) {
+                    await loadData();
+                } else {
+                    alert("Gagal mengubah status pelayanan");
+                }
+            } catch (error) {
+                console.error("Error toggling status:", error);
+            }
         };
 
         window.deletePelayanan = async function (id) {

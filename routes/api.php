@@ -21,6 +21,7 @@ use App\Http\Controllers\UnitKerjaController;
 use App\Http\Controllers\BuatSuratController;
 use App\Http\Controllers\StrukturOrganisasiController;
 use App\Http\Controllers\PengaduanChatController;
+use App\Http\Controllers\ChatController;
 
 
 /*
@@ -94,12 +95,19 @@ Route::middleware(['auth'])->group(function () {
         ]);
     });
 
+    // Standalone Chat API
+    Route::post('/chat/room', [ChatController::class, 'getOrCreateRoom']);
+    Route::get('/chat/room/{roomId}/messages', [ChatController::class, 'getMessages']);
+    Route::post('/chat/room/{roomId}/messages', [ChatController::class, 'sendMessage']);
+
     // ==================== ADMIN API ====================
 Route::prefix('admin')->middleware(['role:admin'])->group(function () {
 
     Route::apiResource('users', UserManagementController::class);
 
     Route::apiResource('surat', SuratController::class);
+    Route::post('surat/{id}/restore', [SuratController::class, 'restore']);
+    Route::delete('surat/{id}/force', [SuratController::class, 'forceDelete']);
 
     Route::apiResource('berita', BeritaController::class);
 
@@ -161,6 +169,7 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
         Route::put('/profil', [ProfileController::class, 'updateApi']);
         Route::get('/pengaduan/{id}/chats', [PengaduanChatController::class, 'getChatsWarga']);
         Route::post('/pengaduan/{id}/chats', [PengaduanChatController::class, 'sendChatWarga']);
+        Route::get('/chat/staff', [ChatController::class, 'getStaffList']);
     });
 
     // ==================== STAF API ====================
@@ -176,6 +185,7 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
         Route::delete('/surat/{surat}', [SuratController::class, 'destroy']);
         Route::get('/profil', [ProfileController::class, 'showApi']);
         Route::put('/profil', [ProfileController::class, 'updateApi']);
+        Route::apiResource('pengumuman', \App\Http\Controllers\PengumumanController::class);
 
         // ── SiSurat: Pembuatan & Arsip Surat ──
         Route::get('/buat-surat/jenis', [BuatSuratController::class, 'indexJenis']);
@@ -185,5 +195,6 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
         Route::get('/arsip-surat', [BuatSuratController::class, 'indexArsip']);
         Route::get('/pengaduan/{id}/chats', [PengaduanChatController::class, 'getChatsStaf']);
         Route::post('/pengaduan/{id}/chats', [PengaduanChatController::class, 'sendChatStaf']);
+        Route::get('/chat/warga', [ChatController::class, 'getWargaList']);
     });
 });

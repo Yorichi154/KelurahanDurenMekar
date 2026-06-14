@@ -232,7 +232,7 @@
             nip: rawUnit.nip_pimpinan || "-",
             email: rawUnit.email,
             phone: rawUnit.kontak,
-            photo: rawUnit.foto_pimpinan ? '/storage/' + rawUnit.foto_pimpinan : 'assets/images/avatar-placeholder.png',
+            photo: rawUnit.foto_pimpinan ? '/storage/' + rawUnit.foto_pimpinan : 'assets/images/avatar-placeholder.svg',
             pendidikan: rawUnit.pendidikan_pimpinan || "-",
             riwayat: typeof rawUnit.riwayat_jabatan === "string"
                 ? rawUnit.riwayat_jabatan.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
@@ -267,7 +267,7 @@
           <div class="card-body">
             <div class="unit-leader">
               <div class="unit-leader-photo">
-                <img src="${unit.photo || "assets/images/avatar-placeholder.png"}" alt="${unit.name || ""}">
+                <img src="${unit.photo || "assets/images/avatar-placeholder.svg"}" alt="${unit.name || ""}">
               </div>
               <div class="unit-leader-main">
                 <h3 class="unit-leader-name">${unit.name || "-"}</h3>

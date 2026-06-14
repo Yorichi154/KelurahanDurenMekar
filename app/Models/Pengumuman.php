@@ -18,5 +18,6 @@ class Pengumuman extends Model
         'date',
         'status',
         'content',
+        'file_path',
     ];
 }

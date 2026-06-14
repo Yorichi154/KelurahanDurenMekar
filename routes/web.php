@@ -172,3 +172,49 @@ Route::get('/dump-berita', function() {
     return "OK";
 });
 
+Route::get('/db-debug', function() {
+    try {
+        return response()->json([
+            'default' => config('database.default'),
+            'connection_details' => config('database.connections.' . config('database.default')),
+            'env_database' => env('DB_DATABASE'),
+            'pdo_database' => \DB::connection()->getDatabaseName(),
+            'tables' => \DB::select('SHOW TABLES')
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+});
+
+Route::get('/check-schema', function() {
+    try {
+        $tables = \Illuminate\Support\Facades\Schema::getAllTables();
+        $info = [];
+        foreach ($tables as $t) {
+            $name = reset($t);
+            $info[$name] = \Illuminate\Support\Facades\Schema::getColumnListing($name);
+        }
+        return response()->json($info);
+    } catch (\Throwable $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
+
+Route::get('/migrate-status', function() {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate:status');
+        return response()->json([
+            'status' => 'success',
+            'output' => \Illuminate\Support\Facades\Artisan::output()
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
+
+
+
+

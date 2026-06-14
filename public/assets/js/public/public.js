@@ -713,6 +713,30 @@ Render public pages dari API Laravel (BUKAN localStorage)
             items.forEach((item) => {
                 const card = document.createElement("article");
                 card.className = "announcement-card";
+
+                let fileHtml = "";
+                if (item.file_path) {
+                    const fileUrl = item.file_path.startsWith("data:") || item.file_path.startsWith("http")
+                        ? item.file_path
+                        : "/storage/" + item.file_path;
+                    
+                    if (item.file_path.toLowerCase().endsWith(".pdf")) {
+                        fileHtml = `
+                            <div style="margin-top: 12px;">
+                                <a href="${fileUrl}" target="_blank" class="btn btn-ghost btn-sm" style="font-weight: 800; font-size: 12px; color: var(--primary); display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; text-decoration: none;">
+                                    <i class="fa-solid fa-file-pdf" style="color: #ef4444; font-size: 14px;"></i> Lihat PDF Lampiran
+                                </a>
+                            </div>
+                        `;
+                    } else {
+                        fileHtml = `
+                            <div style="margin-top: 12px;">
+                                <img src="${fileUrl}" alt="Lampiran" style="max-width: 100%; max-height: 320px; border-radius: 8px; border: 1px solid var(--border); display: block; object-fit: contain; cursor: zoom-in;" onclick="window.open(this.src, '_blank')" />
+                            </div>
+                        `;
+                    }
+                }
+
                 card.innerHTML = `
                     <div class="announcement-meta" style="display: flex; gap: 8px; align-items: center; font-size: 12px; margin-bottom: 8px;">
                         <span class="badge badge-${item.kategori || "info"}" style="font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 800; background: var(--primary-light); color: var(--primary);">
@@ -721,9 +745,10 @@ Render public pages dari API Laravel (BUKAN localStorage)
                         <span class="announcement-date" style="color: var(--muted);">${fmtDate(item.date || item.created_at) || "-"}</span>
                     </div>
                     <h3 class="announcement-title" style="margin: 0 0 6px 0; font-size: 18px; font-weight: 900; color: var(--text);">${item.title || "(Tanpa judul)"}</h3>
-                    <p class="announcement-summary" style="margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5;">
+                    <p class="announcement-summary" style="margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; white-space: pre-wrap;">
                         ${item.content || ""}
                     </p>
+                    ${fileHtml}
                 `;
                 listEl.appendChild(card);
             });
@@ -742,11 +767,14 @@ Render public pages dari API Laravel (BUKAN localStorage)
     }
 
     async function initStrukturOrganisasiPublic() {
-        const treeEl = document.getElementById("soTree");
+        const topContainer = document.getElementById("soTopLevel");
+        const othersContainer = document.getElementById("soOthers");
         const emptyEl = document.getElementById("soEmpty");
-        if (!treeEl || !emptyEl) return;
+        
+        if (!topContainer || !othersContainer || !emptyEl) return;
 
-        treeEl.innerHTML = "";
+        topContainer.innerHTML = "";
+        othersContainer.innerHTML = "";
         emptyEl.style.display = "none";
 
         try {
@@ -757,64 +785,51 @@ Render public pages dari API Laravel (BUKAN localStorage)
             const data = await res.json();
             const items = Array.isArray(data) ? data : (data?.data ?? []);
 
-            if (!items.length) {
+            const activeItems = items.filter(i => i.aktif !== false);
+
+            if (!activeItems.length) {
                 emptyEl.style.display = "block";
                 return;
             }
 
-            // Build hierarchical tree map
-            const byJabatan = {};
-            items.forEach(it => {
-                byJabatan[it.jabatan] = {
-                    ...it,
-                    children: []
-                };
+            // Sort by 'urutan' then by 'id'
+            activeItems.sort((a, b) => {
+                const urutanA = a.urutan ?? 999;
+                const urutanB = b.urutan ?? 999;
+                if (urutanA !== urutanB) return urutanA - urutanB;
+                return (a.id ?? 0) - (b.id ?? 0);
             });
 
-            const roots = [];
-            items.forEach(it => {
-                const node = byJabatan[it.jabatan];
-                const parent = it.parent_jabatan ? byJabatan[it.parent_jabatan] : null;
-                if (parent) {
-                    parent.children.push(node);
-                } else {
-                    roots.push(node);
-                }
-            });
+            // Separate top-level (no parent) and the rest
+            const tops = activeItems.filter(i => !i.parent_jabatan);
+            const others = activeItems.filter(i => !!i.parent_jabatan);
 
             function makeCard(it, isTop = false) {
-                const photo = it.foto
-                    ? `<img src="/storage/${it.foto}" alt="${it.nama}" />`
-                    : `<i class="fa-solid fa-user so-icon"></i>`;
+                const imgSrc = it.foto
+                    ? (it.foto.startsWith('/storage/') || it.foto.startsWith('http') ? it.foto : `/storage/${it.foto}`)
+                    : "";
+                
+                const photo = imgSrc
+                    ? `<img src="${imgSrc}" alt="${it.nama}" onerror="this.onerror=null; this.parentNode.innerHTML='<i class=\"fa-solid fa-user so-icon\" style=\"font-size: 42px; color: var(--muted); opacity: 0.3;\"></i>';" />`
+                    : `<i class="fa-solid fa-user so-icon" style="font-size: 42px; color: var(--muted); opacity: 0.3;"></i>`;
+                
+                const parentEl = isTop
+                    ? ""
+                    : (it.parent_jabatan ? `<div class="so-pub-parent" style="font-size: 11px; color: var(--muted); text-align: center;">Bawahan dari: ${it.parent_jabatan}</div>` : "");
+
                 return `
                     <div class="so-pub-card${isTop ? ' so-top' : ''}">
                         <div class="so-pub-photo">${photo}</div>
                         <div class="so-pub-nama">${it.nama}</div>
                         <div class="so-pub-jabatan">${it.jabatan}</div>
+                        ${parentEl}
                     </div>`;
             }
 
-            function renderNode(node) {
-                const isTop = !node.parent_jabatan || node.children.length > 0;
-                const cardHtml = makeCard(node, isTop);
+            topContainer.innerHTML = tops.map(i => makeCard(i, true)).join('');
+            othersContainer.innerHTML = others.map(i => makeCard(i, false)).join('');
 
-                if (node.children && node.children.length > 0) {
-                    node.children.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
-                    const childrenHtml = node.children.map(child => renderNode(child)).join("");
-                    return `<li>${cardHtml}<ul>${childrenHtml}</ul></li>`;
-                } else {
-                    return `<li>${cardHtml}</li>`;
-                }
-            }
-
-            if (roots.length > 0) {
-                roots.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0));
-                const treeHtml = `<ul>${roots.map(r => renderNode(r)).join("")}</ul>`;
-                treeEl.innerHTML = treeHtml;
-                emptyEl.style.display = "none";
-            } else {
-                emptyEl.style.display = "block";
-            }
+            emptyEl.style.display = (tops.length + others.length) ? "none" : "block";
         } catch (e) {
             console.error("Gagal memuat struktur organisasi", e);
             emptyEl.style.display = "block";

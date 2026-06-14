@@ -1272,7 +1272,8 @@ function initWizardPage() {
     const inAlamat = $("wizAlamat");
     const inKeperluan = $("wizKeperluan");
 
-    let selectedId = api.Storage.get(api.SELECTED_KEY, online[0].id);
+    let selectedId = api.Storage.get(api.SELECTED_KEY, null);
+    if (selectedId) selectedId = String(selectedId);
     let currentStep = 1;
     const maxStep = 3;
 
@@ -1297,31 +1298,26 @@ function initWizardPage() {
     };
 
     function getSelected() {
-        let item = online.find((x) => x.id === selectedId);
-        if (!item) {
-            item = online[0];
-            selectedId = item.id;
-            api.Storage.set(api.SELECTED_KEY, selectedId);
-        }
-        return item;
+        if (!selectedId) return null;
+        return online.find((x) => String(x.id) === String(selectedId)) || null;
     }
 
     function renderHiddenSelect() {
         if (!hiddenSelect) return;
-        hiddenSelect.innerHTML = online
+        hiddenSelect.innerHTML = `<option value="">-- Pilih Jenis Surat --</option>` + online
             .map(
                 (x) =>
                     `<option value="${escapeHtml(x.id)}">${escapeHtml(x.nama)}</option>`,
             )
             .join("");
-        hiddenSelect.value = selectedId;
+        hiddenSelect.value = selectedId || "";
     }
 
     function renderServiceCards() {
         if (!cardsWrap) return;
         cardsWrap.innerHTML = online
             .map((x) => {
-                const isActive = x.id === selectedId;
+                const isActive = selectedId && String(x.id) === String(selectedId);
                 return `
           <div class="choice-card ${isActive ? "active" : ""}" role="button" tabindex="0" data-action="pickService" data-id="${escapeHtml(x.id)}">
             <div class="choice-text">
@@ -1469,13 +1465,43 @@ function initWizardPage() {
             .join("");
     }
 
+    function updateNextButtonState() {
+        if (currentStep === 1) {
+            if (nextBtn) {
+                if (!selectedId) {
+                    nextBtn.disabled = true;
+                    nextBtn.style.opacity = "0.5";
+                    nextBtn.style.cursor = "not-allowed";
+                } else {
+                    nextBtn.disabled = false;
+                    nextBtn.style.opacity = "1";
+                    nextBtn.style.cursor = "pointer";
+                }
+            }
+        } else {
+            if (nextBtn) {
+                nextBtn.disabled = false;
+                nextBtn.style.opacity = "1";
+                nextBtn.style.cursor = "pointer";
+            }
+        }
+    }
+
     function refreshForSelected() {
         const layanan = getSelected();
         renderHiddenSelect();
         renderServiceCards();
-        renderSyarat(layanan);
-        renderUploadTypes(layanan);
-        renderExtraFields(layanan);
+        if (layanan) {
+            renderSyarat(layanan);
+            renderUploadTypes(layanan);
+            renderExtraFields(layanan);
+        } else {
+            if (serviceNameEl) serviceNameEl.textContent = "Pilih jenis surat terlebih dahulu";
+            if (serviceMetaEl) serviceMetaEl.textContent = "";
+            if (syaratRingkas) syaratRingkas.innerHTML = "<li>Silakan pilih salah satu surat di atas.</li>";
+            if (syaratBox) syaratBox.innerHTML = "<li>Silakan pilih salah satu surat di atas.</li>";
+        }
+        updateNextButtonState();
     }
 
     function goStep(step) {
@@ -1499,6 +1525,7 @@ function initWizardPage() {
         if (submitBtn)
             submitBtn.style.display =
                 currentStep === 3 ? "inline-flex" : "none";
+        updateNextButtonState();
     }
 
     function redrawFileList() {

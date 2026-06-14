@@ -26,8 +26,9 @@ class PengaduanController extends Controller
         return response()->json($pengaduan, 201);
     }
 
-    public function show(Pengaduan $pengaduan)
+    public function show($id)
     {
+        $pengaduan = $id instanceof Pengaduan ? $id : Pengaduan::findOrFail($id);
         return $pengaduan->load('user');
     }
 

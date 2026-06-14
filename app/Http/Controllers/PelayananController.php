@@ -88,4 +88,9 @@ class PelayananController extends Controller
             'success' => true
         ]);
     }
+
+    public function indexWarga()
+    {
+        return Pelayanan::with('template')->where('status', 'aktif')->latest()->get();
+    }
 }

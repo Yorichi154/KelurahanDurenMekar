@@ -7,14 +7,28 @@ use Illuminate\Http\Request;
 
 class PengumumanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         return Pengumuman::latest()->get();
     }
 
     public function store(Request $request)
     {
-        return Pengumuman::create($request->all());
+        $validated = $request->validate([
+            'title'     => 'required|string|max:255',
+            'kategori'  => 'nullable|string|max:100',
+            'ringkasan' => 'nullable|string',
+            'date'      => 'required|date',
+            'status'    => 'required|string',
+            'content'   => 'required|string',
+        ]);
+
+        if (empty($validated['kategori'])) {
+            $validated['kategori'] = $validated['status'];
+        }
+
+        $pengumuman = Pengumuman::create($validated);
+        return response()->json($pengumuman, 201);
     }
 
     public function show(Pengumuman $pengumuman)
@@ -24,9 +38,22 @@ class PengumumanController extends Controller
 
     public function update(Request $request, Pengumuman $pengumuman)
     {
-        $pengumuman->update($request->all());
+        $validated = $request->validate([
+            'title'     => 'required|string|max:255',
+            'kategori'  => 'nullable|string|max:100',
+            'ringkasan' => 'nullable|string',
+            'date'      => 'required|date',
+            'status'    => 'required|string',
+            'content'   => 'required|string',
+        ]);
 
-        return $pengumuman;
+        if (empty($validated['kategori'])) {
+            $validated['kategori'] = $validated['status'];
+        }
+
+        $pengumuman->update($validated);
+
+        return response()->json($pengumuman);
     }
 
     public function destroy(Pengumuman $pengumuman)

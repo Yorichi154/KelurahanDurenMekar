@@ -922,6 +922,7 @@
     }
 
     let chatPollInterval = null;
+    let chatStaffPollInterval = null;
     function initChat() {
         const threadListEl = document.getElementById("wargaThreadList");
         const msgEl = document.getElementById("wargaChatMessages");
@@ -932,70 +933,94 @@
         if (!threadListEl || !msgEl) return;
 
         // Reset state
-        let activeThreadId = null;
+        let activeStaffId = null;
+        let activeRoomId = null;
+        let staffList = [];
+        let socket = null;
+
         if (chatPollInterval) {
             clearInterval(chatPollInterval);
             chatPollInterval = null;
+        }
+        if (chatStaffPollInterval) {
+            clearInterval(chatStaffPollInterval);
+            chatStaffPollInterval = null;
         }
 
         msgEl.innerHTML = `
             <div class="muted" style="padding:40px;text-align:center">
                 <i class="fa-solid fa-comments" style="font-size:32px;margin-bottom:10px;color:var(--primary);"></i>
-                <p style="font-weight:700">Ruang Obrolan Pengaduan</p>
-                <p style="font-size:13px">Pilih salah satu thread pengaduan di sebelah kiri untuk berdiskusi dengan petugas.</p>
+                <p style="font-weight:700">Konsultasi dengan Staf Kelurahan</p>
+                <p style="font-size:13px">Pilih salah satu staf kelurahan di sebelah kiri untuk berkonsultasi secara langsung.</p>
             </div>
         `;
 
-        async function loadThreads() {
+        async function loadStaff(silent = false) {
             try {
-                const res = await fetch("/api/warga/pengaduan", { credentials: "include" });
-                if (!res.ok) throw new Error("Gagal memuat pengaduan");
-                const items = await res.json();
+                const res = await fetch("/api/warga/chat/staff", { credentials: "include" });
+                if (!res.ok) throw new Error("Gagal memuat staf");
+                staffList = await res.json();
                 
-                threadListEl.innerHTML = items.map(p => `
-                    <div class="thread-item warga-chat-thread" data-id="${p.id}" style="padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: all 0.2s;" id="thread-item-${p.id}">
-                        <div style="font-weight: 800; font-size: 14px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.judul}</div>
-                        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Kategori: ${p.kategori || "-"}</div>
-                        <div style="font-size: 11px; display: flex; justify-content: space-between; margin-top: 6px; align-items: center;">
-                            <span class="muted">${fmtDate(p.created_at || p.tanggal)}</span>
-                            <span>${pill(p.status)}</span>
+                threadListEl.innerHTML = staffList.map(st => {
+                    const isOnline = st.is_online;
+                    const lastMsgText = st.last_message ? st.last_message.message : 'Belum ada percakapan.';
+                    const dateText = st.last_message ? fmtDate(st.last_message.created_at) : '';
+                    
+                    return `
+                        <div class="thread-item warga-chat-thread" data-id="${st.id}" style="padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: all 0.2s; position: relative;" id="staf-item-${st.id}">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-weight: 800; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${isOnline ? '#10b981' : '#cbd5e1'}; box-shadow: ${isOnline ? '0 0 8px #10b981' : 'none'};"></span>
+                                    ${st.name}
+                                </div>
+                                <span class="badge ${st.role === 'admin' ? 'badge-done' : 'badge-wait'}" style="font-size: 10px; padding: 2px 6px;">${st.role === 'admin' ? 'Admin' : 'Staf'}</span>
+                            </div>
+                            <div style="font-size: 12px; color: var(--muted); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90%;">
+                                ${lastMsgText}
+                            </div>
+                            <div style="font-size: 10px; color: var(--muted); margin-top: 4px; text-align: right;">
+                                ${dateText}
+                            </div>
+                            ${st.unread_count > 0 ? `<span class="badge" style="position: absolute; right: 12px; top: 12px; font-size: 10px; background: #ef4444; border: none; color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; padding: 0;">${st.unread_count}</span>` : ''}
                         </div>
-                    </div>
-                `).join("") || `<div class="muted" style="padding: 20px; text-align: center;">Belum ada pengaduan. Silakan kirim pengaduan terlebih dahulu di menu Pengaduan Saya.</div>`;
+                    `;
+                }).join("") || `<div class="muted" style="padding: 20px; text-align: center;">Belum ada staf kelurahan yang terdaftar.</div>`;
 
                 // Bind click to threads
                 threadListEl.querySelectorAll(".warga-chat-thread").forEach(el => {
                     el.addEventListener("click", () => {
                         const id = el.getAttribute("data-id");
-                        selectThread(id);
+                        selectStaff(id);
                     });
                 });
 
-                if (activeThreadId) {
-                    const activeEl = document.getElementById(`thread-item-${activeThreadId}`);
-                    if (activeEl) activeEl.style.background = "rgba(31, 95, 224, 0.08)";
+                if (activeStaffId) {
+                    const activeEl = document.getElementById(`staf-item-${activeStaffId}`);
+                    if (activeEl) {
+                        activeEl.style.background = "rgba(31, 95, 224, 0.08)";
+                        activeEl.style.borderColor = "var(--primary)";
+                    }
                 }
             } catch (err) {
                 console.error(err);
-                threadListEl.innerHTML = `<div class="muted" style="color:red">Gagal memuat daftar percakapan.</div>`;
+                if (!silent) {
+                    threadListEl.innerHTML = `<div class="muted" style="color:red">Gagal memuat daftar staf.</div>`;
+                }
             }
         }
 
         async function loadMessages(silent = false) {
-            if (!activeThreadId) return;
+            if (!activeRoomId) return;
             // Check if user has left the page
             if (!document.getElementById("wargaChatMessages")) {
-                if (chatPollInterval) {
-                    clearInterval(chatPollInterval);
-                    chatPollInterval = null;
-                }
+                cleanup();
                 return;
             }
 
             try {
-                const res = await fetch(`/api/warga/pengaduan/${activeThreadId}/chats`, { credentials: "include" });
+                const res = await fetch(`/api/chat/room/${activeRoomId}/messages`, { credentials: "include" });
                 if (!res.ok) throw new Error("Gagal mengambil pesan");
-                const chats = await res.json();
+                const messages = await res.json();
                 
                 const session = Guard?.getSession();
                 const userId = session ? session.id : null;
@@ -1004,9 +1029,9 @@
                 const originalScrollTop = msgEl.scrollTop;
                 const isNearBottom = originalScrollTop + msgEl.clientHeight >= originalScrollHeight - 60;
 
-                msgEl.innerHTML = chats.map(c => {
-                    const isSelf = String(c.user_id) === String(userId);
-                    const senderName = isSelf ? "Anda" : (c.user?.name || "Petugas");
+                const messagesHtml = messages.map(c => {
+                    const isSelf = String(c.sender_id) === String(userId);
+                    const senderName = isSelf ? "Anda" : "Petugas";
                     const alignment = isSelf ? "align-self: flex-end; background: var(--primary); color: white;" : "align-self: flex-start; background: #f1f5f9; color: var(--text);";
                     const alignContainer = isSelf ? "justify-content: flex-end;" : "justify-content: flex-start;";
                     
@@ -1014,15 +1039,19 @@
                         <div style="display: flex; ${alignContainer} width: 100%; margin-bottom: 10px;">
                             <div style="max-width: 75%; padding: 10px 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-sm); ${alignment}">
                                 <div style="font-size: 11px; font-weight: 800; opacity: 0.85;">${senderName}</div>
-                                <div style="font-size: 13px; line-height: 1.4; white-space: pre-wrap;">${c.pesan}</div>
+                                <div style="font-size: 13px; line-height: 1.4; white-space: pre-wrap;">${c.message}</div>
                                 <div style="font-size: 9px; align-self: flex-end; opacity: 0.7;">${fmtDate(c.created_at)}</div>
                             </div>
                         </div>
                     `;
-                }).join("") || `<div class="muted" style="padding: 40px; text-align: center;">Belum ada pesan. Kirim pesan pertama untuk memulai diskusi.</div>`;
+                }).join("") || `<div class="muted" style="padding: 40px; text-align: center;">Belum ada pesan. Kirim pesan pertama untuk memulai konsultasi.</div>`;
 
-                if (!silent || isNearBottom) {
-                    msgEl.scrollTop = msgEl.scrollHeight;
+                if (msgEl.getAttribute("data-content-hash") !== messagesHtml.length.toString()) {
+                    msgEl.innerHTML = messagesHtml;
+                    msgEl.setAttribute("data-content-hash", messagesHtml.length.toString());
+                    if (!silent || isNearBottom) {
+                        msgEl.scrollTop = msgEl.scrollHeight;
+                    }
                 }
             } catch (err) {
                 console.error("Gagal memuat pesan:", err);
@@ -1032,63 +1061,153 @@
             }
         }
 
-        async function selectThread(id) {
-            activeThreadId = id;
+        async function selectStaff(stafId) {
+            activeStaffId = stafId;
             
             // Highlight selected
             threadListEl.querySelectorAll(".warga-chat-thread").forEach(el => {
                 const elId = el.getAttribute("data-id");
-                el.style.background = elId === String(id) ? "rgba(31, 95, 224, 0.08)" : "transparent";
-                el.style.borderColor = elId === String(id) ? "var(--primary)" : "var(--border)";
+                el.style.background = elId === String(stafId) ? "rgba(31, 95, 224, 0.08)" : "transparent";
+                el.style.borderColor = elId === String(stafId) ? "var(--primary)" : "var(--border)";
             });
 
-            // Update header
-            try {
-                const res = await fetch(`/api/warga/pengaduan`, { credentials: "include" });
-                const items = await res.json();
-                const thread = items.find(x => String(x.id) === String(id));
-                if (thread && subEl) {
-                    subEl.innerHTML = `Diskusi Tindak Lanjut: <b>${thread.judul}</b> (${pill(thread.status)})`;
-                }
-            } catch (_) {}
-
             msgEl.innerHTML = `<div class="muted" style="padding:40px; text-align:center;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; margin-bottom:10px;"></i><p>Memuat percakapan...</p></div>`;
-            await loadMessages();
 
-            // Set polling interval
+            try {
+                const session = Guard?.getSession();
+                const wargaId = session ? session.id : null;
+                
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                const roomRes = await fetch('/api/chat/room', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        Accept: 'application/json'
+                    },
+                    body: JSON.stringify({ warga_id: wargaId, staf_id: stafId })
+                });
+                
+                if (!roomRes.ok) throw new Error("Gagal membuka room");
+                const room = await roomRes.json();
+                activeRoomId = room.id;
+
+                const staffObj = staffList.find(x => String(x.id) === String(stafId));
+                if (staffObj && subEl) {
+                    const statusText = staffObj.is_online ? '<span style="color: #10b981; font-weight: 800;">● Online</span>' : '<span style="color: var(--muted);">● Offline</span>';
+                    subEl.innerHTML = `Konsultasi dengan: <b>${staffObj.name}</b> (${statusText})`;
+                }
+
+                await loadMessages();
+                
+                // Reset unread count locally and load list again
+                await loadStaff(true);
+
+                // Setup realtime poll fallback (1-second polling)
+                setupRealtime();
+            } catch (err) {
+                console.error(err);
+                msgEl.innerHTML = `<div class="muted" style="color:red; text-align:center; padding:20px;">Gagal memuat percakapan.</div>`;
+            }
+        }
+
+        function setupRealtime() {
             if (chatPollInterval) clearInterval(chatPollInterval);
-            chatPollInterval = setInterval(() => loadMessages(true), 4000);
+            
+            // Try connecting WebSocket first
+            try {
+                if (socket) {
+                    socket.close();
+                }
+                socket = new WebSocket("ws://127.0.0.1:8085");
+                socket.onopen = () => {
+                    console.log("[WS Warga] Connected successfully");
+                };
+                socket.onmessage = (e) => {
+                    try {
+                        const data = JSON.parse(e.data);
+                        if (String(data.room_id) === String(activeRoomId)) {
+                            loadMessages(true);
+                        }
+                        if (data.type === 'update_list' || String(data.receiver_id) === String(Guard?.getSession()?.id)) {
+                            loadStaff(true);
+                        }
+                    } catch (_) {}
+                };
+                socket.onclose = () => {
+                    startPollingFallback();
+                };
+                socket.onerror = () => {
+                    startPollingFallback();
+                };
+            } catch (e) {
+                startPollingFallback();
+            }
+        }
+
+        function startPollingFallback() {
+            if (chatPollInterval) clearInterval(chatPollInterval);
+            chatPollInterval = setInterval(() => {
+                loadMessages(true);
+            }, 1000);
         }
 
         async function sendMessage() {
-            if (!activeThreadId) {
-                alert("Pilih thread pengaduan terlebih dahulu.");
+            if (!activeRoomId) {
+                alert("Pilih staf terlebih dahulu.");
                 return;
             }
-            const pesan = inputEl.value.trim();
-            if (!pesan) return;
+            const message = inputEl.value.trim();
+            if (!message) return;
 
             sendBtn.disabled = true;
             try {
                 const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-                const res = await fetch(`/api/warga/pengaduan/${activeThreadId}/chats`, {
+                const res = await fetch(`/api/chat/room/${activeRoomId}/messages`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         "X-CSRF-TOKEN": csrf,
                         Accept: "application/json"
                     },
-                    body: JSON.stringify({ pesan })
+                    body: JSON.stringify({ message })
                 });
 
                 if (!res.ok) throw new Error("Gagal mengirim pesan");
                 inputEl.value = "";
                 await loadMessages();
+                
+                // notify WebSocket server if connected
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        room_id: activeRoomId,
+                        sender_id: Guard?.getSession()?.id,
+                        receiver_id: activeStaffId,
+                        message: message
+                    }));
+                }
+                
+                await loadStaff(true);
             } catch (err) {
                 console.error(err);
                 alert("Gagal mengirim pesan.");
             } finally {
                 sendBtn.disabled = false;
+            }
+        }
+
+        function cleanup() {
+            if (chatPollInterval) {
+                clearInterval(chatPollInterval);
+                chatPollInterval = null;
+            }
+            if (chatStaffPollInterval) {
+                clearInterval(chatStaffPollInterval);
+                chatStaffPollInterval = null;
+            }
+            if (socket) {
+                socket.close();
+                socket = null;
             }
         }
 
@@ -1101,8 +1220,13 @@
             }
         };
 
-        // Initialize threads
-        loadThreads();
+        // Initialize
+        loadStaff();
+        
+        // Poll staff list status every 5 seconds
+        chatStaffPollInterval = setInterval(() => {
+            loadStaff(true);
+        }, 5000);
     }
 
     // =========================

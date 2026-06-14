@@ -284,6 +284,7 @@
                                 <th>Nama Layanan</th>
                                 <th>Page</th>
                                 <th>Jenis</th>
+                                <th>Status</th>
                                 <th class="text-right">Aksi</th>
                             </tr>
                         </thead>
@@ -386,14 +387,35 @@
                                     </div>
                                 </div>
 
-                                <div class="field">
-                                    <label for="fSrvTombol">Teks Tombol</label>
-                                    <input
-                                        class="input"
-                                        id="fSrvTombol"
-                                        placeholder="Contoh: Ajukan Surat ... Online"
-                                    />
-                                </div>
+                                 <div class="field">
+                                     <label for="fSrvTombol">Teks Tombol</label>
+                                     <input
+                                         class="input"
+                                         id="fSrvTombol"
+                                         placeholder="Contoh: Ajukan Surat ... Online"
+                                     />
+                                 </div>
+
+                                 <div class="field">
+                                     <label>Status Aktif</label>
+                                     <div
+                                         style="
+                                             display: flex;
+                                             gap: 10px;
+                                             align-items: center;
+                                             height: 44px;
+                                         "
+                                     >
+                                         <input
+                                             type="checkbox"
+                                             id="fSrvStatus"
+                                             checked
+                                         />
+                                         <span style="font-weight: 900"
+                                             >Aktif</span
+                                         >
+                                     </div>
+                                 </div>
                             </div>
 
                             <div class="divider" style="margin: 14px 0"></div>

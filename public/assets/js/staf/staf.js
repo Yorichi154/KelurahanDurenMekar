@@ -1009,46 +1009,65 @@ async function initStafPengaduanLaravel() {
     }
 }
 
+function resetStafPengumumanForm() {
+    document.getElementById("staf-pengumuman-id").value = "";
+    const form = document.getElementById("staf-pengumuman-form");
+    if (form) form.reset();
+    document.getElementById("staf-pengumuman-form-title").textContent = "Tambah Pengumuman";
+}
+
 async function initStafPengumumanLaravel() {
     const tbody = document.getElementById("staf-pengumuman-table-body");
     if (!tbody) return;
 
-    const response = await fetch("/api/public/pengumuman");
-
+    const response = await fetch("/api/staf/pengumuman");
     const data = await response.json();
 
-    tbody.innerHTML = data
+    const searchVal = (document.getElementById("staf-pengumuman-search")?.value || "").toLowerCase();
+    const filterVal = document.getElementById("staf-pengumuman-status-filter")?.value || "all";
+
+    const searchInput = document.getElementById("staf-pengumuman-search");
+    const statusFilter = document.getElementById("staf-pengumuman-status-filter");
+
+    if (searchInput && !searchInput.dataset.listenerBound) {
+        searchInput.dataset.listenerBound = "true";
+        searchInput.addEventListener("input", initStafPengumumanLaravel);
+    }
+    if (statusFilter && !statusFilter.dataset.listenerBound) {
+        statusFilter.dataset.listenerBound = "true";
+        statusFilter.addEventListener("change", initStafPengumumanLaravel);
+    }
+
+    let filtered = data;
+    if (filterVal !== "all") {
+        filtered = filtered.filter(item => (item.status || "info") === filterVal);
+    }
+    if (searchVal) {
+        filtered = filtered.filter(item => 
+            (item.title || "").toLowerCase().includes(searchVal) ||
+            (item.content || "").toLowerCase().includes(searchVal)
+        );
+    }
+
+    tbody.innerHTML = filtered
         .map(
             (item) => `
-
 <tr>
-
-    <td>${item.title ?? "-"}</td>
-
-    <td>${item.date ?? "-"}</td>
-
+    <td><b>${item.title ?? "-"}</b></td>
+    <td>${fmtDate(item.date) || "-"}</td>
     <td>
-
-        <span class="badge">
-            ${item.status ?? "-"}
+        <span class="badge badge-cat-${item.status === 'urgent' ? 'darurat' : 'info'}">
+            ${(item.status ?? "info").toUpperCase()}
         </span>
-
     </td>
-
-    <td>-</td>
-
     <td>
-
         <button
             class="btn btn-warning btn-sm edit-pengumuman"
             data-id="${item.id}">
             Edit
         </button>
-
     </td>
-
 </tr>
-
 `,
         )
         .join("");
@@ -1056,69 +1075,106 @@ async function initStafPengumumanLaravel() {
 
 async function savePengumumanLaravel() {
     const id = document.getElementById("staf-pengumuman-id").value;
+    const title = document.getElementById("staf-pengumuman-judul").value;
+    const date = document.getElementById("staf-pengumuman-tanggal").value;
+    const status = document.getElementById("staf-pengumuman-status").value;
+    const content = document.getElementById("staf-pengumuman-isi").value;
 
     const payload = {
-        title: document.getElementById("staf-pengumuman-judul").value,
-
-        date: document.getElementById("staf-pengumuman-tanggal").value,
-
-        status: document.getElementById("staf-pengumuman-status").value,
-
-        content: document.getElementById("staf-pengumuman-isi").value,
+        title,
+        date,
+        status,
+        content
     };
 
+    const submitBtn = document.querySelector("#staf-pengumuman-form button[type='submit']");
+    const origHtml = submitBtn ? submitBtn.innerHTML : "Simpan";
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    }
+
     let response;
+    try {
+        if (id) {
+            response = await fetch(`/api/staf/pengumuman/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": csrfToken,
+                    Accept: "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+        } else {
+            response = await fetch("/api/staf/pengumuman", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": csrfToken,
+                    Accept: "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+        }
 
-    if (id) {
-        response = await fetch(`/api/admin/pengumuman/${id}`, {
-            method: "PUT",
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.message || "Gagal menyimpan pengumuman");
+        }
 
-            headers: {
-                "Content-Type": "application/json",
-
-                "X-CSRF-TOKEN": csrfToken,
-
-                Accept: "application/json",
-            },
-
-            body: JSON.stringify(payload),
-        });
-    } else {
-        response = await fetch("/api/admin/pengumuman", {
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/json",
-
-                "X-CSRF-TOKEN": csrfToken,
-
-                Accept: "application/json",
-            },
-
-            body: JSON.stringify(payload),
-        });
+        alert("Pengumuman berhasil disimpan");
+        resetStafPengumumanForm();
+        initStafPengumumanLaravel();
+    } catch (err) {
+        console.error(err);
+        alert("Gagal menyimpan pengumuman: " + err.message);
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origHtml;
+        }
     }
-
-    if (!response.ok) {
-        alert("Gagal menyimpan pengumuman");
-
-        return;
-    }
-
-    alert("Pengumuman berhasil disimpan");
-
-    initStafPengumumanLaravel();
 }
 
-const form = document.getElementById("staf-pengumuman-form");
+// Event delegation for Edit
+document.addEventListener("click", async (e) => {
+    const editBtn = e.target.closest(".edit-pengumuman");
+    if (editBtn) {
+        const id = editBtn.dataset.id;
+        try {
+            const response = await fetch(`/api/staf/pengumuman/${id}`, {
+                headers: { Accept: "application/json" }
+            });
+            if (!response.ok) throw new Error("Gagal mengambil data pengumuman");
+            const item = await response.json();
+            
+            document.getElementById("staf-pengumuman-id").value = item.id;
+            document.getElementById("staf-pengumuman-judul").value = item.title || "";
+            document.getElementById("staf-pengumuman-tanggal").value = item.date || "";
+            document.getElementById("staf-pengumuman-status").value = item.status || "info";
+            document.getElementById("staf-pengumuman-isi").value = item.content || "";
+            
+            document.getElementById("staf-pengumuman-form-title").textContent = "Edit Pengumuman";
+            document.getElementById("staf-pengumuman-form")?.scrollIntoView({ behavior: "smooth" });
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+});
 
-if (form) {
-    form.addEventListener("submit", async (e) => {
+document.addEventListener("submit", async (e) => {
+    if (e.target.id === "staf-pengumuman-form") {
         e.preventDefault();
-
         await savePengumumanLaravel();
-    });
-}
+    }
+});
+
+document.addEventListener("click", (e) => {
+    if (e.target.closest("#staf-pengumuman-reset")) {
+        resetStafPengumumanForm();
+    }
+});
 const Guard = window.KelurahanGuard;
 let _stafMobileMenuBound = false;
 
@@ -1230,6 +1286,7 @@ window.addEventListener("page:loaded", (e) => {
 });
 
 let stafChatPollInterval = null;
+let stafWargaPollInterval = null;
 async function initStafChatLaravel() {
     const threadListEl = document.getElementById("chatThreadList");
     const msgEl = document.getElementById("chatMessages");
@@ -1239,70 +1296,89 @@ async function initStafChatLaravel() {
 
     if (!threadListEl || !msgEl) return;
 
-    let activeThreadId = null;
+    let activeWargaId = null;
+    let activeRoomId = null;
+    let wargaList = [];
+    let socket = null;
+
     if (stafChatPollInterval) {
         clearInterval(stafChatPollInterval);
         stafChatPollInterval = null;
+    }
+    if (stafWargaPollInterval) {
+        clearInterval(stafWargaPollInterval);
+        stafWargaPollInterval = null;
     }
 
     msgEl.innerHTML = `
         <div class="muted" style="padding:40px;text-align:center">
             <i class="fa-solid fa-comments" style="font-size:32px;margin-bottom:10px;color:var(--primary);"></i>
-            <p style="font-weight:700">Diskusi Obrolan Staf</p>
-            <p style="font-size:13px">Pilih salah satu thread pengaduan di sebelah kiri untuk melihat pesan dan merespons warga.</p>
+            <p style="font-weight:700">Ruang Obrolan Staf</p>
+            <p style="font-size:13px">Pilih salah satu warga di sebelah kiri untuk melihat pesan dan memulai obrolan langsung.</p>
         </div>
     `;
 
-    async function loadThreads() {
+    async function loadWarga(silent = false) {
         try {
-            const res = await fetch("/api/staf/pengaduan", { credentials: "include" });
-            if (!res.ok) throw new Error("Gagal memuat pengaduan");
-            const items = await res.json();
+            const res = await fetch("/api/staf/chat/warga", { credentials: "include" });
+            if (!res.ok) throw new Error("Gagal memuat warga");
+            wargaList = await res.json();
 
-            threadListEl.innerHTML = items.map(p => `
-                <div class="thread-item staf-chat-thread" data-id="${p.id}" style="padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: all 0.2s;" id="staf-thread-${p.id}">
-                    <div style="font-weight: 800; font-size: 14px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.judul}</div>
-                    <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Pelapor: <b>${p.user?.name || "-"}</b></div>
-                    <div style="font-size: 11px; display: flex; justify-content: space-between; margin-top: 6px; align-items: center;">
-                        <span class="muted">${fmtDate(p.created_at)}</span>
-                        <span>${statusBadge(p.status)}</span>
+            threadListEl.innerHTML = wargaList.map(w => {
+                const isOnline = w.is_online;
+                const lastMsgText = w.last_message ? w.last_message.message : 'Belum ada percakapan.';
+                
+                return `
+                    <div class="thread-item staf-chat-thread" data-id="${w.id}" style="padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: all 0.2s; position: relative;" id="warga-item-${w.id}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-weight: 800; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${isOnline ? '#10b981' : '#cbd5e1'}; box-shadow: ${isOnline ? '0 0 8px #10b981' : 'none'};"></span>
+                                ${w.name}
+                            </div>
+                        </div>
+                        <div style="font-size: 12px; color: var(--muted); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90%;">
+                            ${lastMsgText}
+                        </div>
+                        ${w.unread_count > 0 ? `<span class="badge" style="position: absolute; right: 12px; top: 12px; font-size: 10px; background: #ef4444; border: none; color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; padding: 0;">${w.unread_count}</span>` : ''}
                     </div>
-                </div>
-            `).join("") || `<div class="muted" style="padding: 20px; text-align: center;">Belum ada pengaduan warga.</div>`;
+                `;
+            }).join("") || `<div class="muted" style="padding: 20px; text-align: center;">Belum ada warga terdaftar.</div>`;
 
             // Bind click to threads
             threadListEl.querySelectorAll(".staf-chat-thread").forEach(el => {
                 el.addEventListener("click", () => {
                     const id = el.getAttribute("data-id");
-                    selectThread(id);
+                    selectWarga(id);
                 });
             });
 
-            if (activeThreadId) {
-                const activeEl = document.getElementById(`staf-thread-${activeThreadId}`);
-                if (activeEl) activeEl.style.background = "rgba(31, 95, 224, 0.08)";
+            if (activeWargaId) {
+                const activeEl = document.getElementById(`warga-item-${activeWargaId}`);
+                if (activeEl) {
+                    activeEl.style.background = "rgba(31, 95, 224, 0.08)";
+                    activeEl.style.borderColor = "var(--primary)";
+                }
             }
         } catch (err) {
             console.error(err);
-            threadListEl.innerHTML = `<div class="muted" style="color:red">Gagal memuat daftar percakapan.</div>`;
+            if (!silent) {
+                threadListEl.innerHTML = `<div class="muted" style="color:red">Gagal memuat daftar warga.</div>`;
+            }
         }
     }
 
     async function loadMessages(silent = false) {
-        if (!activeThreadId) return;
+        if (!activeRoomId) return;
         // Check if user has left the page
         if (!document.getElementById("chatMessages")) {
-            if (stafChatPollInterval) {
-                clearInterval(stafChatPollInterval);
-                stafChatPollInterval = null;
-            }
+            cleanup();
             return;
         }
 
         try {
-            const res = await fetch(`/api/staf/pengaduan/${activeThreadId}/chats`, { credentials: "include" });
+            const res = await fetch(`/api/chat/room/${activeRoomId}/messages`, { credentials: "include" });
             if (!res.ok) throw new Error("Gagal mengambil pesan");
-            const chats = await res.json();
+            const messages = await res.json();
 
             const session = Guard?.getSession();
             const userId = session ? session.id : null;
@@ -1311,9 +1387,9 @@ async function initStafChatLaravel() {
             const originalScrollTop = msgEl.scrollTop;
             const isNearBottom = originalScrollTop + msgEl.clientHeight >= originalScrollHeight - 60;
 
-            msgEl.innerHTML = chats.map(c => {
-                const isSelf = String(c.user_id) === String(userId);
-                const senderName = isSelf ? "Anda (Staf)" : (c.user?.name || "Warga");
+            const messagesHtml = messages.map(c => {
+                const isSelf = String(c.sender_id) === String(userId);
+                const senderName = isSelf ? "Anda (Staf)" : "Warga";
                 const alignment = isSelf ? "align-self: flex-end; background: var(--primary); color: white;" : "align-self: flex-start; background: #f1f5f9; color: var(--text);";
                 const alignContainer = isSelf ? "justify-content: flex-end;" : "justify-content: flex-start;";
 
@@ -1321,15 +1397,19 @@ async function initStafChatLaravel() {
                     <div style="display: flex; ${alignContainer} width: 100%; margin-bottom: 10px;">
                         <div style="max-width: 75%; padding: 10px 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-sm); ${alignment}">
                             <div style="font-size: 11px; font-weight: 800; opacity: 0.85;">${senderName}</div>
-                            <div style="font-size: 13px; line-height: 1.4; white-space: pre-wrap;">${c.pesan}</div>
+                            <div style="font-size: 13px; line-height: 1.4; white-space: pre-wrap;">${c.message}</div>
                             <div style="font-size: 9px; align-self: flex-end; opacity: 0.7;">${fmtDate(c.created_at)}</div>
                         </div>
                     </div>
                 `;
-            }).join("") || `<div class="muted" style="padding: 40px; text-align: center;">Belum ada pesan. Kirim tanggapan untuk memulai obrolan.</div>`;
+            }).join("") || `<div class="muted" style="padding: 40px; text-align: center;">Belum ada pesan. Kirim pesan pertama untuk memulai obrolan.</div>`;
 
-            if (!silent || isNearBottom) {
-                msgEl.scrollTop = msgEl.scrollHeight;
+            if (msgEl.getAttribute("data-content-hash") !== messagesHtml.length.toString()) {
+                msgEl.innerHTML = messagesHtml;
+                msgEl.setAttribute("data-content-hash", messagesHtml.length.toString());
+                if (!silent || isNearBottom) {
+                    msgEl.scrollTop = msgEl.scrollHeight;
+                }
             }
         } catch (err) {
             console.error("Gagal memuat pesan:", err);
@@ -1339,66 +1419,141 @@ async function initStafChatLaravel() {
         }
     }
 
-    async function selectThread(id) {
-        activeThreadId = id;
+    async function selectWarga(wargaId) {
+        activeWargaId = wargaId;
 
         // Highlight selected
         threadListEl.querySelectorAll(".staf-chat-thread").forEach(el => {
             const elId = el.getAttribute("data-id");
-            el.style.background = elId === String(id) ? "rgba(31, 95, 224, 0.08)" : "transparent";
-            el.style.borderColor = elId === String(id) ? "var(--primary)" : "var(--border)";
+            el.style.background = elId === String(wargaId) ? "rgba(31, 95, 224, 0.08)" : "transparent";
+            el.style.borderColor = elId === String(wargaId) ? "var(--primary)" : "var(--border)";
         });
 
-        // Update header
+        msgEl.innerHTML = `<div class="muted" style="padding:40px; text-align:center;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; margin-bottom:10px;"></i><p>Memuat percakapan...</p></div>`;
+
         try {
-            const res = await fetch(`/api/staf/pengaduan/${id}`, { credentials: "include" });
-            const p = await res.json();
-            if (p && headEl) {
+            const session = Guard?.getSession();
+            const stafId = session ? session.id : null;
+
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            const roomRes = await fetch('/api/chat/room', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    Accept: 'application/json'
+                },
+                body: JSON.stringify({ warga_id: wargaId, staf_id: stafId })
+            });
+
+            if (!roomRes.ok) throw new Error("Gagal membuka room");
+            const room = await roomRes.json();
+            activeRoomId = room.id;
+
+            const wargaObj = wargaList.find(x => String(x.id) === String(wargaId));
+            if (wargaObj && headEl) {
+                const statusText = wargaObj.is_online ? '<span style="color: #10b981; font-weight: 800;">● Online</span>' : '<span style="color: var(--muted);">● Offline</span>';
                 headEl.innerHTML = `
-                    <div style="font-weight: 1000; font-size: 16px;">${p.judul}</div>
+                    <div style="font-weight: 1000; font-size: 16px;">${wargaObj.name}</div>
                     <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">
-                        Pelapor: <b>${p.user?.name || "-"}</b> • Status: ${statusBadge(p.status)}
+                        Status Warga: ${statusText}
                     </div>
                 `;
             }
-        } catch (_) {}
 
-        msgEl.innerHTML = `<div class="muted" style="padding:40px; text-align:center;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; margin-bottom:10px;"></i><p>Memuat percakapan...</p></div>`;
-        await loadMessages();
+            await loadMessages();
+            
+            // Clear unread count locally
+            await loadWarga(true);
 
-        // Set polling interval
+            setupRealtime();
+        } catch (err) {
+            console.error(err);
+            msgEl.innerHTML = `<div class="muted" style="color:red; text-align:center; padding:20px;">Gagal memuat percakapan.</div>`;
+        }
+    }
+
+    function setupRealtime() {
         if (stafChatPollInterval) clearInterval(stafChatPollInterval);
-        stafChatPollInterval = setInterval(() => loadMessages(true), 4000);
+
+        // Try connecting WebSocket first
+        try {
+            if (socket) {
+                socket.close();
+            }
+            socket = new WebSocket("ws://127.0.0.1:8085");
+            socket.onopen = () => {
+                console.log("[WS Staf] Connected successfully");
+            };
+            socket.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (String(data.room_id) === String(activeRoomId)) {
+                        loadMessages(true);
+                    }
+                    if (data.type === 'update_list' || String(data.receiver_id) === String(Guard?.getSession()?.id)) {
+                        loadWarga(true);
+                    }
+                } catch (_) {}
+            };
+            socket.onclose = () => {
+                startPollingFallback();
+            };
+            socket.onerror = () => {
+                startPollingFallback();
+            };
+        } catch (e) {
+            startPollingFallback();
+        }
+    }
+
+    function startPollingFallback() {
+        if (stafChatPollInterval) clearInterval(stafChatPollInterval);
+        stafChatPollInterval = setInterval(() => {
+            loadMessages(true);
+        }, 1000);
     }
 
     async function sendMessage(e) {
         if (e) e.preventDefault();
 
-        if (!activeThreadId) {
-            alert("Pilih percakapan pengaduan terlebih dahulu.");
+        if (!activeRoomId) {
+            alert("Pilih warga terlebih dahulu.");
             return;
         }
-        const pesan = inputEl.value.trim();
-        if (!pesan) return;
+        const message = inputEl.value.trim();
+        if (!message) return;
 
         const btn = formEl.querySelector("button[type='submit']");
         if (btn) btn.disabled = true;
 
         try {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-            const res = await fetch(`/api/staf/pengaduan/${activeThreadId}/chats`, {
+            const res = await fetch(`/api/chat/room/${activeRoomId}/messages`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRF-TOKEN": csrf,
                     Accept: "application/json"
                 },
-                body: JSON.stringify({ pesan })
+                body: JSON.stringify({ message })
             });
 
             if (!res.ok) throw new Error("Gagal mengirim pesan");
             inputEl.value = "";
             await loadMessages();
+
+            // notify WebSocket server if connected
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    room_id: activeRoomId,
+                    sender_id: Guard?.getSession()?.id,
+                    receiver_id: activeWargaId,
+                    message: message
+                }));
+            }
+
+            await loadWarga(true);
         } catch (err) {
             console.error(err);
             alert("Gagal mengirim pesan.");
@@ -1407,9 +1562,29 @@ async function initStafChatLaravel() {
         }
     }
 
+    function cleanup() {
+        if (stafChatPollInterval) {
+            clearInterval(stafChatPollInterval);
+            stafChatPollInterval = null;
+        }
+        if (stafWargaPollInterval) {
+            clearInterval(stafWargaPollInterval);
+            stafWargaPollInterval = null;
+        }
+        if (socket) {
+            socket.close();
+            socket = null;
+        }
+    }
+
     // Bind events
     if (formEl) formEl.onsubmit = sendMessage;
 
-    // Initialize threads
-    loadThreads();
+    // Initialize
+    loadWarga();
+
+    // Poll warga list every 5 seconds
+    stafWargaPollInterval = setInterval(() => {
+        loadWarga(true);
+    }, 5000);
 }
