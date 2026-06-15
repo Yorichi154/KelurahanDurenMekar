@@ -494,6 +494,8 @@
                 setVal("pkPhone", data.phone);
                 setVal("pkAddress", data.address);
                 setVal("pkInstagram", data.instagram);
+                setVal("pkFacebook", data.facebook);
+                setVal("pkYoutube", data.youtube);
                 setVal("pkMaps", data.maps);
                 setVal("pkJam", data.jam_pelayanan);
 
@@ -505,6 +507,8 @@
                         phone: data.phone || "",
                         address: data.address || "",
                         instagram: data.instagram || "",
+                        facebook: data.facebook || "",
+                        youtube: data.youtube || "",
                         note: data.profil || "",
                         lurahName: data.lurah_name || "",
                         kecamatan: data.kecamatan || "",
@@ -563,6 +567,8 @@
                 phone: get("pkPhone"),
                 address: get("pkAddress"),
                 instagram: get("pkInstagram"),
+                facebook: get("pkFacebook"),
+                youtube: get("pkYoutube"),
                 maps: get("pkMaps"),
                 jam_pelayanan: get("pkJam"),
             };
@@ -2453,6 +2459,10 @@
 
             document.getElementById("sInstagram").value = data.instagram ?? "";
 
+            document.getElementById("sFacebook").value = data.facebook ?? "";
+
+            document.getElementById("sYoutube").value = data.youtube ?? "";
+
             document.getElementById("sNote").value = data.profil ?? "";
         }
 
@@ -2472,6 +2482,10 @@
                     address: document.getElementById("sAddress").value,
 
                     instagram: document.getElementById("sInstagram").value,
+
+                    facebook: document.getElementById("sFacebook").value,
+
+                    youtube: document.getElementById("sYoutube").value,
 
                     profil: document.getElementById("sNote").value,
                 };
@@ -3866,6 +3880,10 @@
 
             document.getElementById("sInstagram").value = data.instagram ?? "";
 
+            document.getElementById("sFacebook").value = data.facebook ?? "";
+
+            document.getElementById("sYoutube").value = data.youtube ?? "";
+
             document.getElementById("sNote").value = data.profil ?? "";
         }
 
@@ -3885,6 +3903,10 @@
                     address: document.getElementById("sAddress").value,
 
                     instagram: document.getElementById("sInstagram").value,
+
+                    facebook: document.getElementById("sFacebook").value,
+
+                    youtube: document.getElementById("sYoutube").value,
 
                     profil: document.getElementById("sNote").value,
                 };

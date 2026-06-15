@@ -15,6 +15,8 @@ class Setting extends Model
         'phone',
         'address',
         'instagram',
+        'facebook',
+        'youtube',
         'lurah_name',
         'kecamatan',
         'kota',

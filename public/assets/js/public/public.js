@@ -47,6 +47,8 @@ Render public pages dari API Laravel (BUKAN localStorage)
                 phone: ls.phone,
                 email: ls.email,
                 instagram: ls.instagram,
+                facebook: ls.facebook,
+                youtube: ls.youtube,
                 profil: ls.note,
                 lurah_name: ls.lurahName,
                 kecamatan: ls.kecamatan,
@@ -177,7 +179,7 @@ Render public pages dari API Laravel (BUKAN localStorage)
                         statTotalWarga.textContent = Number(stats.total_warga).toLocaleString("id-ID");
                     }
                     if (statTotalRtrw && stats.total_rtrw !== undefined) {
-                        statTotalRtrw.textContent = Number(stats.total_rtrw).toLocaleString("id-ID");
+                        statTotalRtrw.textContent = stats.total_rtrw;
                     }
                     if (statLayananAktif && stats.layanan_aktif !== undefined) {
                         statLayananAktif.textContent = Number(stats.layanan_aktif).toLocaleString("id-ID");
@@ -649,6 +651,99 @@ Render public pages dari API Laravel (BUKAN localStorage)
             });
         });
     }
+    async function renderKontakPublic() {
+        try {
+            // Load Settings
+            const setting = await fetchSettings();
+            if (setting) {
+                const kPhone = document.getElementById('kPhone');
+                const kEmail = document.getElementById('kEmail');
+                const kAddress = document.getElementById('kAddress');
+                const kAddress2 = document.getElementById('kAddress2');
+                const kProfil = document.getElementById('kProfil');
+                const kIgRow = document.getElementById('kIgRow');
+                const kInstagram = document.getElementById('kInstagram');
+                const kFbRow = document.getElementById('kFbRow');
+                const kFacebook = document.getElementById('kFacebook');
+                const kYtRow = document.getElementById('kYtRow');
+                const kYoutube = document.getElementById('kYoutube');
+
+                if (kPhone) kPhone.textContent = setting.phone || '-';
+                if (kEmail) kEmail.textContent = setting.email || '-';
+                if (kAddress) kAddress.textContent = setting.address || '-';
+                if (kAddress2) kAddress2.textContent = `Kec. ${setting.kecamatan || '-'}, ${setting.kota || '-'}`;
+                if (kProfil) kProfil.textContent = setting.jam_pelayanan || setting.profil || '-';
+                
+                if (setting.instagram) {
+                    if (kIgRow) kIgRow.style.display = 'block';
+                    if (kInstagram) kInstagram.textContent = setting.instagram;
+                } else {
+                    if (kIgRow) kIgRow.style.display = 'none';
+                }
+                if (setting.facebook) {
+                    if (kFbRow) kFbRow.style.display = 'block';
+                    if (kFacebook) kFacebook.textContent = setting.facebook;
+                } else {
+                    if (kFbRow) kFbRow.style.display = 'none';
+                }
+                if (setting.youtube) {
+                    if (kYtRow) kYtRow.style.display = 'block';
+                    if (kYoutube) kYoutube.textContent = setting.youtube;
+                } else {
+                    if (kYtRow) kYtRow.style.display = 'none';
+                }
+            }
+
+            // Load RT/RW
+            const rtrwRes = await fetch('/api/public/rtrw');
+            if (rtrwRes.ok) {
+                const rtrw = await rtrwRes.json();
+                const grid = document.getElementById('kRtGrid');
+                if (grid) {
+                    if (rtrw && rtrw.length > 0) {
+                        grid.innerHTML = rtrw.map(it => `
+                            <div class="rt-card">
+                                <strong>${it.rt_rw || '-'}</strong>
+                                <p>${it.ketua || '-'}</p>
+                                <small>${it.no_hp || '-'}</small>
+                            </div>
+                        `).join('');
+                    } else {
+                        grid.innerHTML = '<div style="font-size: 13px; color: var(--muted);">Belum ada kontak RT/RW</div>';
+                    }
+                }
+            }
+
+            // Load FAQ
+            const faqRes = await fetch('/api/public/faq');
+            if (faqRes.ok) {
+                const faqs = await faqRes.json();
+                const box = document.getElementById('kFaqBox');
+                if (box) {
+                    if (faqs && faqs.length > 0) {
+                        box.innerHTML = faqs.map(f => `
+                            <div class="faq-item">
+                                <button class="faq-question">${f.question}</button>
+                                <div class="faq-answer">${f.answer}</div>
+                            </div>
+                        `).join('');
+                        
+                        // Re-bind click events
+                        box.querySelectorAll('.faq-question').forEach(btn => {
+                            btn.addEventListener("click", () => {
+                                btn.classList.toggle("active");
+                                btn.nextElementSibling.classList.toggle("show");
+                            });
+                        });
+                    } else {
+                        box.innerHTML = '<div style="font-size: 13px; color: var(--muted);">Belum ada FAQ</div>';
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Error loading kontak data:', e);
+        }
+    }
 
     // ==========================
     // PENGUMUMAN (dari API publik)
@@ -923,7 +1018,10 @@ Render public pages dari API Laravel (BUKAN localStorage)
         if (name === "berita") renderBerita();
         if (name === "agenda") renderAgenda();
         if (name === "galeri") renderGaleri();
-        if (name === "kontak") initFAQ();
+        if (name === "kontak") {
+            initFAQ();
+            renderKontakPublic();
+        }
         if (name === "pengumuman") renderPengumuman();
         if (name === "struktur-organisasi") initStrukturOrganisasiPublic();
         if (name === "peta-wilayah") initPetaWilayahPublic();

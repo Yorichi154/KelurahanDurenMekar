@@ -75,9 +75,19 @@ Route::get('/public/galeri', [GaleriController::class, 'index']);
 Route::get('/public/struktur-organisasi', [StrukturOrganisasiController::class, 'index']);
 
 Route::get('/public/stats', function () {
+    $setting = \App\Models\Setting::first();
+    $totalRtrw = '0';
+    if ($setting) {
+        $rt = $setting->jumlah_rt ?? '0';
+        $rw = $setting->jumlah_rw ?? '0';
+        $totalRtrw = $rt . ' / ' . $rw;
+    } else {
+        $totalRtrw = (string)\App\Models\Rtrw::count();
+    }
+
     return response()->json([
         'total_warga' => \App\Models\User::where('role', 'warga')->count(),
-        'total_rtrw' => \App\Models\Rtrw::count(),
+        'total_rtrw' => $totalRtrw,
         'layanan_aktif' => \App\Models\Pelayanan::count(),
         'surat_diproses' => \App\Models\Surat::where('status', 'diproses')->count(),
     ]);
