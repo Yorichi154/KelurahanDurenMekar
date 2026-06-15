@@ -23,6 +23,7 @@ class Pelayanan extends Model
         'jam_pelayanan',
         'lokasi',
         'biaya',
+        'deskripsi_surat',
         // Keep old columns in fillable for backwards compatibility with controller inputs
         'nama',
         'slug',

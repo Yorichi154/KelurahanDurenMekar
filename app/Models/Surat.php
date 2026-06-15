@@ -19,6 +19,7 @@ class Surat extends Model
         'dibuat_oleh',
         'catatan_staf',
         'file_surat',
+        'konten_final',
         'status',
         'berkas',
     ];

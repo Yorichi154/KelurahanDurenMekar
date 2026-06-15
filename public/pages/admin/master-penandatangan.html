@@ -1,4 +1,4 @@
-<section class="admin-shell" data-admin-page="list" data-type="pengumuman">
+<section class="admin-shell" data-admin-page="master-penandatangan">
     <aside class="admin-side">
         <div class="side-head">
             <h3><i class="fa-solid fa-shield-halved"></i> Panel Admin</h3>
@@ -33,6 +33,7 @@
                     <i class="fa-solid fa-location-dot"></i> Profil Kelurahan
                 </a>
             </li>
+
             <!-- ORGANISASI & PELAYANAN -->
             <li>
                 <a
@@ -40,6 +41,14 @@
                     data-page="admin/pelayanan"
                     href="#admin/pelayanan"
                     ><i class="fa-regular fa-file-lines"></i> Pelayanan Surat</a
+                >
+            </li>
+            <li>
+                <a
+                    class="nav-link active"
+                    data-page="admin/master-penandatangan"
+                    href="#admin/master-penandatangan"
+                    ><i class="fa-solid fa-signature"></i> Master Penandatangan</a
                 >
             </li>
             <li>
@@ -57,16 +66,6 @@
                     href="#admin/lembaga"
                     ><i class="fa-solid fa-building-columns"></i> Lembaga</a>
             </li>
-<li>
-    <a
-        class="nav-link"
-        data-page="admin/master-penandatangan"
-        href="#admin/master-penandatangan"
-    >
-        <i class="fa-solid fa-signature"></i>
-        Master Penandatangan
-    </a>
-</li>
             <li>
                 <a
                     class="nav-link"
@@ -216,7 +215,6 @@
             <li>
                 <a class="nav-link" data-page="admin/users" href="#admin/users">
                     <i class="fa-solid fa-users-gear"></i>
-
                     Kelola User
                 </a>
             </li>
@@ -233,36 +231,50 @@
             </li>
         </ul>
     </aside>
+
     <div class="admin-main">
         <div class="admin-top">
-            <h1>Kelola Pengumuman</h1>
+            <div>
+                <h1>Master Penandatangan</h1>
+                <div class="muted" style="font-weight: 700">
+                    Kelola profil pejabat penandatangan surat pelayanan Kelurahan.
+                </div>
+            </div>
             <div class="top-actions">
-                <button class="btn btn-3d btn-primary btn-tambah-data" data-action="create">
-                    <span class="btn-text">Tambah Pengumuman</span>
-                    <i class="fa-solid fa-plus"></i>
-                </button>
+                <a
+                    class="btn btn-ghost nav-link"
+                    data-page="admin/dashboard"
+                    href="#admin/dashboard"
+                    ><i class="fa-solid fa-gauge"></i> Dashboard</a
+                >
             </div>
         </div>
 
         <div class="card">
             <div class="card-body">
-                <div class="form-row" style="align-items: end">
-                    <div class="field">
+                <div
+                    class="admin-toolbar"
+                    style="
+                        display: flex;
+                        gap: 10px;
+                        flex-wrap: wrap;
+                        align-items: end;
+                        justify-content: space-between;
+                    "
+                >
+                    <div class="field" style="min-width: 260px; flex: 1">
                         <label>Cari</label>
                         <input
                             class="input"
-                            type="text"
-                            id="adminSearch"
-                            placeholder="Cari judul..."
+                            id="adminPenandatanganSearch"
+                            placeholder="Cari nama atau NIP..."
                         />
                     </div>
-                    <div class="field">
-                        <label>Prioritas</label>
-                        <select id="adminFilterStatus">
-                            <option value="">Semua</option>
-                            <option value="info">Info</option>
-                            <option value="urgent">Urgent</option>
-                        </select>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap">
+                        <button class="btn btn-3d btn-primary btn-tambah-data" data-action="penandatanganCreate">
+                            <span class="btn-text">Tambah Penandatangan</span>
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -270,67 +282,73 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Judul</th>
-                                <th>Tanggal</th>
-                                <th>Prioritas</th>
+                                <th>Nama Pejabat</th>
+                                <th>Jabatan</th>
+                                <th>NIP</th>
+                                <th>Status Aktif</th>
                                 <th style="width: 170px">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody id="adminTbody"></tbody>
+                        <tbody id="adminPenandatanganTbody"></tbody>
                     </table>
+                </div>
+
+                <div
+                    id="adminPenandatanganEmpty"
+                    class="muted"
+                    style="display: none; margin-top: 12px"
+                >
+                    Belum ada pejabat penandatangan terdaftar.
                 </div>
             </div>
         </div>
 
-        <div class="modal" id="adminModal" aria-hidden="true">
+        <div class="modal" id="adminPenandatanganModal" aria-hidden="true">
             <div class="modal-panel">
                 <div class="modal-head">
-                    <h3 id="adminModalTitle">Tambah Pengumuman</h3>
-                    <button class="btn btn-ghost" data-action="closeModal">
+                    <h3 style="margin: 0" id="adminPenandatanganModalTitle">
+                        Tambah Penandatangan
+                    </h3>
+                    <button class="btn btn-ghost" data-action="penandatanganClose">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
-                <form class="modal-body" id="adminForm">
-                    <input type="hidden" id="itemId" />
+                <form class="modal-body" id="adminPenandatanganForm">
+                    <input type="hidden" id="penandatanganId" />
 
                     <div class="field">
-                        <label>Judul</label>
-                        <input class="input" id="fTitle" required />
+                        <label>Nama Lengkap (dengan Gelar)</label>
+                        <input class="input" id="penandatanganNama" required placeholder="Contoh: H. MAHMUDIN, S.Sos" />
+                    </div>
+
+                    <div class="field">
+                        <label>Jabatan Dinas</label>
+                        <input class="input" id="penandatanganJabatan" required placeholder="Contoh: Lurah, Sekretaris Kelurahan, Kasi Pemerintahan" />
+                        <small class="muted" style="display:block; margin-top:4px;">
+                            Jika jabatan selain "Lurah" (misal: Sekretaris, Kasi), sistem akan menambahkan awalan "a.n. Lurah Duren Mekar" di surat.
+                        </small>
                     </div>
 
                     <div class="form-row">
                         <div class="field">
-                            <label>Tanggal</label>
-                            <input
-                                class="input"
-                                id="fDate"
-                                type="date"
-                                required
-                            />
+                            <label>NIP</label>
+                            <input class="input" id="penandatanganNip" required placeholder="Contoh: 196805121990031005" />
                         </div>
                         <div class="field">
-                            <label>Prioritas</label>
-                            <select id="fStatus">
-                                <option value="info">Info</option>
-                                <option value="urgent">Urgent</option>
+                            <label>Status</label>
+                            <select id="penandatanganStatus" required>
+                                <option value="1">Aktif</option>
+                                <option value="0">Nonaktif</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div class="field">
-                        <label>Isi Pengumuman</label>
-                        <textarea
-                            id="fContent"
-                            placeholder="Isi pengumuman..."
-                        ></textarea>
                     </div>
 
                     <div class="modal-foot">
                         <button
                             class="btn btn-ghost"
                             type="button"
-                            data-action="closeModal"
+                            data-action="penandatanganClose"
                         >
                             Batal
                         </button>

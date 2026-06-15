@@ -332,6 +332,7 @@ const routeRoles = {
     "admin/pengaduan": ["admin"],
     "admin/surat": ["admin"],
     "admin/pelayanan": ["admin"],
+    "admin/master-penandatangan": ["admin"],
     "admin/galeri": ["admin"],
     "admin/agenda": ["admin"],
     "admin/pengumuman": ["admin"],
@@ -435,7 +436,12 @@ async function navigateTo(page, opts = {}) {
         }
 
         // Update URL hash
-        const newHash = `#${page}`;
+        let newHash = `#${page}`;
+        const currentHash = window.location.hash;
+        if (currentHash.includes("?")) {
+            const query = currentHash.split("?")[1];
+            newHash = `#${page}?${query}`;
+        }
         if (opts.replace) {
             history.replaceState({}, "", newHash);
         } else {

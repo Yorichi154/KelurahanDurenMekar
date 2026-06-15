@@ -22,6 +22,7 @@ use App\Http\Controllers\BuatSuratController;
 use App\Http\Controllers\StrukturOrganisasiController;
 use App\Http\Controllers\PengaduanChatController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\MasterPenandatanganController;
 
 
 /*
@@ -36,22 +37,6 @@ Route::get('/test-auth', function () {
     ]);
 
 })->middleware('auth');
-
-
-Route::get('/run-migration', function () {
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        return response()->json([
-            'status' => 'success',
-            'output' => \Illuminate\Support\Facades\Artisan::output(),
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $e->getMessage(),
-        ], 500);
-    }
-});
 
 /*
 |--------------------------------------------------------------------------
@@ -138,6 +123,7 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
     Route::apiResource('setting', SettingController::class);
 
     Route::apiResource('pelayanan', PelayananController::class);
+    Route::apiResource('master-penandatangan', MasterPenandatanganController::class);
 
     Route::apiResource('unit-kerja', UnitKerjaController::class);
 
@@ -198,6 +184,8 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
         Route::apiResource('pengumuman', \App\Http\Controllers\PengumumanController::class);
 
         // ── SiSurat: Pembuatan & Arsip Surat ──
+        Route::get('/buat-surat/penandatangan', [MasterPenandatanganController::class, 'indexActive']);
+        Route::get('/buat-surat/warga', [BuatSuratController::class, 'searchWarga']);
         Route::get('/buat-surat/jenis', [BuatSuratController::class, 'indexJenis']);
         Route::post('/buat-surat/preview', [BuatSuratController::class, 'preview']);
         Route::post('/buat-surat', [BuatSuratController::class, 'store']);

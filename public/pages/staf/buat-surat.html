@@ -74,6 +74,27 @@
                   <i class="fa-solid fa-arrow-left"></i> Ganti Jenis
                 </button>
               </div>
+
+              <!-- Pencarian Warga Autocomplete -->
+              <div class="field" style="margin-bottom: 20px; position: relative;">
+                <label style="font-weight:700">Pencarian Data Warga (Cari NIK / Nama)</label>
+                <div class="search-box" style="width: 100%; position: relative;">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <input id="sisWargaSearchInput" type="text" class="input" placeholder="Masukkan NIK atau Nama untuk mencari warga..." autocomplete="off" />
+                  <button type="button" class="btn btn-ghost btn-sm" id="sisClearWargaSearch" style="position: absolute; right: 8px; top: 8px; display: none; padding: 4px 8px;">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+                <div id="sisWargaSearchResults" class="autocomplete-results" style="display: none; position: absolute; z-index: 100; left: 0; right: 0; background: #fff; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 200px; overflow-y: auto; margin-top: 4px;">
+                  <!-- Autocomplete results rendered by JS -->
+                </div>
+                <small class="muted" style="display:block; margin-top:4px;">
+                  Cari warga terdaftar untuk mengisi form otomatis. Jika warga tidak punya akun, kosongkan pencarian dan isi form manual.
+                </small>
+              </div>
+
+              <input type="hidden" id="sisWargaUserId" />
+
               <form id="sisDataForm" class="form" style="background:transparent;border:0;padding:0">
                 <div id="sisFormFields"><!-- Rendered by JS --></div>
               </form>
@@ -126,12 +147,46 @@
 
           <!-- Actions -->
           <div style="display:flex;flex-direction:column;gap:16px">
-            <!-- Nomor Surat preview -->
-            <div class="card" style="border:2px solid rgba(34,197,94,.22);background:rgba(34,197,94,.04)">
+            <!-- Finalisasi Dokumen -->
+            <div class="card">
               <div class="card-pad" style="padding:14px">
-                <div style="font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Nomor Surat Akan Digenerate</div>
-                <div style="font-size:13px;font-weight:1000;color:#166534;font-family:monospace">XXX / <span id="sisNomorKode">-</span> / DBM / RB / YYYY</div>
-                <div style="font-size:11px;color:var(--muted);margin-top:4px">Nomor pasti akan ditetapkan saat generate</div>
+                <div style="font-size:13px;font-weight:1000;margin-bottom:12px"><i class="fa-solid fa-file-signature" style="color:var(--primary);margin-right:6px"></i>Pengaturan Dokumen</div>
+                
+                <div class="field" style="margin-bottom:10px">
+                  <label style="font-weight:700">Nomor Surat <span style="color:var(--danger)">*</span></label>
+                  <input type="text" class="input" id="sisNomorSurat" placeholder="Contoh: 470 / 205 / VI / 2026" required />
+                </div>
+
+                <div class="field" style="margin-bottom:10px">
+                  <label style="font-weight:700">Penandatangan <span style="color:var(--danger)">*</span></label>
+                  <select id="sisPenandatangan" class="input" required>
+                    <option value="">-- Pilih Penandatangan --</option>
+                  </select>
+                </div>
+
+                <div class="field" style="margin-bottom:10px">
+                  <label style="font-weight:700">Tanggal Surat <span style="color:var(--danger)">*</span></label>
+                  <input type="date" class="input" id="sisTanggalSurat" required />
+                </div>
+
+                <div class="field" style="margin-bottom:10px">
+                  <label style="font-weight:700">Masa Berlaku</label>
+                  <select id="sisMasaBerlakuOpsi" class="input">
+                    <option value="tidak_ada" selected>Tidak Ada</option>
+                    <option value="sampai_tanggal">Sampai Tanggal</option>
+                    <option value="custom">Teks Custom</option>
+                  </select>
+                </div>
+
+                <div class="field" id="sisMasaBerlakuTanggalWrap" style="display:none; margin-bottom:10px">
+                  <label style="font-weight:700">Berlaku Sampai Tanggal</label>
+                  <input type="date" class="input" id="sisMasaBerlakuTanggal" />
+                </div>
+
+                <div class="field" id="sisMasaBerlakuCustomWrap" style="display:none; margin-bottom:10px">
+                  <label style="font-weight:700">Teks Masa Berlaku Custom</label>
+                  <input type="text" class="input" id="sisMasaBerlakuCustom" placeholder="Contoh: Berlaku 3 bulan sejak tanggal dikeluarkan." />
+                </div>
               </div>
             </div>
 
@@ -143,7 +198,6 @@
                   <option value="F4" selected>F4 / Folio (21.59 × 33.02 cm)</option>
                   <option value="A4">A4 (21 × 29.7 cm)</option>
                 </select>
-                <div style="font-size:11px;color:var(--muted);margin-top:6px">Pilih ukuran kertas untuk cetak surat</div>
               </div>
             </div>
 
@@ -162,6 +216,14 @@
                 <textarea id="sisCatatanStaf" class="input" style="height:70px;resize:none" placeholder="Catatan hanya terlihat oleh staf..."></textarea>
               </div>
             </div>
+
+            <!-- Visual Editor Actions -->
+            <button type="button" class="btn btn-warning" id="sisEditNarasiBtn" style="width:100%;justify-content:center;gap:10px;padding:12px;font-size:14px;background:#f59e0b;color:#fff;margin-bottom:4px">
+              <i class="fa-solid fa-pen-to-square"></i> Edit Narasi Surat
+            </button>
+            <button type="button" class="btn btn-ghost" id="sisResetTemplateBtn" style="width:100%;justify-content:center;gap:10px;padding:12px;font-size:14px;margin-bottom:8px">
+              <i class="fa-solid fa-arrows-rotate"></i> Reset Template
+            </button>
 
             <!-- Generate Button -->
             <button type="button" class="btn btn-success" id="sisGenerateBtn" style="width:100%;justify-content:center;gap:10px;padding:16px;font-size:15px;font-weight:1000;background:#16a34a;color:#fff">
@@ -189,6 +251,47 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edit Narasi Surat -->
+  <div class="modal" id="sisEditNarasiModal" aria-hidden="true">
+    <div class="modal-panel" style="max-width:850px; width:90%;">
+      <div class="modal-head">
+        <h3 style="margin:0"><i class="fa-solid fa-pen-to-square" style="color:var(--primary);margin-right:8px"></i>Edit Narasi Surat</h3>
+        <button class="btn btn-ghost" id="sisCloseEditNarasiBtn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="padding:16px;">
+        <!-- Toolbar visual editor -->
+        <div class="editor-toolbar" style="display:flex;gap:6px;margin-bottom:12px;border:1px solid var(--border);padding:6px;border-radius:8px;background:var(--bg-light);flex-wrap:wrap">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.execCommand('bold',false,null)" title="Bold"><strong>B</strong></button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.execCommand('italic',false,null)" title="Italic"><em>I</em></button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.execCommand('underline',false,null)" title="Underline"><u>U</u></button>
+          <div style="width:1px;background:var(--border);margin:0 4px"></div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.execCommand('insertUnorderedList',false,null)" title="Bullet List"><i class="fa-solid fa-list-ul"></i></button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.execCommand('insertOrderedList',false,null)" title="Numbered List"><i class="fa-solid fa-list-ol"></i></button>
+          <div style="width:1px;background:var(--border);margin:0 4px"></div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.execCommand('justifyLeft',false,null)" title="Align Left"><i class="fa-solid fa-align-left"></i></button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.execCommand('justifyCenter',false,null)" title="Align Center"><i class="fa-solid fa-align-center"></i></button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.execCommand('justifyRight',false,null)" title="Align Right"><i class="fa-solid fa-align-right"></i></button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.execCommand('justifyFull',false,null)" title="Justify"><i class="fa-solid fa-align-justify"></i></button>
+        </div>
+        
+        <!-- Editor Canvas -->
+        <div id="sisEditNarasiCanvas" contenteditable="true" style="min-height:300px; max-height:450px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; padding:16px; background:#fff; font-family:'Times New Roman',Times,serif; font-size:14px; line-height:1.5; outline:none">
+          <!-- Loaded from iframe dynamically -->
+        </div>
+        
+        <div style="margin-top:10px;" class="muted">
+          <small><i class="fa-solid fa-info-circle"></i> Edit isi narasi secara visual di atas. Perubahan akan disimpan secara lokal dan diperbarui pada preview cetak.</small>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="sisCancelEditNarasiBtn">Batal</button>
+        <button class="btn btn-solid" id="sisSaveEditNarasiBtn">Simpan Perubahan</button>
       </div>
     </div>
   </div>

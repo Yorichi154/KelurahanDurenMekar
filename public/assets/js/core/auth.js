@@ -367,6 +367,8 @@
                 labels.forEach(el => el.style.display = "none");
             }
             
+            sessionStorage.setItem("reset_email", email);
+            
             // Auto redirect to verify-otp page after 1.5 seconds
             setTimeout(() => {
                 window.location.hash = `#verify-otp?email=${encodeURIComponent(email)}`;
@@ -499,14 +501,20 @@
             const urlParams = new URLSearchParams(window.location.search);
             email = urlParams.get('email') || '';
         }
+        if (!email) {
+            email = sessionStorage.getItem("reset_email") || "";
+        }
+        if (!token) {
+            token = sessionStorage.getItem("reset_otp_token") || "";
+        }
 
         const emailInput = document.getElementById("resetEmail");
-        if (emailInput && email) {
+        if (emailInput) {
             emailInput.value = email;
         }
 
         const tokenInput = document.getElementById("resetToken");
-        if (tokenInput && token) {
+        if (tokenInput) {
             tokenInput.value = token;
         }
 
@@ -585,6 +593,8 @@
                 throw new Error(errMsg);
             }
 
+            // Save OTP/token to sessionStorage as fallback
+            sessionStorage.setItem("reset_otp_token", otp);
             // If valid, redirect to reset-password with email and OTP code
             window.location.hash = `#reset-password?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`;
         } catch (error) {
@@ -617,9 +627,12 @@
             const urlParams = new URLSearchParams(window.location.search);
             email = urlParams.get('email') || '';
         }
+        if (!email) {
+            email = sessionStorage.getItem("reset_email") || "";
+        }
 
         const emailInput = document.getElementById("otpEmail");
-        if (emailInput && email) {
+        if (emailInput) {
             emailInput.value = email;
         }
 

@@ -424,6 +424,13 @@ async function loadPelayananApi() {
         const titleEl = document.querySelector("#srvTitle");
         if (titleEl) titleEl.textContent = layanan.nama || "-";
 
+        // deskripsi
+        const descEl = document.querySelector("#srvDeskripsi");
+        if (descEl) {
+            descEl.textContent = layanan.deskripsi_surat || "";
+            descEl.style.display = layanan.deskripsi_surat ? "block" : "none";
+        }
+
         // badge status
         const badge = el("srvStatusBadge");
         if (badge) {
@@ -1176,7 +1183,7 @@ async function loadPelayananApi() {
               </div>
               <h3 style="margin: 8px 0 4px 0; font-size: 16px; font-weight:800; color: var(--text);">${x.nama}</h3>
               <p class="muted" style="font-size: 13px; line-height: 1.4; margin-bottom: 8px;">
-                Layanan pembuatan ${x.nama} untuk warga Kelurahan Duren Mekar.
+                ${x.deskripsi_surat || `Layanan pembuatan ${x.nama} untuk warga Kelurahan Duren Mekar.`}
               </p>
               <div style="display:flex; gap:12px; font-size:12px; margin-bottom:12px;" class="muted">
                 <span><i class="fa-regular fa-clock"></i> ${estimasi}</span>
@@ -1322,7 +1329,8 @@ function initWizardPage() {
           <div class="choice-card ${isActive ? "active" : ""}" role="button" tabindex="0" data-action="pickService" data-id="${escapeHtml(x.id)}">
             <div class="choice-text">
               <div class="choice-title">${escapeHtml(x.nama)}</div>
-              <div class="choice-meta">Estimasi: ${escapeHtml(x.estimasi || "-")}</div>
+              ${x.deskripsi_surat ? `<div class="choice-desc" style="font-size:12px;color:var(--muted);margin-top:4px;">${escapeHtml(x.deskripsi_surat)}</div>` : ""}
+              <div class="choice-meta" style="margin-top:6px;">Estimasi: ${escapeHtml(x.estimasi || "-")}</div>
             </div>
             <div class="choice-icon">
               <i class="fa-solid ${isActive ? "fa-circle-check" : "fa-circle"}"></i>

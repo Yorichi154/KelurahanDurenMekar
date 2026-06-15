@@ -484,6 +484,13 @@ async function sisShowPreview() {
 
   try {
     const ukuran = document.getElementById('sisUkuranKertas')?.value || 'F4';
+    const numVal = document.getElementById('sisNomorSurat')?.value || '';
+    const tglVal = document.getElementById('sisTanggalSurat')?.value || '';
+    const penVal = document.getElementById('sisPenandatangan')?.value || null;
+    const mbOpsi = document.getElementById('sisMasaBerlakuOpsi')?.value || 'tidak_ada';
+    const mbTgl = document.getElementById('sisMasaBerlakuTanggal')?.value || '';
+    const mbCust = document.getElementById('sisMasaBerlakuCustom')?.value || '';
+
     const res = await fetch('/api/staf/buat-surat/preview', {
       method: 'POST',
       headers: {
@@ -491,7 +498,18 @@ async function sisShowPreview() {
         'X-CSRF-TOKEN': CSRF(),
         'Accept': 'application/json',
       },
-      body: JSON.stringify({ kode_jenis: sisState.selectedKode, data_surat: data, ukuran_kertas: ukuran }),
+      body: JSON.stringify({ 
+        kode_jenis: sisState.selectedKode, 
+        data_surat: { ...data, user_id: document.getElementById('sisWargaUserId')?.value || null }, 
+        ukuran_kertas: ukuran,
+        nomor_surat: numVal,
+        tanggal_surat: tglVal,
+        penandatangan_id: penVal,
+        masa_berlaku_opsi: mbOpsi,
+        tanggal_berakhir: mbTgl,
+        masa_berlaku_custom: mbCust,
+        edited_html: sisState.editedHtml || null
+      }),
     });
     const html = await res.text();
     frame.srcdoc = html;
@@ -507,6 +525,21 @@ async function sisGenerate() {
 
   const keperluan = document.getElementById('sisKeperluan')?.value || sisState.formData.keperluan || '-';
   const catatanStaf = document.getElementById('sisCatatanStaf')?.value || '';
+  const numVal = document.getElementById('sisNomorSurat')?.value || '';
+  const tglVal = document.getElementById('sisTanggalSurat')?.value || '';
+  const penVal = document.getElementById('sisPenandatangan')?.value || null;
+  const mbOpsi = document.getElementById('sisMasaBerlakuOpsi')?.value || 'tidak_ada';
+  const mbTgl = document.getElementById('sisMasaBerlakuTanggal')?.value || '';
+  const mbCust = document.getElementById('sisMasaBerlakuCustom')?.value || '';
+
+  if (!numVal.trim()) {
+    alert('Nomor Surat wajib diisi!');
+    return;
+  }
+  if (!penVal) {
+    alert('Penandatangan wajib dipilih!');
+    return;
+  }
 
   const genBtn = document.getElementById('sisGenerateBtn');
   const genState = document.getElementById('sisGeneratingState');
@@ -524,10 +557,21 @@ async function sisGenerate() {
       },
       body: JSON.stringify({
         kode_jenis: sisState.selectedKode,
-        data_surat: { ...sisState.formData, catatan_staf: catatanStaf },
+        data_surat: { 
+          ...sisState.formData, 
+          user_id: document.getElementById('sisWargaUserId')?.value || null,
+          catatan_staf: catatanStaf 
+        },
         keperluan,
         ukuran_kertas: ukuran,
         surat_id: sisState.suratId || null,
+        nomor_surat: numVal,
+        tanggal_surat: tglVal,
+        penandatangan_id: penVal,
+        masa_berlaku_opsi: mbOpsi,
+        tanggal_berakhir: mbTgl,
+        masa_berlaku_custom: mbCust,
+        edited_html: sisState.editedHtml || null
       }),
     });
 
@@ -557,12 +601,218 @@ async function sisGenerate() {
   }
 }
 
+// Debounce helper for live preview reloads
+let previewTimeout = null;
+function triggerPreviewReload() {
+  if (previewTimeout) clearTimeout(previewTimeout);
+  previewTimeout = setTimeout(() => {
+    sisShowPreview();
+  }, 400);
+}
+
 // ── Init ──────────────────────────────────────────────────────────
 async function initBuatSurat() {
   await loadSuratConfigFromApi();
-  sisState = { step: 1, selectedKode: null, formData: {}, suratId: null };
+  sisState = { step: 1, selectedKode: null, formData: {}, suratId: null, editedHtml: null };
   sisGoStep(1);
   sisRenderJenisGrid();
+
+  // Reset fields in form and search
+  const hiddenUserId = document.getElementById('sisWargaUserId');
+  const searchInput = document.getElementById('sisWargaSearchInput');
+  const clearBtn = document.getElementById('sisClearWargaSearch');
+  const resultsDiv = document.getElementById('sisWargaSearchResults');
+  
+  if (hiddenUserId) hiddenUserId.value = '';
+  if (searchInput) searchInput.value = '';
+  if (clearBtn) clearBtn.style.display = 'none';
+  if (resultsDiv) resultsDiv.style.display = 'none';
+
+  // Load penandatangans
+  try {
+    const penRes = await fetch("/api/staf/buat-surat/penandatangan");
+    if (penRes.ok) {
+      const activeSignees = await penRes.json();
+      const selectPenandatangan = document.getElementById("sisPenandatangan");
+      if (selectPenandatangan) {
+        selectPenandatangan.innerHTML = '<option value="">-- Pilih Penandatangan --</option>' + 
+          activeSignees.map(s => `<option value="${s.id}">${s.nama} (${s.jabatan})</option>`).join('');
+      }
+    }
+  } catch (err) {
+    console.error("Gagal memuat penandatangan:", err);
+  }
+
+  // Warga Autocomplete Event Handlers
+  if (searchInput) {
+    searchInput.addEventListener('input', async function() {
+      const q = this.value.trim();
+      if (q.length < 1) {
+        resultsDiv.style.display = 'none';
+        clearBtn.style.display = 'none';
+        return;
+      }
+      clearBtn.style.display = 'block';
+      
+      try {
+        const res = await fetch(`/api/staf/buat-surat/warga?q=${encodeURIComponent(q)}`);
+        if (!res.ok) throw new Error("Gagal");
+        const list = await res.json();
+        if (list.length === 0) {
+          resultsDiv.innerHTML = '<div style="padding:10px;color:var(--muted);text-align:center;">Warga tidak ditemukan</div>';
+          resultsDiv.style.display = 'block';
+          return;
+        }
+        
+        resultsDiv.innerHTML = list.map(w => `
+          <div class="autocomplete-item" data-id="${w.id}" style="padding:10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .2s">
+            <div style="font-weight:700">${w.name}</div>
+            <div style="font-size:11px;color:var(--muted)">NIK: ${w.nik} | RT/RW: ${w.rt || '-'}/${w.rw || '-'}</div>
+          </div>
+        `).join('');
+        resultsDiv.style.display = 'block';
+        
+        resultsDiv.querySelectorAll('.autocomplete-item').forEach(item => {
+          item.style.cursor = 'pointer';
+          item.addEventListener('mouseover', function() { this.style.background = 'rgba(0,0,0,0.04)'; });
+          item.addEventListener('mouseout', function() { this.style.background = 'none'; });
+          item.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const w = list.find(x => x.id == id);
+            if (w) {
+              hiddenUserId.value = w.id;
+              searchInput.value = `${w.name} (${w.nik})`;
+              resultsDiv.style.display = 'none';
+              clearBtn.style.display = 'block';
+
+              // Autofill form fields
+              const mappings = {
+                nama: w.name,
+                nik: w.nik,
+                telp: w.telp,
+                alamat: w.alamat,
+                rt: w.rt,
+                rw: w.rw,
+              };
+              for (const [key, val] of Object.entries(mappings)) {
+                const el = document.getElementById(`sisf_${key}`);
+                if (el) el.value = val || '';
+              }
+            }
+          });
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+        resultsDiv.style.display = 'none';
+      }
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      hiddenUserId.value = '';
+      clearBtn.style.display = 'none';
+      resultsDiv.style.display = 'none';
+      
+      // Clear form inputs
+      const form = document.getElementById('sisDataForm');
+      if (form) form.reset();
+    });
+  }
+
+  // Finalization input listeners to reload preview dynamically
+  const inputsToBind = [
+    'sisNomorSurat', 'sisPenandatangan', 'sisTanggalSurat',
+    'sisMasaBerlakuOpsi', 'sisMasaBerlakuTanggal', 'sisMasaBerlakuCustom',
+    'sisUkuranKertas', 'sisKeperluan'
+  ];
+  inputsToBind.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', triggerPreviewReload);
+      el.addEventListener('change', triggerPreviewReload);
+    }
+  });
+
+  const mbOpsi = document.getElementById('sisMasaBerlakuOpsi');
+  if (mbOpsi) {
+    mbOpsi.addEventListener('change', function() {
+      const val = this.value;
+      const tglWrap = document.getElementById('sisMasaBerlakuTanggalWrap');
+      const customWrap = document.getElementById('sisMasaBerlakuCustomWrap');
+      if (tglWrap) tglWrap.style.display = val === 'sampai_tanggal' ? 'block' : 'none';
+      if (customWrap) customWrap.style.display = val === 'custom' ? 'block' : 'none';
+    });
+  }
+
+  // Edit Narasi Modal Handlers
+  const editNarasiBtn = document.getElementById('sisEditNarasiBtn');
+  if (editNarasiBtn) {
+    editNarasiBtn.addEventListener('click', () => {
+      const frame = document.getElementById('sisPreviewFrame');
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      
+      const customBody = doc.querySelector('.custom-template-body');
+      let bodyHtml = '';
+      if (customBody) {
+        bodyHtml = customBody.innerHTML;
+      } else {
+        const pageEl = doc.querySelector('.page');
+        if (pageEl) {
+          const clone = pageEl.cloneNode(true);
+          clone.querySelector('.kop')?.remove();
+          clone.querySelector('.surat-title')?.remove();
+          clone.querySelector('.surat-nomor')?.remove();
+          clone.querySelector('.ttd-section')?.remove();
+          bodyHtml = clone.innerHTML.trim();
+        } else {
+          bodyHtml = doc.body.innerHTML;
+        }
+      }
+      
+      document.getElementById('sisEditNarasiCanvas').innerHTML = bodyHtml;
+      document.getElementById('sisEditNarasiModal')?.classList.add('open');
+    });
+  }
+
+  const saveEditNarasiBtn = document.getElementById('sisSaveEditNarasiBtn');
+  if (saveEditNarasiBtn) {
+    saveEditNarasiBtn.addEventListener('click', () => {
+      const canvasHtml = document.getElementById('sisEditNarasiCanvas').innerHTML;
+      sisState.editedHtml = canvasHtml;
+      document.getElementById('sisEditNarasiModal')?.classList.remove('open');
+      sisShowPreview();
+    });
+  }
+
+  const closeEditNarasiBtn = document.getElementById('sisCloseEditNarasiBtn');
+  if (closeEditNarasiBtn) {
+    closeEditNarasiBtn.addEventListener('click', () => {
+      document.getElementById('sisEditNarasiModal')?.classList.remove('open');
+    });
+  }
+  const cancelEditNarasiBtn = document.getElementById('sisCancelEditNarasiBtn');
+  if (cancelEditNarasiBtn) {
+    cancelEditNarasiBtn.addEventListener('click', () => {
+      document.getElementById('sisEditNarasiModal')?.classList.remove('open');
+    });
+  }
+
+  const resetTemplateBtn = document.getElementById('sisResetTemplateBtn');
+  if (resetTemplateBtn) {
+    resetTemplateBtn.addEventListener('click', () => {
+      if (confirm('Reset template narasi surat ke bawaan? Semua editan kustom Anda akan hilang.')) {
+        sisState.editedHtml = null;
+        sisShowPreview();
+      }
+    });
+  }
 
   // Prefill logic from online application
   const prefillRaw = sessionStorage.getItem('prefill_surat');
@@ -595,6 +845,13 @@ async function initBuatSurat() {
           sisState.suratId = prefillObj.id;
 
           const dataSurat = (prefillObj.data_surat && typeof prefillObj.data_surat === 'object') ? prefillObj.data_surat : {};
+          
+          if (prefillObj.user) {
+            if (hiddenUserId) hiddenUserId.value = prefillObj.user.id || "";
+            if (searchInput) searchInput.value = `${prefillObj.user.name} (${prefillObj.user.nik})`;
+            if (clearBtn) clearBtn.style.display = 'block';
+          }
+
           sisState.formData = {
             nama: prefillObj.user?.name || "",
             nik: prefillObj.user?.nik || "",
@@ -619,23 +876,49 @@ async function initBuatSurat() {
   if (grid) {
     grid.addEventListener('click', e => {
       const card = e.target.closest('.sisurat-jenis-card');
-      if (card) sisRenderStep2(card.dataset.kode);
+      if (card) {
+        sisState.editedHtml = null; // Reset visual editor edits on new letter select
+        sisRenderStep2(card.dataset.kode);
+      }
     });
   }
 
   const searchEl = document.getElementById('sisJenisSearch');
   if (searchEl) {
-    searchEl.addEventListener('input', () => sisRenderJenisGrid(searchEl.value));
+    searchEl.addEventListener('input', () => {
+      sisState.editedHtml = null;
+      sisRenderJenisGrid(searchEl.value);
+    });
   }
 
   const backBtn = document.getElementById('sisBackBtn');
   if (backBtn) backBtn.addEventListener('click', () => {
     sisState.suratId = null; // Reset linked online request when returning to list
+    sisState.editedHtml = null;
     sisGoStep(1);
   });
 
   const previewBtn = document.getElementById('sisPreviewBtn');
-  if (previewBtn) previewBtn.addEventListener('click', sisShowPreview);
+  if (previewBtn) {
+    previewBtn.addEventListener('click', () => {
+      // Default step 3 finalization date to today
+      const tglSurat = document.getElementById('sisTanggalSurat');
+      if (tglSurat && !tglSurat.value) {
+        tglSurat.value = new Date().toISOString().split('T')[0];
+      }
+      
+      const numSurat = document.getElementById('sisNomorSurat');
+      if (numSurat) numSurat.value = '';
+
+      const mOpsi = document.getElementById('sisMasaBerlakuOpsi');
+      if (mOpsi) {
+        mOpsi.value = 'tidak_ada';
+        mOpsi.dispatchEvent(new Event('change'));
+      }
+      
+      sisShowPreview();
+    });
+  }
 
   const editBtn = document.getElementById('sisEditBtn');
   if (editBtn) editBtn.addEventListener('click', () => {
@@ -648,7 +931,7 @@ async function initBuatSurat() {
 
   const buatLagiBtn = document.getElementById('sisBuatLagiBtn');
   if (buatLagiBtn) buatLagiBtn.addEventListener('click', () => {
-    sisState = { step: 1, selectedKode: null, formData: {}, suratId: null };
+    sisState = { step: 1, selectedKode: null, formData: {}, suratId: null, editedHtml: null };
     sisGoStep(1);
     sisRenderJenisGrid();
   });

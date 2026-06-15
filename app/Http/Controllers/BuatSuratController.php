@@ -66,6 +66,24 @@ class BuatSuratController extends Controller
         return response()->json($result);
     }
 
+    public function searchWarga(Request $request)
+    {
+        $q = $request->query('q');
+        if (empty($q)) {
+            return response()->json([]);
+        }
+
+        $warga = \App\Models\User::where('role', 'warga')
+            ->where(function($query) use ($q) {
+                $query->where('name', 'like', "%{$q}%")
+                      ->orWhere('nik', 'like', "%{$q}%");
+            })
+            ->limit(10)
+            ->get(['id', 'name', 'nik', 'alamat', 'rt', 'rw', 'telp', 'email']);
+
+        return response()->json($warga);
+    }
+
     /**
      * POST /api/staf/buat-surat/preview
      * Return HTML preview of the letter (for display in modal)
@@ -76,14 +94,36 @@ class BuatSuratController extends Controller
             'kode_jenis'    => 'required|string',
             'data_surat'    => 'required|array',
             'ukuran_kertas' => 'nullable|string|in:A4,F4',
+            'nomor_surat'   => 'nullable|string',
+            'tanggal_surat' => 'nullable|string',
+            'penandatangan_id' => 'nullable|integer',
+            'masa_berlaku_opsi' => 'nullable|string',
+            'tanggal_berakhir' => 'nullable|string',
+            'masa_berlaku_custom' => 'nullable|string',
+            'edited_html' => 'nullable|string',
         ]);
 
         $kode   = $request->kode_jenis;
         $data   = $request->data_surat;
         $ukuran = $request->ukuran_kertas ?? 'F4';
-        $now    = Carbon::now();
 
-        $html = $this->buildSuratHtml($kode, $data, '[PREVIEW — BELUM TERSIMPAN]', $now, $ukuran);
+        $tanggalInput = $request->tanggal_surat ?? $data['tanggal_surat'] ?? null;
+        $now    = $tanggalInput ? Carbon::parse($tanggalInput) : Carbon::now();
+
+        $nomor  = $request->nomor_surat ?? '[PREVIEW — BELUM TERSIMPAN]';
+
+        $html = $this->buildSuratHtml(
+            $kode,
+            $data,
+            $nomor,
+            $now,
+            $ukuran,
+            $request->penandatangan_id,
+            $request->edited_html,
+            $request->masa_berlaku_opsi,
+            $request->tanggal_berakhir,
+            $request->masa_berlaku_custom
+        );
 
         return response($html, 200)->header('Content-Type', 'text/html; charset=utf-8');
     }
@@ -100,61 +140,84 @@ class BuatSuratController extends Controller
             'keperluan'     => 'required|string',
             'ukuran_kertas' => 'nullable|string|in:A4,F4',
             'surat_id'      => 'nullable|integer',
+            'nomor_surat'   => 'required|string',
+            'tanggal_surat' => 'nullable|string',
+            'penandatangan_id' => 'nullable|integer',
+            'masa_berlaku_opsi' => 'nullable|string',
+            'tanggal_berakhir' => 'nullable|string',
+            'masa_berlaku_custom' => 'nullable|string',
+            'edited_html' => 'nullable|string',
         ]);
 
         $kode    = $request->kode_jenis;
         $data    = $request->data_surat;
         $ukuran  = $request->ukuran_kertas ?? 'F4';
-        $now     = Carbon::now();
-        $bulanRomawi = self::$BULAN_ROMAWI[$now->month];
-        $tahun   = (string) $now->year;
 
-        // Generate nomor surat atomically
-        $nomorSurat = NomorSurat::generateNomor($kode, $bulanRomawi, $tahun);
+        $tanggalInput = $request->tanggal_surat ?? $data['tanggal_surat'] ?? null;
+        $now     = $tanggalInput ? Carbon::parse($tanggalInput) : Carbon::now();
 
-        // Determine warga user_id: use data_surat.user_id or authenticated staf's id as fallback
-        $userId = $data['user_id'] ?? auth()->id();
+        $nomorSurat = $request->nomor_surat;
 
-        // Build HTML for PDF
-        $html = $this->buildSuratHtml($kode, $data, $nomorSurat, $now, $ukuran);
+        // user_id can be null if citizens have no accounts
+        $userId = $data['user_id'] ?? null;
 
-        // Paper size: A4 = default, F4/Folio = 8.5" x 13" (215.9mm x 330.2mm)
+        $html = $this->buildSuratHtml(
+            $kode,
+            $data,
+            $nomorSurat,
+            $now,
+            $ukuran,
+            $request->penandatangan_id,
+            $request->edited_html,
+            $request->masa_berlaku_opsi,
+            $request->tanggal_berakhir,
+            $request->masa_berlaku_custom
+        );
+
         if ($ukuran === 'F4') {
             $paper = [0, 0, 612, 936]; // 8.5" x 13" in points
         } else {
             $paper = 'A4';
         }
 
-        // Generate PDF via dompdf
         $pdf = Pdf::loadHTML($html)
             ->setPaper($paper, 'portrait')
             ->setOption('defaultFont', 'times')
             ->setOption('isHtml5ParserEnabled', true)
             ->setOption('isRemoteEnabled', false);
 
-        // Save PDF to storage
         $filename = 'surat/' . str_replace('/', '_', $nomorSurat) . '.pdf';
         $pdfContent = $pdf->output();
         \Storage::disk('public')->put($filename, $pdfContent);
 
-        // Determine status and type info
         $pelayanan = \App\Models\Pelayanan::where('kode_surat', strtoupper($kode))
-            ->orWhere('kode_surat', $kode)
+            ->orWhere('kode_surat', strtolower($kode))
             ->first();
         $metodeHasil = $pelayanan ? $pelayanan->metode_hasil : 'download';
         $status = ($metodeHasil === 'pickup') ? 'siap_diambil' : 'selesai';
 
-        // Determine if updating an existing record
         $suratId = $request->surat_id ?? $data['surat_id'] ?? null;
         $jenisNama = $pelayanan ? $pelayanan->nama_surat : (self::$JENIS_CONFIG[$kode] ?? $kode);
+
+        // Store metadata in data_surat
+        $data['nomor_surat'] = $nomorSurat;
+        $data['tanggal_surat'] = $tanggalInput;
+        $data['penandatangan_id'] = $request->penandatangan_id;
+        $data['masa_berlaku_opsi'] = $request->masa_berlaku_opsi;
+        $data['tanggal_berakhir'] = $request->tanggal_berakhir;
+        $data['masa_berlaku_custom'] = $request->masa_berlaku_custom;
+        $data['edited_html'] = $request->edited_html;
+        $data['ukuran_kertas'] = $ukuran;
 
         if ($suratId) {
             $surat = Surat::findOrFail($suratId);
             $surat->update([
+                'user_id'     => $userId,
                 'nomor_surat' => $nomorSurat,
                 'data_surat'  => $data,
                 'dibuat_oleh' => auth()->id(),
                 'file_surat'  => $filename,
+                'konten_final'=> $html,
                 'status'      => $status,
             ]);
         } else {
@@ -166,6 +229,7 @@ class BuatSuratController extends Controller
                 'data_surat'  => $data,
                 'dibuat_oleh' => auth()->id(),
                 'file_surat'  => $filename,
+                'konten_final'=> $html,
                 'status'      => $status,
             ]);
         }
@@ -203,16 +267,31 @@ class BuatSuratController extends Controller
     {
         $surat = Surat::findOrFail($id);
 
-        if ($surat->file_surat && \Storage::disk('public')->exists($surat->file_surat)) {
-            $pdfContent = \Storage::disk('public')->get($surat->file_surat);
-        } else {
-            // Regenerate on the fly
-            $kode  = $this->getKodeFromJenis($surat->jenis_surat);
-            $data  = is_array($surat->data_surat) ? $surat->data_surat : [];
-            $created = $surat->created_at ?? Carbon::now();
-            $html  = $this->buildSuratHtml($kode, $data, $surat->nomor_surat ?? '-', $created, 'F4');
-            $pdf   = Pdf::loadHTML($html)->setPaper([0, 0, 612, 936], 'portrait')->setOption('defaultFont', 'times');
+        if ($surat->konten_final) {
+            $html = $surat->konten_final;
+            $ukuran = $surat->data_surat['ukuran_kertas'] ?? 'F4';
+            if ($ukuran === 'F4') {
+                $paper = [0, 0, 612, 936];
+            } else {
+                $paper = 'A4';
+            }
+            $pdf = Pdf::loadHTML($html)
+                ->setPaper($paper, 'portrait')
+                ->setOption('defaultFont', 'times')
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isRemoteEnabled', false);
             $pdfContent = $pdf->output();
+        } else {
+            if ($surat->file_surat && \Storage::disk('public')->exists($surat->file_surat)) {
+                $pdfContent = \Storage::disk('public')->get($surat->file_surat);
+            } else {
+                $kode  = $this->getKodeFromJenis($surat->jenis_surat);
+                $data  = is_array($surat->data_surat) ? $surat->data_surat : [];
+                $created = $surat->created_at ?? Carbon::now();
+                $html  = $this->buildSuratHtml($kode, $data, $surat->nomor_surat ?? '-', $created, 'F4');
+                $pdf   = Pdf::loadHTML($html)->setPaper([0, 0, 612, 936], 'portrait')->setOption('defaultFont', 'times');
+                $pdfContent = $pdf->output();
+            }
         }
 
         $nomorSafe = str_replace(['/', '\\', ' '], '_', $surat->nomor_surat ?? $id);
@@ -257,12 +336,20 @@ class BuatSuratController extends Controller
     // HTML BUILDER — Template Surat per Jenis
     // ─────────────────────────────────────────────────────
 
-    private function buildSuratHtml(string $kode, array $d, string $nomor, $tanggal, string $ukuran = 'F4'): string
-    {
+    private function buildSuratHtml(
+        string $kode, 
+        array $d, 
+        string $nomor, 
+        $tanggal, 
+        string $ukuran = 'F4',
+        ?int $penandatanganId = null,
+        ?string $editedHtml = null,
+        ?string $masaBerlakuOpsi = null,
+        ?string $tanggalBerakhir = null,
+        ?string $masaBerlakuCustom = null
+    ): string {
         $now     = Carbon::parse($tanggal);
         $tglIndo = $this->tglIndonesia($now);
-        $bulan   = $now->translatedFormat('F');
-        $tahun   = $now->year;
 
         // Fetch Pelayanan and see if it has a print template configured
         $slug = strtolower($kode);
@@ -272,20 +359,32 @@ class BuatSuratController extends Controller
             ->first();
 
         $header  = $this->buildHeader($nomor, $kode);
-        $footer  = $this->buildFooter($d, $tglIndo);
+        $footer  = $this->buildFooter($tglIndo, $penandatanganId);
 
-        if ($pelayanan && $pelayanan->template && !empty($pelayanan->template->konten_html)) {
+        $validityText = '';
+        $opsi = $masaBerlakuOpsi ?? 'tidak_ada';
+        if ($opsi === 'sampai_tanggal') {
+            if ($tanggalBerakhir) {
+                $tglExp = Carbon::parse($tanggalBerakhir);
+                $tglExpIndo = $this->tglIndonesia($tglExp);
+                $validityText = "Surat keterangan ini berlaku sampai tanggal {$tglExpIndo}.";
+            }
+        } elseif ($opsi === 'custom') {
+            $validityText = $masaBerlakuCustom ?? '';
+        }
+
+        if (!empty($editedHtml)) {
+            $isi = '<div class="custom-template-body" style="line-height: 1.5; text-align: justify; margin-top: 15px;">' . $editedHtml . '</div>';
+        } elseif ($pelayanan && $pelayanan->template && !empty($pelayanan->template->konten_html)) {
             $konten = $pelayanan->template->konten_html;
 
             // Variables mapping
             $vars = [
                 'nomor_surat' => $nomor,
                 'tanggal'     => $tglIndo,
-                'lurah_name'  => 'H. MAHMUDIN, S.Sos',
-                'lurah_nip'   => '196805121990031005',
             ];
 
-            // Resolve applicant user account details if present
+            // Resolve applicant user details if present
             $user = null;
             if (isset($d['user_id'])) {
                 $user = \App\Models\User::find($d['user_id']);
@@ -297,6 +396,13 @@ class BuatSuratController extends Controller
                 $vars['alamat'] = $user->alamat;
                 $vars['rt']     = $user->rt;
                 $vars['rw']     = $user->rw;
+            } else {
+                $vars['nama']   = $d['nama'] ?? '';
+                $vars['nik']    = $d['nik'] ?? '';
+                $vars['telp']   = $d['telp'] ?? '';
+                $vars['alamat'] = $d['alamat'] ?? '';
+                $vars['rt']     = $d['rt'] ?? '';
+                $vars['rw']     = $d['rw'] ?? '';
             }
 
             // Overlay custom fields from payload
@@ -316,16 +422,32 @@ class BuatSuratController extends Controller
 
             $isi = '<div class="custom-template-body" style="line-height: 1.5; text-align: justify; margin-top: 15px;">' . $konten . '</div>';
         } else {
-            $isi = $this->buildIsi($kode, $d, $nomor, $tglIndo);
+            $resolvedData = $d;
+            if (isset($d['user_id']) && !empty($d['user_id'])) {
+                $user = \App\Models\User::find($d['user_id']);
+                if ($user) {
+                    $resolvedData = array_merge([
+                        'nama' => $user->name,
+                        'nik' => $user->nik,
+                        'telp' => $user->telp,
+                        'alamat' => $user->alamat,
+                        'rt' => $user->rt,
+                        'rw' => $user->rw,
+                    ], $d);
+                }
+            }
+            $isi = $this->buildIsi($kode, $resolvedData, $nomor, $tglIndo);
         }
 
-        // Page dimensions based on paper size
-        if ($ukuran === 'F4') {
-            $pageWidth  = '21.59cm';  // 8.5 inches
-            $pageHeight = '33.02cm';  // 13 inches
+        // Apply validity text injection
+        if (!empty($validityText)) {
+            if (str_contains($isi, '{{masa_berlaku}}') || str_contains($isi, '{{tanggal_berakhir}}') || str_contains($isi, '{{ masa_berlaku }}') || str_contains($isi, '{{ tanggal_berakhir }}')) {
+                $isi = str_replace(['{{masa_berlaku}}', '{{ tanggal_berakhir }}', '{{ masa_berlaku }}', '{{tanggal_berakhir}}'], $validityText, $isi);
+            } else {
+                $isi .= '<div class="validity-section" style="margin-top: 15px; margin-bottom: 15px; text-align: justify; line-height: 1.4; font-weight: bold;">' . htmlspecialchars($validityText) . '</div>';
+            }
         } else {
-            $pageWidth  = '21cm';
-            $pageHeight = '29.7cm';
+            $isi = str_replace(['{{masa_berlaku}}', '{{ tanggal_berakhir }}', '{{ masa_berlaku }}', '{{tanggal_berakhir}}'], '', $isi);
         }
 
         return <<<HTML
@@ -424,16 +546,43 @@ HTML;
         }
         $logoHtml = $logoBase64 ? '<img src="' . $logoBase64 . '" alt="Logo">' : '<div class="no-logo">LOGO</div>';
 
+        // Load profile settings dynamically
+        $setting = \App\Models\Setting::first();
+        $kota = $setting ? strtoupper($setting->kota ?? 'KOTA DEPOK') : 'KOTA DEPOK';
+        $kec = $setting ? strtoupper($setting->kecamatan ?? 'BOJONGSARI') : 'BOJONGSARI';
+        $kel = $setting ? strtoupper($setting->site_name ?? 'KELURAHAN DUREN MEKAR') : 'KELURAHAN DUREN MEKAR';
+
+        $pemerintah = "PEMERINTAH " . $kota;
+        $kecamatan = "KECAMATAN " . $kec;
+        $kelurahan = $kel;
+
+        $addressLine = 'Jl. Raya Duren Mekar No. 1, Bojongsari, Kota Depok';
+        if ($setting) {
+            $addressParts = [];
+            if ($setting->address) $addressParts[] = $setting->address;
+
+            $contactParts = [];
+            if ($setting->phone) $contactParts[] = 'Telp. ' . $setting->phone;
+            if ($setting->email) $contactParts[] = 'Email: ' . $setting->email;
+
+            $addressLine = implode(', ', $addressParts);
+            if (!empty($contactParts)) {
+                $addressLine .= ' - ' . implode(', ', $contactParts);
+            }
+        } else {
+            $addressLine .= ' - Telp. (021) 7422123';
+        }
+
         return <<<HTML
 <div class="kop">
   <div class="kop-logo">
     {$logoHtml}
   </div>
   <div class="kop-text">
-    <div class="k1">PEMERINTAH KOTA DEPOK</div>
-    <div class="k2">KECAMATAN BOJONGSARI</div>
-    <div class="k3">KELURAHAN DUREN MEKAR</div>
-    <div class="k4">Jl. Raya Duren Mekar No. 1, Bojongsari, Kota Depok - Telp. (021) 7422123</div>
+    <div class="k1">{$pemerintah}</div>
+    <div class="k2">{$kecamatan}</div>
+    <div class="k3">{$kelurahan}</div>
+    <div class="k4">{$addressLine}</div>
   </div>
 </div>
 <div class="surat-title">
@@ -443,15 +592,41 @@ HTML;
 HTML;
     }
 
-    private function buildFooter(array $d, string $tglIndo): string
+    private function buildFooter(string $tglIndo, ?int $penandatanganId = null): string
     {
+        $nama = 'H. MAHMUDIN, S.Sos';
+        $nip = '196805121990031005';
+        $jabatan = 'Lurah';
+
+        if ($penandatanganId) {
+            $penandatangan = \App\Models\MasterPenandatangan::find($penandatanganId);
+            if ($penandatangan) {
+                $nama = $penandatangan->nama;
+                $nip = $penandatangan->nip;
+                $jabatan = $penandatangan->jabatan;
+            }
+        } else {
+            // Default to Setting's lurah_name
+            $setting = \App\Models\Setting::first();
+            if ($setting && $setting->lurah_name) {
+                $nama = $setting->lurah_name;
+            }
+        }
+
+        $jabatanHtml = '';
+        if (str_contains(strtolower($jabatan), 'lurah') && !str_contains(strtolower($jabatan), 'a.n.')) {
+            $jabatanHtml = 'Lurah Duren Mekar';
+        } else {
+            $jabatanHtml = 'a.n. Lurah Duren Mekar<br>' . $jabatan;
+        }
+
         return <<<HTML
 <div class="clearfix">
   <div class="ttd-section">
     <div class="ttd-kota">Depok, {$tglIndo}</div>
-    <div class="ttd-jabatan">Lurah Duren Mekar</div>
-    <div class="ttd-nama">[Nama Lurah]</div>
-    <div class="ttd-nip">NIP. [NIP Lurah]</div>
+    <div class="ttd-jabatan">{$jabatanHtml}</div>
+    <div class="ttd-nama">{$nama}</div>
+    <div class="ttd-nip">NIP. {$nip}</div>
   </div>
 </div>
 HTML;

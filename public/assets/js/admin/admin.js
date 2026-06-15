@@ -3664,6 +3664,7 @@
             document.getElementById("fSrvId").value = "";
             document.getElementById("fSrvTemplate").value = "";
             if (editorCanvas) editorCanvas.innerHTML = "";
+            document.getElementById("fSrvDeskripsiSurat").value = "";
             document.getElementById("fSrvStatus").checked = true;
             draftSyarat = [];
             draftSteps = [];
@@ -3726,6 +3727,7 @@
                     catatan: document.getElementById("fSrvCatatan").value,
                     template_html: document.getElementById("fSrvTemplate").value,
                     teks_tombol: document.getElementById("fSrvTombol").value,
+                    deskripsi_surat: document.getElementById("fSrvDeskripsiSurat").value,
                     status: document.getElementById("fSrvStatus").checked ? 'aktif' : 'nonaktif',
                 };
 
@@ -3764,6 +3766,96 @@
             });
         }
 
+        function getDefaultTemplateHtml(kode) {
+            const k = (kode || "").toUpperCase();
+            
+            const blockPemohon = `
+<table class="data-table">
+  <tr><td class="field-label">Nama Lengkap</td><td class="sep">:</td><td><strong>{{nama}}</strong></td></tr>
+  <tr><td class="field-label">Tempat / Tgl Lahir</td><td class="sep">:</td><td>{{tempat_lahir}}, {{tgl_lahir}}</td></tr>
+  <tr><td class="field-label">Jenis Kelamin</td><td class="sep">:</td><td>{{jenis_kelamin}}</td></tr>
+  <tr><td class="field-label">Agama</td><td class="sep">:</td><td>{{agama}}</td></tr>
+  <tr><td class="field-label">Status Perkawinan</td><td class="sep">:</td><td>{{status_nikah}}</td></tr>
+  <tr><td class="field-label">Pekerjaan</td><td class="sep">:</td><td>{{pekerjaan}}</td></tr>
+  <tr><td class="field-label">NIK</td><td class="sep">:</td><td>{{nik}}</td></tr>
+  <tr><td class="field-label">No. KK</td><td class="sep">:</td><td>{{no_kk}}</td></tr>
+  <tr><td class="field-label">Alamat</td><td class="sep">:</td><td>{{alamat}}</td></tr>
+  <tr><td class="field-label">RT / RW</td><td class="sep">:</td><td>{{rt}} / {{rw}}</td></tr>
+</table>`;
+
+            switch(k) {
+                case 'SKTM':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang berdomisili pada alamat tersebut di atas, dan yang bersangkutan <strong>TIDAK MAMPU / KURANG MAMPU</strong> secara ekonomi.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKDOM':
+                case 'SKDM':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga yang berdomisili / bertempat tinggal secara <strong>{{jenis_domisili}}</strong> di Kelurahan Duren Mekar sejak <strong>{{sejak_tahun}}</strong>.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKKEHIDUPAN':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan dengan sesungguhnya bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang berdomisili pada alamat tersebut di atas dan pada saat surat keterangan ini dibuat, yang bersangkutan <strong>MASIH HIDUP</strong>.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini kami buat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKBELUMNIK':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar dan berdasarkan data yang ada pada kami, yang bersangkutan <strong>BELUM MEMILIKI NOMOR INDUK KEPENDUDUKAN (NIK)</strong>.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKWIRASWASTA':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang menjalankan usaha/wirausaha dengan keterangan sebagai berikut :</p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Usaha</td><td class="sep">:</td><td>{{nama_usaha}}</td></tr>\n  <tr><td class="field-label">Jenis Usaha</td><td class="sep">:</td><td>{{jenis_usaha}}</td></tr>\n  <tr><td class="field-label">Alamat Usaha</td><td class="sep">:</td><td>{{alamat_usaha}}</td></tr>\n  <tr><td class="field-label">Perkiraan Pendapatan</td><td class="sep">:</td><td>Rp {{pendapatan}} / bulan</td></tr>\n</table>\n<p style="margin-top: 15px;">Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKPINDAH':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang akan <strong>PINDAH TEMPAT TINGGAL</strong> ke :</p>\n<table class="data-table">\n  <tr><td class="field-label">Alamat Tujuan</td><td class="sep">:</td><td>{{alamat_tujuan}}</td></tr>\n  <tr><td class="field-label">Kelurahan/Desa</td><td class="sep">:</td><td>{{kel_tujuan}}</td></tr>\n  <tr><td class="field-label">Kecamatan</td><td class="sep">:</td><td>{{kec_tujuan}}</td></tr>\n  <tr><td class="field-label">Kota/Kabupaten</td><td class="sep">:</td><td>{{kota_tujuan}}</td></tr>\n  <tr><td class="field-label">Alasan Pindah</td><td class="sep">:</td><td>{{alasan_pindah}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKKEMATIAN':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Almarhum/ah</td><td class="sep">:</td><td><strong>{{nama_alm}}</strong></td></tr>\n  <tr><td class="field-label">Tempat / Tgl Lahir</td><td class="sep">:</td><td>{{tempat_lahir_alm}}, {{tgl_lahir_alm}}</td></tr>\n  <tr><td class="field-label">NIK</td><td class="sep">:</td><td>{{nik_alm}}</td></tr>\n  <tr><td class="field-label">Agama</td><td class="sep">:</td><td>{{agama_alm}}</td></tr>\n  <tr><td class="field-label">Tanggal Meninggal</td><td class="sep">:</td><td>{{tgl_meninggal}}</td></tr>\n  <tr><td class="field-label">Tempat Meninggal</td><td class="sep">:</td><td>{{tempat_meninggal}}</td></tr>\n  <tr><td class="field-label">Sebab Kematian</td><td class="sep">:</td><td>{{sebab_kematian}}</td></tr>\n  <tr><td class="field-label">Alamat Terakhir</td><td class="sep">:</td><td>{{alamat_alm}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKKELAHIRAN':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa telah lahir seorang anak dengan keterangan sebagai berikut :</p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Anak</td><td class="sep">:</td><td><strong>{{nama_anak}}</strong></td></tr>\n  <tr><td class="field-label">Jenis Kelamin</td><td class="sep">:</td><td>{{jk_anak}}</td></tr>\n  <tr><td class="field-label">Tempat Lahir</td><td class="sep">:</td><td>{{tempat_lahir_anak}}</td></tr>\n  <tr><td class="field-label">Tanggal Lahir</td><td class="sep">:</td><td>{{tgl_lahir_anak}}</td></tr>\n  <tr><td class="field-label">Nama Ayah</td><td class="sep">:</td><td>{{nama_ayah}}</td></tr>\n  <tr><td class="field-label">Nama Ibu</td><td class="sep">:</td><td>{{nama_ibu}}</td></tr>\n  <tr><td class="field-label">Alamat Orang Tua</td><td class="sep">:</td><td>{{alamat_ortu}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKGAJISWASTA':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang bekerja sebagai <strong>{{jabatan}}</strong> di <strong>{{nama_perusahaan}}</strong> dengan penghasilan rata-rata <strong>Rp {{penghasilan}}</strong> per bulan.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKGAJIPNS':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang berstatus sebagai <strong>Pegawai Negeri Sipil (PNS)</strong> pada instansi <strong>{{instansi}}</strong>, Golongan <strong>{{golongan}}</strong>, dengan penghasilan rata-rata <strong>Rp {{penghasilan}}</strong> per bulan.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKPEMILIKAN':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang memiliki sebidang tanah dengan keterangan :</p>\n<table class="data-table">\n  <tr><td class="field-label">Luas Tanah</td><td class="sep">:</td><td>{{luas_tanah}} m²</td></tr>\n  <tr><td class="field-label">Lokasi Tanah</td><td class="sep">:</td><td>{{lokasi_tanah}}</td></tr>\n  <tr><td class="field-label">Bukti Kepemilikan</td><td class="sep">:</td><td>{{bukti_kepemilikan}}</td></tr>\n  <tr><td class="field-label">Nomor Sertifikat</td><td class="sep">:</td><td>{{no_sertifikat}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKTIDAKBUTA':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang berdasarkan pengetahuan dan pengamatan kami, yang bersangkutan <strong>TIDAK BUTA HURUF</strong> dan mampu membaca serta menulis dengan baik.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKSENGKETA':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang memiliki tanah/bangunan di <strong>{{alamat_tanah}}</strong>, dan berdasarkan pengetahuan kami, tanah/bangunan tersebut <strong>TIDAK DALAM SENGKETA</strong> dengan pihak manapun.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'SKBERSIH':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang berdasarkan pengetahuan dan pengamatan kami selama ini, yang bersangkutan <strong>BERKELAKUAN BAIK</strong>, tidak pernah terlibat dalam tindak pidana dan tidak pernah melakukan perbuatan yang bertentangan dengan norma masyarakat.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'N1':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar dan bermaksud untuk <strong>MELANGSUNGKAN PERNIKAHAN</strong> dengan :</p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Calon Pasangan</td><td class="sep">:</td><td><strong>{{nama_pasangan}}</strong></td></tr>\n  <tr><td class="field-label">Tempat / Tgl Lahir</td><td class="sep">:</td><td>{{ttl_pasangan}}</td></tr>\n  <tr><td class="field-label">NIK Calon Pasangan</td><td class="sep">:</td><td>{{nik_pasangan}}</td></tr>\n  <tr><td class="field-label">Alamat Calon Pasangan</td><td class="sep">:</td><td>{{alamat_pasangan}}</td></tr>\n  <tr><td class="field-label">Rencana Menikah</td><td class="sep">:</td><td>{{rencana_nikah}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya di Kantor Urusan Agama setempat.</p>`;
+
+                case 'N2':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah anak dari :</p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Ayah</td><td class="sep">:</td><td>{{nama_ayah}}</td></tr>\n  <tr><td class="field-label">Nama Ibu</td><td class="sep">:</td><td>{{nama_ibu}}</td></tr>\n  <tr><td class="field-label">Alamat Orang Tua</td><td class="sep">:</td><td>{{alamat_ortu}}</td></tr>\n  <tr><td class="field-label">Status Perkawinan Ortu</td><td class="sep">:</td><td>{{status_ortu}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Demikian surat keterangan asal usul ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya di Kantor Urusan Agama setempat.</p>`;
+
+                case 'N4':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Ayah</td><td class="sep">:</td><td><strong>{{nama_ayah}}</strong></td></tr>\n  <tr><td class="field-label">Tempat / Tgl Lahir</td><td class="sep">:</td><td>{{ttl_ayah}}</td></tr>\n  <tr><td class="field-label">Pekerjaan Ayah</td><td class="sep">:</td><td>{{pekerjaan_ayah}}</td></tr>\n  <tr><td class="field-label">Nama Ibu</td><td class="sep">:</td><td><strong>{{nama_ibu}}</strong></td></tr>\n  <tr><td class="field-label">Tempat / Tgl Lahir Ibu</td><td class="sep">:</td><td>{{ttl_ibu}}</td></tr>\n  <tr><td class="field-label">Pekerjaan Ibu</td><td class="sep">:</td><td>{{pekerjaan_ibu}}</td></tr>\n  <tr><td class="field-label">Alamat Orang Tua</td><td class="sep">:</td><td>{{alamat_ortu}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Demikian surat keterangan tentang orang tua ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya di Kantor Urusan Agama setempat.</p>`;
+
+                case 'PENGANTAR':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, memberikan surat pengantar kepada :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Untuk keperluan : <strong>{{keperluan}}</strong> pada instansi/lembaga <strong>{{tujuan_instansi}}</strong>.</p>\n<p>Kepada yang berwenang diharapkan dapat memberikan bantuan sebagaimana mestinya.</p>\n<p>Demikian surat pengantar ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'PENGANTARSKCK':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, memberikan surat pengantar guna keperluan pembuatan Surat Keterangan Catatan Kepolisian (SKCK) kepada :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Kepada Yth. Kepala Kepolisian Sektor / Resort Kota Depok agar berkenan membantu yang bersangkutan dalam pembuatan <strong>SKCK</strong>.</p>\n<p>Demikian surat pengantar ini dibuat dengan sebenarnya.</p>`;
+
+                case 'PENGANTARPINDAH':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Bermaksud pindah tempat tinggal ke : <strong>{{alamat_tujuan}}</strong>, Kelurahan <strong>{{kel_tujuan}}</strong>, Kecamatan <strong>{{kec_tujuan}}</strong>, Kota/Kabupaten <strong>{{kota_tujuan}}</strong>.</p>\n<p>Kepada pihak yang berwenang di tempat tujuan agar berkenan menerima dan membantu yang bersangkutan mengurus kepindahannya.</p>\n<p>Demikian surat pengantar ini dibuat dengan sebenarnya.</p>`;
+
+                case 'REKOMENDASI':
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, dengan ini memberikan <strong>REKOMENDASI</strong> kepada :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Berdasarkan pengamatan dan pengetahuan kami, yang bersangkutan adalah warga yang baik, bertanggung jawab, dan layak mendapat rekomendasi untuk keperluan tersebut.</p>\n<p>Demikian surat rekomendasi ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+
+                case 'KUASA':
+                    return `<p>Yang bertanda tangan di bawah ini, selaku Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n<p><strong>PEMBERI KUASA :</strong></p>\n\${blockPemohon}\n<p style="margin-top: 15px;"><strong>Memberikan kuasa penuh kepada :</strong></p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Penerima Kuasa</td><td class="sep">:</td><td><strong>{{nama_penerima}}</strong></td></tr>\n  <tr><td class="field-label">NIK Penerima Kuasa</td><td class="sep">:</td><td>{{nik_penerima}}</td></tr>\n  <tr><td class="field-label">Hubungan</td><td class="sep">:</td><td>{{hubungan}}</td></tr>\n  <tr><td class="field-label">Alamat Penerima</td><td class="sep">:</td><td>{{alamat_penerima}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Surat kuasa ini dibuat dengan sebenarnya tanpa paksaan dari pihak manapun.</p>`;
+
+                default:
+                    return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
+            }
+        }
+
         window.editPelayanan = async function (id) {
             const response = await fetchAPI(`/api/admin/pelayanan/${id}`);
             const item = await response.json();
@@ -3777,11 +3869,17 @@
             document.getElementById("fSrvJam").value = item.jam_pelayanan ?? "";
             document.getElementById("fSrvLokasi").value = item.lokasi ?? "";
             document.getElementById("fSrvCatatan").value = item.catatan ?? "";
-            document.getElementById("fSrvTemplate").value = item.template?.konten_html ?? "";
+            
+            const rawTemplate = item.template?.konten_html ?? "";
+            const defaultTemplate = getDefaultTemplateHtml(item.slug || item.kode_surat);
+            const templateHtml = rawTemplate.trim() !== "" ? rawTemplate : defaultTemplate;
+            
+            document.getElementById("fSrvTemplate").value = templateHtml;
             if (editorCanvas) {
-                editorCanvas.innerHTML = item.template?.konten_html ?? "";
+                editorCanvas.innerHTML = templateHtml;
             }
             document.getElementById("fSrvTombol").value = item.teks_tombol ?? "";
+            document.getElementById("fSrvDeskripsiSurat").value = item.deskripsi_surat ?? "";
             document.getElementById("fSrvStatus").checked = (item.status === 'aktif');
 
             draftSyarat = item.syarat ?? [];
@@ -3816,6 +3914,7 @@
                     catatan: item.catatan,
                     template_html: item.template?.konten_html || '',
                     teks_tombol: item.teks_tombol,
+                    deskripsi_surat: item.deskripsi_surat,
                     status: nextStatus,
                 };
 
@@ -4129,6 +4228,189 @@
                 };
             });
     }
+
+    let _penandatanganBound = false;
+    async function initMasterPenandatangan() {
+        const tbody = document.getElementById("adminPenandatanganTbody");
+        const empty = document.getElementById("adminPenandatanganEmpty");
+        const searchInput = document.getElementById("adminPenandatanganSearch");
+
+        if (!tbody) return;
+
+        let allItems = [];
+
+        async function loadData() {
+            try {
+                const res = await fetchAPI("/api/admin/master-penandatangan", {
+                    credentials: "same-origin",
+                    headers: { Accept: "application/json" }
+                });
+                if (!res.ok) throw new Error("Gagal memuat data penandatangan");
+                allItems = await res.json();
+                render();
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">${err.message}</td></tr>`;
+            }
+        }
+
+        function render() {
+            const query = (searchInput?.value || "").trim().toLowerCase();
+            let items = allItems;
+
+            if (query) {
+                items = items.filter(it => 
+                    (it.nama || "").toLowerCase().includes(query) ||
+                    (it.nip || "").toLowerCase().includes(query) ||
+                    (it.jabatan || "").toLowerCase().includes(query)
+                );
+            }
+
+            if (!items.length) {
+                tbody.innerHTML = "";
+                if (empty) empty.style.display = "block";
+                return;
+            }
+
+            if (empty) empty.style.display = "none";
+
+            tbody.innerHTML = items.map(it => {
+                const statusBadge = it.status_aktif 
+                    ? `<span class="badge badge-done" style="background:rgba(34,197,94,.12);color:#16a34a">Aktif</span>`
+                    : `<span class="badge badge-neutral" style="background:rgba(148,163,184,.22);color:#334155">Nonaktif</span>`;
+                
+                return `
+                <tr>
+                    <td><b>${it.nama}</b></td>
+                    <td>${it.jabatan}</td>
+                    <td>${it.nip}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="btn btn-warning btn-sm" data-action="penandatanganEdit" data-id="${it.id}">
+                                <i class="fa-solid fa-pen"></i> Edit
+                            </button>
+                            <button class="btn btn-danger btn-sm" data-action="penandatanganDelete" data-id="${it.id}">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+            }).join("");
+        }
+
+        await loadData();
+
+        if (searchInput && !searchInput.dataset.bound) {
+            searchInput.dataset.bound = "true";
+            searchInput.addEventListener("input", render);
+        }
+
+        if (_penandatanganBound) return;
+        _penandatanganBound = true;
+
+        // Form submit
+        const form = document.getElementById("adminPenandatanganForm");
+        if (form) {
+            form.addEventListener("submit", async function(e) {
+                e.preventDefault();
+                const id = document.getElementById("penandatanganId").value;
+                const payload = {
+                    nama: document.getElementById("penandatanganNama").value,
+                    jabatan: document.getElementById("penandatanganJabatan").value,
+                    nip: document.getElementById("penandatanganNip").value,
+                    status_aktif: document.getElementById("penandatanganStatus").value === "1",
+                };
+
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                const method = id ? "PUT" : "POST";
+                const url = id ? `/api/admin/master-penandatangan/${id}` : "/api/admin/master-penandatangan";
+
+                try {
+                    const res = await fetchAPI(url, {
+                        method,
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": csrf,
+                            Accept: "application/json"
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const errData = await res.json();
+                        throw new Error(errData.message || "Gagal menyimpan data");
+                    }
+
+                    document.getElementById("adminPenandatanganModal")?.classList.remove("open");
+                    await loadData();
+                } catch (err) {
+                    alert(err.message);
+                }
+            });
+        }
+
+        // Global click handler in admin context
+        document.addEventListener("click", async (e) => {
+            const btnCreate = e.target.closest("[data-action='penandatanganCreate']");
+            const btnEdit = e.target.closest("[data-action='penandatanganEdit']");
+            const btnDelete = e.target.closest("[data-action='penandatanganDelete']");
+            const btnClose = e.target.closest("[data-action='penandatanganClose']");
+
+            if (btnClose) {
+                document.getElementById("adminPenandatanganModal")?.classList.remove("open");
+            }
+
+            if (btnCreate) {
+                document.getElementById("adminPenandatanganModalTitle").textContent = "Tambah Penandatangan";
+                document.getElementById("penandatanganId").value = "";
+                document.getElementById("penandatanganNama").value = "";
+                document.getElementById("penandatanganJabatan").value = "";
+                document.getElementById("penandatanganNip").value = "";
+                document.getElementById("penandatanganStatus").value = "1";
+                document.getElementById("adminPenandatanganModal")?.classList.add("open");
+            }
+
+            if (btnEdit) {
+                const id = btnEdit.dataset.id;
+                try {
+                    const res = await fetchAPI(`/api/admin/master-penandatangan/${id}`);
+                    if (!res.ok) throw new Error("Gagal mengambil data penandatangan");
+                    const it = await res.json();
+
+                    document.getElementById("adminPenandatanganModalTitle").textContent = "Edit Penandatangan";
+                    document.getElementById("penandatanganId").value = it.id;
+                    document.getElementById("penandatanganNama").value = it.nama;
+                    document.getElementById("penandatanganJabatan").value = it.jabatan;
+                    document.getElementById("penandatanganNip").value = it.nip;
+                    document.getElementById("penandatanganStatus").value = it.status_aktif ? "1" : "0";
+                    document.getElementById("adminPenandatanganModal")?.classList.add("open");
+                } catch (err) {
+                    alert(err.message);
+                }
+            }
+
+            if (btnDelete) {
+                const id = btnDelete.dataset.id;
+                if (!confirm("Apakah Anda yakin ingin menghapus pejabat penandatangan ini?")) return;
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                try {
+                    const res = await fetchAPI(`/api/admin/master-penandatangan/${id}`, {
+                        method: "DELETE",
+                        headers: {
+                            "X-CSRF-TOKEN": csrf,
+                            Accept: "application/json"
+                        }
+                    });
+                    if (!res.ok) throw new Error("Gagal menghapus data");
+                    await loadData();
+                } catch (err) {
+                    alert(err.message);
+                }
+            }
+        });
+    }
     window.addEventListener("page:loaded", (e) => {
         const name = e.detail?.name || "";
         const isAdminRoute = name.startsWith("admin/");
@@ -4166,6 +4448,7 @@
         if (name === "admin/lembaga") initLembagaLaravel();
         if (name === "admin/unit-kerja") initUnitKerjaLaravel();
         if (name === "admin/pelayanan") initPelayananLaravel();
+        if (name === "admin/master-penandatangan") initMasterPenandatangan();
         if (name === "admin/users") initUsersLaravel();
         if (name === "admin/struktur-organisasi") initStrukturOrganisasi();
         if (name === "admin/laporan") initLaporan();
