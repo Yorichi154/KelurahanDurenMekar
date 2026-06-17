@@ -35,12 +35,12 @@ class BeritaController extends Controller
         return response()->json($berita, 201);
     }
 
-    public function show(Berita $berita)
+    public function show(Berita $beritum)
     {
-        return response()->json($berita);
+        return response()->json($beritum);
     }
 
-    public function update(Request $request, Berita $berita)
+    public function update(Request $request, Berita $beritum)
     {
         $validated = $request->validate([
             'title'     => 'required|max:255',
@@ -54,37 +54,34 @@ class BeritaController extends Controller
 
         if (isset($validated['image']) && $validated['image']) {
             // Delete old image if it is stored in our filesystem
-            if ($berita->image && str_starts_with($berita->image, '/storage/')) {
-                $oldPath = str_replace('/storage/', '', $berita->image);
+            if ($beritum->image && str_starts_with($beritum->image, '/storage/')) {
+                $oldPath = str_replace('/storage/', '', $beritum->image);
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
             }
             $validated['image'] = $this->saveBase64Image($validated['image'], 'berita');
         }
 
-        $berita->update($validated);
+        $beritum->update($validated);
 
-        return response()->json($berita);
+        return response()->json($beritum);
     }
 
-    public function destroy(Berita $berita)
-    {
-        if ($berita->image && str_starts_with($berita->image, '/storage/')) {
-            $oldPath = str_replace('/storage/', '', $berita->image);
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
-        }
-        $berita->delete();
-
-        return response()->json([
-            'success' => true
-        ]);
+ public function destroy(Berita $berita)
+{
+    if ($berita->image && str_starts_with($berita->image, '/storage/')) {
+        $oldPath = str_replace('/storage/', '', $berita->image);
+        \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
     }
+    $berita->delete();
 
+    return response()->json(['success' => true]);
+}
     private function saveBase64Image($base64String, $folder = 'uploads')
     {
         if (preg_match('/^data:([\w\-\+]+)\/([\w\-\+]+);base64,/', $base64String, $matches)) {
             $mainType = strtolower($matches[1]);
             $subType = strtolower($matches[2]);
-            
+
             $allowedImages = ['jpg', 'jpeg', 'gif', 'png', 'webp', 'x-png', 'pjpeg', 'svg', 'svg+xml'];
             $isPdf = ($mainType === 'application' && $subType === 'pdf');
             $isImage = ($mainType === 'image' && in_array($subType, $allowedImages));

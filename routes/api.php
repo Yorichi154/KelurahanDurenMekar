@@ -104,8 +104,8 @@ Route::prefix('admin')->middleware(['role:admin'])->group(function () {
     Route::post('surat/{id}/restore', [SuratController::class, 'restore']);
     Route::delete('surat/{id}/force', [SuratController::class, 'forceDelete']);
 
-    Route::apiResource('berita', BeritaController::class);
-
+Route::apiResource('berita', \App\Http\Controllers\BeritaController::class)
+    ->parameters(['berita' => 'berita']);
     Route::apiResource('pengaduan', PengaduanController::class);
 
     Route::apiResource('pengumuman', PengumumanController::class);

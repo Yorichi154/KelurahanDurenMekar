@@ -1,4 +1,5 @@
-<section class="admin-shell" data-admin-page="master-penandatangan">
+<section class="admin-shell" data-admin-page="lembaga">
+    <!-- =============== SIDEBAR =============== -->
     <aside class="admin-side">
         <div class="side-head">
             <h3><i class="fa-solid fa-shield-halved"></i> Panel Admin</h3>
@@ -33,7 +34,6 @@
                     <i class="fa-solid fa-location-dot"></i> Profil Kelurahan
                 </a>
             </li>
-
             <!-- ORGANISASI & PELAYANAN -->
             <li>
                 <a
@@ -41,14 +41,6 @@
                     data-page="admin/pelayanan"
                     href="#admin/pelayanan"
                     ><i class="fa-regular fa-file-lines"></i> Pelayanan Surat</a
-                >
-            </li>
-            <li>
-                <a
-                    class="nav-link active"
-                    data-page="admin/master-penandatangan"
-                    href="#admin/master-penandatangan"
-                    ><i class="fa-solid fa-signature"></i> Master Penandatangan</a
                 >
             </li>
             <li>
@@ -64,14 +56,26 @@
                     class="nav-link"
                     data-page="admin/lembaga"
                     href="#admin/lembaga"
-                    ><i class="fa-solid fa-building-columns"></i> Lembaga</a>
+                    ><i class="fa-solid fa-building-columns"></i> Lembaga</a
+                >
+            </li>
+            <li>
+                <a
+                    class="nav-link"
+                    data-page="admin/master-penandatangan"
+                    href="#admin/master-penandatangan"
+                >
+                    <i class="fa-solid fa-signature"></i>
+                    Master Penandatangan
+                </a>
             </li>
             <li>
                 <a
                     class="nav-link"
                     data-page="admin/struktur-organisasi"
                     href="#admin/struktur-organisasi"
-                    ><i class="fa-solid fa-sitemap"></i> Struktur Org.</a>
+                    ><i class="fa-solid fa-sitemap"></i> Struktur Org.</a
+                >
             </li>
             <!-- KONTEN (collapse) -->
             <li class="menu-group" data-group="konten">
@@ -215,6 +219,7 @@
             <li>
                 <a class="nav-link" data-page="admin/users" href="#admin/users">
                     <i class="fa-solid fa-users-gear"></i>
+
                     Kelola User
                 </a>
             </li>
@@ -231,13 +236,13 @@
             </li>
         </ul>
     </aside>
-
     <div class="admin-main">
         <div class="admin-top">
             <div>
                 <h1>Master Penandatangan</h1>
                 <div class="muted" style="font-weight: 700">
-                    Kelola profil pejabat penandatangan surat pelayanan Kelurahan.
+                    Kelola profil pejabat penandatangan surat pelayanan
+                    Kelurahan.
                 </div>
             </div>
             <div class="top-actions">
@@ -271,7 +276,10 @@
                         />
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap">
-                        <button class="btn btn-3d btn-primary btn-tambah-data" data-action="penandatanganCreate">
+                        <button
+                            class="btn btn-3d btn-primary btn-tambah-data"
+                            data-action="penandatanganCreate"
+                        >
                             <span class="btn-text">Tambah Penandatangan</span>
                             <i class="fa-solid fa-plus"></i>
                         </button>
@@ -309,7 +317,10 @@
                     <h3 style="margin: 0" id="adminPenandatanganModalTitle">
                         Tambah Penandatangan
                     </h3>
-                    <button class="btn btn-ghost" data-action="penandatanganClose">
+                    <button
+                        class="btn btn-ghost"
+                        data-action="penandatanganClose"
+                    >
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
@@ -319,21 +330,41 @@
 
                     <div class="field">
                         <label>Nama Lengkap (dengan Gelar)</label>
-                        <input class="input" id="penandatanganNama" required placeholder="Contoh: H. MAHMUDIN, S.Sos" />
+                        <input
+                            class="input"
+                            id="penandatanganNama"
+                            required
+                            placeholder="Contoh: H. MAHMUDIN, S.Sos"
+                        />
                     </div>
 
                     <div class="field">
                         <label>Jabatan Dinas</label>
-                        <input class="input" id="penandatanganJabatan" required placeholder="Contoh: Lurah, Sekretaris Kelurahan, Kasi Pemerintahan" />
-                        <small class="muted" style="display:block; margin-top:4px;">
-                            Jika jabatan selain "Lurah" (misal: Sekretaris, Kasi), sistem akan menambahkan awalan "a.n. Lurah Duren Mekar" di surat.
+                        <input
+                            class="input"
+                            id="penandatanganJabatan"
+                            required
+                            placeholder="Contoh: Lurah, Sekretaris Kelurahan, Kasi Pemerintahan"
+                        />
+                        <small
+                            class="muted"
+                            style="display: block; margin-top: 4px"
+                        >
+                            Jika jabatan selain "Lurah" (misal: Sekretaris,
+                            Kasi), sistem akan menambahkan awalan "a.n. Lurah
+                            Duren Mekar" di surat.
                         </small>
                     </div>
 
                     <div class="form-row">
                         <div class="field">
                             <label>NIP</label>
-                            <input class="input" id="penandatanganNip" required placeholder="Contoh: 196805121990031005" />
+                            <input
+                                class="input"
+                                id="penandatanganNip"
+                                required
+                                placeholder="Contoh: 196805121990031005"
+                            />
                         </div>
                         <div class="field">
                             <label>Status</label>

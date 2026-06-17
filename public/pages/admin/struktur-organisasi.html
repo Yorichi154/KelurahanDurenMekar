@@ -1,88 +1,290 @@
-<section class="admin-shell" data-admin-page="struktur-organisasi">
+<section class="admin-shell" data-admin-page="lembaga">
+    <!-- =============== SIDEBAR =============== -->
     <aside class="admin-side">
         <div class="side-head">
             <h3><i class="fa-solid fa-shield-halved"></i> Panel Admin</h3>
-            <div class="muted" style="font-size: 12px; margin-top: 6px" id="adminUserLabel" data-bind="userName">-</div>
+            <div
+                class="muted"
+                style="font-size: 12px; margin-top: 6px"
+                id="adminUserLabel"
+                data-bind="userName"
+            >
+                -
+            </div>
         </div>
 
         <ul class="side-menu" id="adminSideMenu">
-            <li><a class="nav-link" data-page="admin/dashboard" href="#admin/dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</a></li>
-            <li><a class="nav-link" data-page="admin/profil-kelurahan" href="#admin/profil-kelurahan"><i class="fa-solid fa-location-dot"></i> Profil Kelurahan</a></li>
-            <li><a class="nav-link" data-page="admin/pelayanan" href="#admin/pelayanan"><i class="fa-regular fa-file-lines"></i> Pelayanan Surat</a></li>
-<li>
-    <a
-        class="nav-link"
-        data-page="admin/master-penandatangan"
-        href="#admin/master-penandatangan"
-    >
-        <i class="fa-solid fa-signature"></i>
-        Master Penandatangan
-    </a>
-</li>
-            <li><a class="nav-link" data-page="admin/unit-kerja" href="#admin/unit-kerja"><i class="fa-solid fa-people-roof"></i> Unit Kerja</a></li>
-            <li><a class="nav-link" data-page="admin/lembaga" href="#admin/lembaga"><i class="fa-solid fa-building-columns"></i> Lembaga</a></li>
-            <li><a class="nav-link" data-page="admin/struktur-organisasi" href="#admin/struktur-organisasi"><i class="fa-solid fa-sitemap"></i> Struktur Org.</a></li>
+            <!-- MAIN -->
+            <li>
+                <a
+                    class="nav-link"
+                    data-page="admin/dashboard"
+                    href="#admin/dashboard"
+                >
+                    <i class="fa-solid fa-gauge"></i> Dashboard
+                </a>
+            </li>
+
+            <li>
+                <a
+                    class="nav-link"
+                    data-page="admin/profil-kelurahan"
+                    href="#admin/profil-kelurahan"
+                >
+                    <i class="fa-solid fa-location-dot"></i> Profil Kelurahan
+                </a>
+            </li>
+            <!-- ORGANISASI & PELAYANAN -->
+            <li>
+                <a
+                    class="nav-link"
+                    data-page="admin/pelayanan"
+                    href="#admin/pelayanan"
+                    ><i class="fa-regular fa-file-lines"></i> Pelayanan Surat</a
+                >
+            </li>
+            <li>
+                <a
+                    class="nav-link"
+                    data-page="admin/unit-kerja"
+                    href="#admin/unit-kerja"
+                    ><i class="fa-solid fa-people-roof"></i> Unit Kerja</a
+                >
+            </li>
+            <li>
+                <a
+                    class="nav-link"
+                    data-page="admin/lembaga"
+                    href="#admin/lembaga"
+                    ><i class="fa-solid fa-building-columns"></i> Lembaga</a
+                >
+            </li>
+            <li>
+                <a
+                    class="nav-link"
+                    data-page="admin/master-penandatangan"
+                    href="#admin/master-penandatangan"
+                >
+                    <i class="fa-solid fa-signature"></i>
+                    Master Penandatangan
+                </a>
+            </li>
+            <li>
+                <a
+                    class="nav-link"
+                    data-page="admin/struktur-organisasi"
+                    href="#admin/struktur-organisasi"
+                    ><i class="fa-solid fa-sitemap"></i> Struktur Org.</a
+                >
+            </li>
+            <!-- KONTEN (collapse) -->
             <li class="menu-group" data-group="konten">
-                <button class="group-toggle" type="button" aria-expanded="false" aria-controls="groupKonten">
-                    <span class="left"><i class="fa-regular fa-folder-open"></i><span>Konten</span></span>
+                <button
+                    class="group-toggle"
+                    type="button"
+                    aria-expanded="false"
+                    aria-controls="groupKonten"
+                >
+                    <span class="left">
+                        <i class="fa-regular fa-folder-open"></i>
+                        <span>Konten</span>
+                    </span>
                     <i class="fa-solid fa-chevron-down chev"></i>
                 </button>
+
                 <ul class="group-items" id="groupKonten">
-                    <li><a class="nav-link" data-page="admin/berita" href="#admin/berita"><i class="fa-regular fa-newspaper"></i> Kelola Berita</a></li>
-                    <li><a class="nav-link" data-page="admin/agenda" href="#admin/agenda"><i class="fa-regular fa-calendar"></i> Kelola Agenda</a></li>
-                    <li><a class="nav-link" data-page="admin/galeri" href="#admin/galeri"><i class="fa-regular fa-image"></i> Kelola Galeri</a></li>
-                    <li><a class="nav-link" data-page="admin/pengumuman" href="#admin/pengumuman"><i class="fa-solid fa-bullhorn"></i> Kelola Pengumuman</a></li>
+                    <li>
+                        <a
+                            class="nav-link"
+                            data-page="admin/berita"
+                            href="#admin/berita"
+                            ><i class="fa-regular fa-newspaper"></i> Kelola
+                            Berita</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            class="nav-link"
+                            data-page="admin/agenda"
+                            href="#admin/agenda"
+                            ><i class="fa-regular fa-calendar"></i> Kelola
+                            Agenda</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            class="nav-link"
+                            data-page="admin/galeri"
+                            href="#admin/galeri"
+                            ><i class="fa-regular fa-image"></i> Kelola
+                            Galeri</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            class="nav-link"
+                            data-page="admin/pengumuman"
+                            href="#admin/pengumuman"
+                            ><i class="fa-solid fa-bullhorn"></i> Kelola
+                            Pengumuman</a
+                        >
+                    </li>
                 </ul>
             </li>
+            <!-- OPERASIONAL (collapse) -->
             <li class="menu-group" data-group="operasional">
-                <button class="group-toggle" type="button" aria-expanded="false" aria-controls="groupOperasional">
-                    <span class="left"><i class="fa-solid fa-clipboard-check"></i><span>Operasional</span></span>
+                <button
+                    class="group-toggle"
+                    type="button"
+                    aria-expanded="false"
+                    aria-controls="groupOperasional"
+                >
+                    <span class="left">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                        <span>Operasional</span>
+                    </span>
                     <i class="fa-solid fa-chevron-down chev"></i>
                 </button>
+
                 <ul class="group-items" id="groupOperasional">
-                    <li><a class="nav-link" data-page="admin/pengaduan" href="#admin/pengaduan"><i class="fa-solid fa-comments"></i> Pengaduan</a></li>
-                    <li><a class="nav-link" data-page="admin/surat" href="#admin/surat"><i class="fa-solid fa-file-signature"></i> Surat</a></li>
-                    <li><a class="nav-link" data-page="admin/rt-rw" href="#admin/rt-rw"><i class="fa-solid fa-users"></i> RT/RW</a></li>
-                    <li><a class="nav-link" data-page="admin/faq" href="#admin/faq"><i class="fa-regular fa-circle-question"></i> FAQ</a></li>
+                    <li>
+                        <a
+                            class="nav-link"
+                            data-page="admin/pengaduan"
+                            href="#admin/pengaduan"
+                            ><i class="fa-solid fa-comments"></i> Pengaduan</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            class="nav-link"
+                            data-page="admin/surat"
+                            href="#admin/surat"
+                            ><i class="fa-solid fa-file-signature"></i> Surat</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            class="nav-link"
+                            data-page="admin/rt-rw"
+                            href="#admin/rt-rw"
+                            ><i class="fa-solid fa-users"></i> RT/RW</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            class="nav-link"
+                            data-page="admin/faq"
+                            href="#admin/faq"
+                            ><i class="fa-regular fa-circle-question"></i>
+                            FAQ</a
+                        >
+                    </li>
                 </ul>
             </li>
+            <!-- SISTEM (collapse) -->
             <li class="menu-group" data-group="sistem">
-                <button class="group-toggle" type="button" aria-expanded="false" aria-controls="groupSistem">
-                    <span class="left"><i class="fa-solid fa-sliders"></i><span>Sistem</span></span>
+                <button
+                    class="group-toggle"
+                    type="button"
+                    aria-expanded="false"
+                    aria-controls="groupSistem"
+                >
+                    <span class="left">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span>Sistem</span>
+                    </span>
                     <i class="fa-solid fa-chevron-down chev"></i>
                 </button>
+
                 <ul class="group-items" id="groupSistem">
-                    <li><a class="nav-link" data-page="admin/pengaturan" href="#admin/pengaturan"><i class="fa-solid fa-gear"></i> Pengaturan</a></li>
-                    <li><a class="nav-link" data-page="admin/laporan" href="#admin/laporan"><i class="fa-solid fa-chart-column"></i> Laporan</a></li>
+                    <li>
+                        <a
+                            class="nav-link"
+                            data-page="admin/pengaturan"
+                            href="#admin/pengaturan"
+                            ><i class="fa-solid fa-gear"></i> Pengaturan</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            class="nav-link"
+                            data-page="admin/laporan"
+                            href="#admin/laporan"
+                            ><i class="fa-solid fa-chart-column"></i> Laporan</a
+                        >
+                    </li>
                 </ul>
             </li>
-            <li><a class="nav-link" data-page="admin/users" href="#admin/users"><i class="fa-solid fa-users-gear"></i> Kelola User</a></li>
-            <li><a class="nav-link" data-page="home" href="#home"><i class="fa-solid fa-arrow-left"></i> Ke Publik</a></li>
-            <li><a href="#" data-action="logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
+            <li>
+                <a class="nav-link" data-page="admin/users" href="#admin/users">
+                    <i class="fa-solid fa-users-gear"></i>
+
+                    Kelola User
+                </a>
+            </li>
+            <!-- BOTTOM -->
+            <li>
+                <a class="nav-link" data-page="home" href="#home"
+                    ><i class="fa-solid fa-arrow-left"></i> Ke Publik</a
+                >
+            </li>
+            <li>
+                <a href="#" data-action="logout"
+                    ><i class="fa-solid fa-right-from-bracket"></i> Logout</a
+                >
+            </li>
         </ul>
     </aside>
-
     <div class="admin-main">
         <div class="admin-top">
             <div>
-                <h1><i class="fa-solid fa-sitemap" style="color:var(--primary);margin-right:8px"></i>Struktur Organisasi</h1>
-                <div class="muted" style="font-weight:700">Kelola foto, nama, dan jabatan anggota organisasi kelurahan</div>
+                <h1>
+                    <i
+                        class="fa-solid fa-sitemap"
+                        style="color: var(--primary); margin-right: 8px"
+                    ></i
+                    >Struktur Organisasi
+                </h1>
+                <div class="muted" style="font-weight: 700">
+                    Kelola foto, nama, dan jabatan anggota organisasi kelurahan
+                </div>
             </div>
             <div class="top-actions">
-                <a class="btn btn-ghost nav-link" data-page="admin/dashboard" href="#admin/dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+                <a
+                    class="btn btn-ghost nav-link"
+                    data-page="admin/dashboard"
+                    href="#admin/dashboard"
+                    ><i class="fa-solid fa-gauge"></i> Dashboard</a
+                >
             </div>
         </div>
 
         <!-- Toolbar -->
-        <div class="card" style="margin-bottom:16px">
+        <div class="card" style="margin-bottom: 16px">
             <div class="card-body">
-                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;justify-content:space-between">
-                    <div class="field" style="min-width:260px;flex:1">
+                <div
+                    style="
+                        display: flex;
+                        gap: 10px;
+                        flex-wrap: wrap;
+                        align-items: end;
+                        justify-content: space-between;
+                    "
+                >
+                    <div class="field" style="min-width: 260px; flex: 1">
                         <label>Cari Anggota</label>
-                        <input class="input" id="soSearch" placeholder="Cari nama atau jabatan..." />
+                        <input
+                            class="input"
+                            id="soSearch"
+                            placeholder="Cari nama atau jabatan..."
+                        />
                     </div>
                     <div>
-                        <button class="btn btn-3d btn-primary btn-tambah-data" id="soBtnTambah">
+                        <button
+                            class="btn btn-3d btn-primary btn-tambah-data"
+                            id="soBtnTambah"
+                        >
                             <span class="btn-text">Tambah Anggota</span>
                             <i class="fa-solid fa-plus"></i>
                         </button>
@@ -92,10 +294,30 @@
         </div>
 
         <!-- Card Grid -->
-        <div id="soGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:20px"></div>
+        <div
+            id="soGrid"
+            style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 16px;
+                margin-bottom: 20px;
+            "
+        ></div>
 
-        <div id="soEmpty" class="muted" style="display:none;text-align:center;padding:40px 20px">
-            <i class="fa-solid fa-sitemap" style="font-size:48px;opacity:.2;display:block;margin-bottom:12px"></i>
+        <div
+            id="soEmpty"
+            class="muted"
+            style="display: none; text-align: center; padding: 40px 20px"
+        >
+            <i
+                class="fa-solid fa-sitemap"
+                style="
+                    font-size: 48px;
+                    opacity: 0.2;
+                    display: block;
+                    margin-bottom: 12px;
+                "
+            ></i>
             Belum ada data anggota. Klik "Tambah Anggota" untuk memulai.
         </div>
     </div>
@@ -103,56 +325,141 @@
 
 <!-- Modal Form Tambah / Edit -->
 <div class="modal" id="soModal" aria-hidden="true">
-    <div class="modal-panel" style="max-width:480px;width:96vw">
+    <div class="modal-panel" style="max-width: 480px; width: 96vw">
         <div class="modal-head">
             <div class="modal-title">
                 <h3 id="soModalTitle">Tambah Anggota</h3>
             </div>
-            <button class="btn btn-ghost icon-btn" id="soBtnClose" type="button"><i class="fa-solid fa-xmark"></i></button>
+            <button
+                class="btn btn-ghost icon-btn"
+                id="soBtnClose"
+                type="button"
+            >
+                <i class="fa-solid fa-xmark"></i>
+            </button>
         </div>
 
         <form id="soForm" class="modal-body">
             <input type="hidden" id="soId" />
 
             <!-- Foto Preview -->
-            <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:16px;gap:10px">
-                <div id="soPhotoWrap" style="
-                    width:110px;height:110px;border-radius:50%;overflow:hidden;
-                    border:3px solid var(--border);background:var(--field-bg);
-                    display:flex;align-items:center;justify-content:center">
-                    <img id="soPhotoPreview" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none" />
-                    <i id="soPhotoIcon" class="fa-solid fa-user" style="font-size:44px;color:var(--muted);opacity:.3"></i>
+            <div
+                style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    margin-bottom: 16px;
+                    gap: 10px;
+                "
+            >
+                <div
+                    id="soPhotoWrap"
+                    style="
+                        width: 110px;
+                        height: 110px;
+                        border-radius: 50%;
+                        overflow: hidden;
+                        border: 3px solid var(--border);
+                        background: var(--field-bg);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    "
+                >
+                    <img
+                        id="soPhotoPreview"
+                        src=""
+                        alt=""
+                        style="
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                            display: none;
+                        "
+                    />
+                    <i
+                        id="soPhotoIcon"
+                        class="fa-solid fa-user"
+                        style="
+                            font-size: 44px;
+                            color: var(--muted);
+                            opacity: 0.3;
+                        "
+                    ></i>
                 </div>
-                <label class="btn btn-3d btn-light btn-sm btn-pilih-foto" for="soFoto" style="cursor:pointer">
+                <label
+                    class="btn btn-3d btn-light btn-sm btn-pilih-foto"
+                    for="soFoto"
+                    style="cursor: pointer"
+                >
                     <span class="btn-text">Pilih Foto</span>
                     <i class="fa-solid fa-camera"></i>
                 </label>
-                <input type="file" id="soFoto" name="foto" accept="image/*" style="display:none" />
+                <input
+                    type="file"
+                    id="soFoto"
+                    name="foto"
+                    accept="image/*"
+                    style="display: none"
+                />
             </div>
 
             <div class="field">
-                <label>Nama Lengkap <span style="color:#ef4444">*</span></label>
-                <input class="input" id="soNama" placeholder="Drs. Budi Santoso, M.Si" required />
+                <label
+                    >Nama Lengkap <span style="color: #ef4444">*</span></label
+                >
+                <input
+                    class="input"
+                    id="soNama"
+                    placeholder="Drs. Budi Santoso, M.Si"
+                    required
+                />
             </div>
 
             <div class="field">
-                <label>Jabatan <span style="color:#ef4444">*</span></label>
-                <input class="input" id="soJabatan" placeholder="Lurah / Sekretaris / dll" required />
+                <label>Jabatan <span style="color: #ef4444">*</span></label>
+                <input
+                    class="input"
+                    id="soJabatan"
+                    placeholder="Lurah / Sekretaris / dll"
+                    required
+                />
             </div>
 
             <div class="field">
                 <label>Atasan / Jabatan Induk</label>
-                <input class="input" id="soParent" placeholder="Kosongkan jika jabatan tertinggi" />
-                <div style="font-size:11px;color:var(--muted);margin-top:4px">Isi dengan jabatan atasan langsung untuk bagan organisasi</div>
+                <input
+                    class="input"
+                    id="soParent"
+                    placeholder="Kosongkan jika jabatan tertinggi"
+                />
+                <div
+                    style="
+                        font-size: 11px;
+                        color: var(--muted);
+                        margin-top: 4px;
+                    "
+                >
+                    Isi dengan jabatan atasan langsung untuk bagan organisasi
+                </div>
             </div>
 
             <div class="field">
                 <label>Urutan Tampil</label>
-                <input type="number" class="input" id="soUrutan" value="0" min="0" placeholder="0 = paling atas" />
+                <input
+                    type="number"
+                    class="input"
+                    id="soUrutan"
+                    value="0"
+                    min="0"
+                    placeholder="0 = paling atas"
+                />
             </div>
 
             <div class="modal-foot">
-                <button class="btn btn-ghost" type="button" id="soBtnBatal">Batal</button>
+                <button class="btn btn-ghost" type="button" id="soBtnBatal">
+                    Batal
+                </button>
                 <button class="btn btn-solid" type="submit" id="soBtnSimpan">
                     <i class="fa-solid fa-floppy-disk"></i> Simpan
                 </button>
@@ -162,34 +469,82 @@
 </div>
 
 <style>
-.so-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    box-shadow: var(--shadow-sm);
-    display: flex; flex-direction: column; align-items: center;
-    padding: 22px 14px 16px; gap: 8px;
-    transition: box-shadow .2s, transform .15s;
-    position: relative;
-}
-.so-card:hover { box-shadow: 0 12px 30px rgba(15,23,42,.14); transform: translateY(-2px); }
-.so-photo {
-    width: 84px; height: 84px; border-radius: 50%; overflow: hidden;
-    border: 3px solid var(--primary); background: var(--field-bg);
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.so-photo img { width:100%; height:100%; object-fit:cover; }
-.so-photo .so-avatar-icon { font-size:34px; color:var(--muted); opacity:.3; }
-.so-nama { font-size:14px; font-weight:900; text-align:center; color:var(--text); margin-top:4px; }
-.so-jabatan {
-    font-size:11px; font-weight:800; color:var(--primary);
-    background:rgba(31,95,224,.1); padding:2px 10px; border-radius:999px; text-align:center;
-}
-.so-parent { font-size:11px; color:var(--muted); text-align:center; }
-.so-actions { display:flex; gap:6px; margin-top:6px; }
-.so-urutan-badge {
-    position:absolute; top:9px; left:11px;
-    background:rgba(31,95,224,.12); color:var(--primary);
-    font-size:10px; font-weight:800; padding:2px 7px; border-radius:999px;
-}
+    .so-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 22px 14px 16px;
+        gap: 8px;
+        transition:
+            box-shadow 0.2s,
+            transform 0.15s;
+        position: relative;
+    }
+    .so-card:hover {
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
+        transform: translateY(-2px);
+    }
+    .so-photo {
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3px solid var(--primary);
+        background: var(--field-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .so-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .so-photo .so-avatar-icon {
+        font-size: 34px;
+        color: var(--muted);
+        opacity: 0.3;
+    }
+    .so-nama {
+        font-size: 14px;
+        font-weight: 900;
+        text-align: center;
+        color: var(--text);
+        margin-top: 4px;
+    }
+    .so-jabatan {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--primary);
+        background: rgba(31, 95, 224, 0.1);
+        padding: 2px 10px;
+        border-radius: 999px;
+        text-align: center;
+    }
+    .so-parent {
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+    }
+    .so-actions {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+    }
+    .so-urutan-badge {
+        position: absolute;
+        top: 9px;
+        left: 11px;
+        background: rgba(31, 95, 224, 0.12);
+        color: var(--primary);
+        font-size: 10px;
+        font-weight: 800;
+        padding: 2px 7px;
+        border-radius: 999px;
+    }
 </style>

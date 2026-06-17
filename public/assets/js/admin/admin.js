@@ -140,13 +140,15 @@
 
     async function fetchAPI(url, options = {}) {
         const headers = {
-            "Accept": "application/json",
+            Accept: "application/json",
             "X-Requested-With": "XMLHttpRequest",
             ...options.headers,
         };
         const method = (options.method || "GET").toUpperCase();
         if (method !== "GET" && !headers["X-CSRF-TOKEN"]) {
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            const csrf = document.querySelector(
+                'meta[name="csrf-token"]',
+            )?.content;
             if (csrf) {
                 headers["X-CSRF-TOKEN"] = csrf;
             }
@@ -319,11 +321,13 @@
         setImagePreview(item?.image || "");
 
         modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
     }
 
     function closeModal() {
         const modal = document.getElementById("adminModal");
         if (modal) modal.classList.remove("open");
+        modal.setAttribute("aria-hidden", "true");
     }
 
     function readForm(type) {
@@ -440,7 +444,7 @@
             if (s === "published") cls = "badge-done";
             if (s === "draft") cls = "badge-wait";
         }
-        const labelText = s === "siap_diambil" ? "Siap Diambil" : (status || "-");
+        const labelText = s === "siap_diambil" ? "Siap Diambil" : status || "-";
         return `<span class="badge ${cls}">${labelText}</span>`;
     }
 
@@ -470,7 +474,10 @@
 
         async function loadProfilData() {
             try {
-                const res = await fetchAPI("/api/admin/setting", { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                const res = await fetchAPI("/api/admin/setting", {
+                    credentials: "same-origin",
+                    headers: { Accept: "application/json" },
+                });
                 if (!res.ok) return;
                 const data = await res.json();
                 if (!data) return;
@@ -547,7 +554,8 @@
 
             if (!save) return;
 
-            const get = (id) => document.getElementById(id)?.value?.trim() || "";
+            const get = (id) =>
+                document.getElementById(id)?.value?.trim() || "";
 
             const payload = {
                 site_name: get("pkSiteName"),
@@ -574,23 +582,31 @@
             };
 
             try {
-                const checkRes = await fetchAPI("/api/admin/setting", { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                const checkRes = await fetchAPI("/api/admin/setting", {
+                    credentials: "same-origin",
+                    headers: { Accept: "application/json" },
+                });
                 const currentSetting = await checkRes.json().catch(() => null);
 
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
                 let response;
 
                 if (currentSetting?.id) {
-                    response = await fetchAPI(`/api/admin/setting/${currentSetting.id}`, {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": csrf,
-                            Accept: "application/json",
+                    response = await fetchAPI(
+                        `/api/admin/setting/${currentSetting.id}`,
+                        {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": csrf,
+                                Accept: "application/json",
+                            },
+                            credentials: "same-origin",
+                            body: JSON.stringify(payload),
                         },
-                        credentials: 'same-origin',
-                        body: JSON.stringify(payload),
-                    });
+                    );
                 } else {
                     response = await fetchAPI("/api/admin/setting", {
                         method: "POST",
@@ -599,7 +615,7 @@
                             "X-CSRF-TOKEN": csrf,
                             Accept: "application/json",
                         },
-                        credentials: 'same-origin',
+                        credentials: "same-origin",
                         body: JSON.stringify(payload),
                     });
                 }
@@ -1278,138 +1294,150 @@
             ?.addEventListener("click", loadData);
     }
     let _laporanBound = false;
+
     async function initBeritaLaravel() {
         const tbody = document.getElementById("adminTbody");
-
         if (!tbody) return;
 
+        // ── Render & pasang event delegation di tbody ──
         async function loadData() {
             try {
-                const response = await fetchAPI("/api/admin/berita", {
-                    credentials: "same-origin",
-                    headers: {
-                        Accept: "application/json",
-                    },
-                });
-
+                const response = await fetchAPI("/api/admin/berita");
+                if (!response.ok) throw new Error("HTTP " + response.status);
                 const data = await response.json();
-                tbody.innerHTML = data
-                    .map(
-                        (item) => `
-                    <tr>
-                        <td>${item.title}</td>
-                        <td>${item.category}</td>
-                        <td>${item.date}</td>
-                        <td>${item.status}</td>
-                        <td>
-                            <button
-                                class="btn btn-warning btn-sm"
-                                data-action="editBerita"
-                                data-id="${item.id}">
-                                Edit
-                            </button>
-                            <button
-                                class="btn btn-danger btn-sm"
-                                data-action="deleteBerita"
-                                data-id="${item.id}">
-                                Hapus
-                            </button>
-                        </td>
-                    </tr>
-                `,
-                    )
+
+                const tbl = document.getElementById("adminTbody");
+                if (!tbl) return;
+
+                tbl.innerHTML = data
+                    .map(function (item) {
+                        return `<tr data-id="${item.id}">
+        <td>
+            <b>${item.title || ""}</b>
+            <div style="font-size:12px;color:#888">${item.excerpt || ""}</div>
+        </td>
+        <td><span class="badge">${item.category || "-"}</span></td>
+        <td>${item.date || "-"}</td>
+        <td>
+            <span class="badge" style="${
+                item.status === "published"
+                    ? "background:rgba(34,197,94,.12);color:#16a34a"
+                    : "background:rgba(148,163,184,.22);color:#334155"
+            }">${item.status || "draft"}</span>
+        </td>
+        <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button type="button"
+                    style="padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:#f59e0b;color:#fff;font-size:13px;display:inline-flex;align-items:center;gap:5px"
+                    data-action="editBerita" data-id="${item.id}">
+                    <i class="fa-solid fa-pen"></i> Edit
+                </button>
+                <button type="button"
+                    style="padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:#ef4444;color:#fff;font-size:13px;display:inline-flex;align-items:center;gap:5px"
+                    data-action="deleteBerita" data-id="${item.id}">
+                    <i class="fa-solid fa-trash"></i> Hapus
+                </button>
+            </div>
+        </td>
+    </tr>`;
+                    })
                     .join("");
             } catch (error) {
-                console.error("Gagal memuat berita", error);
+                console.error("Gagal memuat berita:", error);
             }
         }
 
+        // Expose loadData supaya handler global (delete/edit) bisa refresh tabel
+        // setelah operasi sukses tanpa harus re-init seluruh halaman.
+        initBeritaLaravel._loadData = loadData;
+
+        // ── Load awal ──
         await loadData();
 
-        const createBtn = document.querySelector("[data-action='create']");
+        // ── Tombol Tambah ──
+        var createBtn = document.querySelector("[data-action='create']");
         if (createBtn && !createBtn.dataset.bound) {
             createBtn.dataset.bound = "true";
-            createBtn.onclick = () => {
-                document.getElementById("itemId").value = "";
-                document.getElementById("adminForm")?.reset();
-                setImagePreview("");
-                if (document.getElementById("adminModalTitle")) {
-                    document.getElementById("adminModalTitle").textContent = "Tambah Berita";
-                }
-                openModal("berita");
-            };
+            createBtn.addEventListener("click", function () {
+                openModal("berita", null);
+            });
         }
 
-        const fileInput = document.getElementById("fImage");
+        // ── File upload preview ──
+        var fileInput = document.getElementById("fImage");
         if (fileInput && !fileInput.dataset.bound) {
             fileInput.dataset.bound = "true";
-            fileInput.addEventListener("change", async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    try {
-                        const base64 = await fileToDataURL(file);
-                        document.getElementById("fImageExisting").value = base64;
-                        setImagePreview(base64);
-                    } catch (err) {
-                        console.error(err);
-                        alert("Gagal membaca file");
-                    }
+            fileInput.addEventListener("change", async function (e) {
+                var file = e.target.files[0];
+                if (!file) return;
+                try {
+                    var base64 = await fileToDataURL(file);
+                    var existing = document.getElementById("fImageExisting");
+                    if (existing) existing.value = base64;
+                    setImagePreview(base64);
+                } catch (err2) {
+                    alert("Gagal membaca file");
                 }
             });
         }
 
-        const form = document.getElementById("adminForm");
-        if (form && !form.dataset.bound) {
-            form.dataset.bound = "true";
-            form.onsubmit = async (e) => {
+        // ── Form submit: SELALU re-bind agar id terbaru terbaca ──
+        var form = document.getElementById("adminForm");
+        if (form) {
+            // Hapus bound lama supaya selalu fresh
+            form.removeAttribute("data-bound");
+            form.onsubmit = null;
+            form.onsubmit = async function (e) {
                 e.preventDefault();
-                const id = document.getElementById("itemId").value;
-                const payload = {
-                    title: document.getElementById("fTitle").value,
-                    category: document.getElementById("fCategory").value,
-                    date: document.getElementById("fDate").value,
-                    excerpt: document.getElementById("fExcerpt").value,
-                    content: document.getElementById("fContent").value,
-                    status: document.getElementById("fStatus").value,
-                    image: document.getElementById("fImageExisting")?.value || "",
+                var itemId = (
+                    document.getElementById("itemId")?.value || ""
+                ).trim();
+                var payload = {
+                    title: document.getElementById("fTitle")?.value || "",
+                    category: document.getElementById("fCategory")?.value || "",
+                    date: document.getElementById("fDate")?.value || "",
+                    excerpt: document.getElementById("fExcerpt")?.value || "",
+                    content: document.getElementById("fContent")?.value || "",
+                    status:
+                        document.getElementById("fStatus")?.value || "draft",
+                    image:
+                        document.getElementById("fImageExisting")?.value || "",
                 };
-
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-                let response;
-                if (id) {
-                    response = await fetchAPI(`/api/admin/berita/${id}`, {
-                        method: "PUT",
-                        credentials: "same-origin",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": csrf,
-                            Accept: "application/json",
-                        },
+                try {
+                    var url = itemId
+                        ? "/api/admin/berita/" + itemId
+                        : "/api/admin/berita";
+                    var method = itemId ? "PUT" : "POST";
+                    var res = await fetchAPI(url, {
+                        method: method,
+                        headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(payload),
                     });
-                } else {
-                    response = await fetchAPI("/api/admin/berita", {
-                        method: "POST",
-                        credentials: "same-origin",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": csrf,
-                            Accept: "application/json",
-                        },
-                        body: JSON.stringify(payload),
-                    });
+                    if (!res.ok) {
+                        var errBody = await res.json().catch(function () {
+                            return {};
+                        });
+                        alert(
+                            "Gagal menyimpan: " +
+                                (errBody.message || res.status),
+                        );
+                        return;
+                    }
+                    closeModal();
+                    await loadData();
+                } catch (err) {
+                    console.error(err);
+                    alert("Terjadi kesalahan saat menyimpan berita");
                 }
-
-                if (!response.ok) {
-                    alert("Gagal menyimpan berita");
-                    return;
-                }
-
-                closeModal();
-                await loadData();
             };
         }
+
+        // Refresh referensi loadData (penting kalau initBeritaLaravel dipanggil
+        // ulang setelah navigasi—closure loadData lama sudah tidak valid karena
+        // <tbody id="adminTbody"> sudah diganti DOM-nya).
+        initBeritaLaravel._loadData = loadData;
     }
+
     async function initAgendaLaravel() {
         const tbody = document.getElementById("adminTbody");
         if (!tbody) return;
@@ -1457,7 +1485,8 @@
                 document.getElementById("itemId").value = "";
                 document.getElementById("adminForm")?.reset();
                 if (document.getElementById("adminModalTitle")) {
-                    document.getElementById("adminModalTitle").textContent = "Tambah Agenda";
+                    document.getElementById("adminModalTitle").textContent =
+                        "Tambah Agenda";
                 }
                 openModal("agenda");
             };
@@ -1476,7 +1505,9 @@
                     content: document.getElementById("fContent").value,
                 };
 
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
                 let response;
                 if (id) {
                     response = await fetchAPI(`/api/admin/agenda/${id}`, {
@@ -1557,7 +1588,8 @@
                 document.getElementById("itemId").value = "";
                 document.getElementById("adminForm")?.reset();
                 if (document.getElementById("adminModalTitle")) {
-                    document.getElementById("adminModalTitle").textContent = "Tambah Pengumuman";
+                    document.getElementById("adminModalTitle").textContent =
+                        "Tambah Pengumuman";
                 }
                 openModal("pengumuman");
             };
@@ -1575,7 +1607,9 @@
                     content: document.getElementById("fContent").value,
                 };
 
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
                 let response;
                 if (id) {
                     response = await fetchAPI(`/api/admin/pengumuman/${id}`, {
@@ -1675,7 +1709,8 @@
                 if (file) {
                     try {
                         const base64 = await fileToDataURL(file);
-                        document.getElementById("fImageExisting").value = base64;
+                        document.getElementById("fImageExisting").value =
+                            base64;
                         setImagePreview(base64);
                     } catch (err) {
                         console.error(err);
@@ -1699,7 +1734,8 @@
                     title: document.getElementById("fTitle").value,
                     category: document.getElementById("fCategory").value,
                     date: document.getElementById("fDate").value,
-                    image: document.getElementById("fImageExisting")?.value || "",
+                    image:
+                        document.getElementById("fImageExisting")?.value || "",
                     content: document.getElementById("fContent").value,
                 };
 
@@ -1796,7 +1832,9 @@
     async function initPengaduanLaravel() {
         const tbody = document.getElementById("adminPengaduanTbody");
         const empty = document.getElementById("adminPengaduanEmpty");
-        const q = document.getElementById("adminPengaduanSearch") || document.getElementById("adminPengaduanSearchTop");
+        const q =
+            document.getElementById("adminPengaduanSearch") ||
+            document.getElementById("adminPengaduanSearchTop");
         const f = document.getElementById("adminPengaduanFilter");
 
         if (!tbody) return;
@@ -1833,7 +1871,8 @@
             if (status) {
                 filtered = filtered.filter((it) => {
                     const s = (it.status || "").toLowerCase();
-                    if (status === "baru") return s === "baru" || s === "menunggu";
+                    if (status === "baru")
+                        return s === "baru" || s === "menunggu";
                     return s === status;
                 });
             }
@@ -1869,10 +1908,18 @@
             window._pengaduanLaravelBound = true;
 
             document.addEventListener("click", async (e) => {
-                const detail = e.target.closest("[data-action='pengaduanDetailLaravel']");
-                const del = e.target.closest("[data-action='pengaduanDeleteLaravel']");
-                const close = e.target.closest("[data-action='closePengaduanModal']");
-                const save = e.target.closest("[data-action='savePengaduanStatus']");
+                const detail = e.target.closest(
+                    "[data-action='pengaduanDetailLaravel']",
+                );
+                const del = e.target.closest(
+                    "[data-action='pengaduanDeleteLaravel']",
+                );
+                const close = e.target.closest(
+                    "[data-action='closePengaduanModal']",
+                );
+                const save = e.target.closest(
+                    "[data-action='savePengaduanStatus']",
+                );
 
                 if (close) {
                     _closeModal("adminPengaduanModal");
@@ -1881,15 +1928,21 @@
 
                 if (del) {
                     const id = del.dataset.id;
-                    if (!confirm("Hapus pengaduan ini secara permanen?")) return;
+                    if (!confirm("Hapus pengaduan ini secara permanen?"))
+                        return;
                     try {
-                        const response = await fetchAPI(`/api/admin/pengaduan/${id}`, {
-                            method: "DELETE",
-                            headers: {
-                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
-                                Accept: "application/json",
+                        const response = await fetchAPI(
+                            `/api/admin/pengaduan/${id}`,
+                            {
+                                method: "DELETE",
+                                headers: {
+                                    "X-CSRF-TOKEN": document.querySelector(
+                                        'meta[name="csrf-token"]',
+                                    )?.content,
+                                    Accept: "application/json",
+                                },
                             },
-                        });
+                        );
                         if (response.ok) {
                             alert("Pengaduan berhasil dihapus");
                             loadData();
@@ -1906,21 +1959,33 @@
                 if (detail) {
                     const id = detail.dataset.id;
                     try {
-                        const res = await fetchAPI(`/api/admin/pengaduan/${id}`, {
-                            headers: { Accept: "application/json" }
-                        });
+                        const res = await fetchAPI(
+                            `/api/admin/pengaduan/${id}`,
+                            {
+                                headers: { Accept: "application/json" },
+                            },
+                        );
                         const it = await res.json();
                         if (!it) return;
 
                         document.getElementById("apdId").value = it.id;
-                        document.getElementById("apdNama").value = it.user?.name || "";
-                        document.getElementById("apdTanggal").value = _fmtDate(it.created_at || it.tanggal);
-                        document.getElementById("apdJudul").value = it.judul || "";
+                        document.getElementById("apdNama").value =
+                            it.user?.name || "";
+                        document.getElementById("apdTanggal").value = _fmtDate(
+                            it.created_at || it.tanggal,
+                        );
+                        document.getElementById("apdJudul").value =
+                            it.judul || "";
                         document.getElementById("apdIsi").value = it.isi || "";
-                        document.getElementById("apdStatus").value = (it.status || "menunggu").toLowerCase();
-                        document.getElementById("apdCatatan").value = it.catatanAdmin || "";
+                        document.getElementById("apdStatus").value = (
+                            it.status || "menunggu"
+                        ).toLowerCase();
+                        document.getElementById("apdCatatan").value =
+                            it.catatanAdmin || "";
 
-                        const sub = document.getElementById("adminPengaduanModalSub");
+                        const sub = document.getElementById(
+                            "adminPengaduanModalSub",
+                        );
                         if (sub) sub.textContent = `ID: ${it.id}`;
 
                         _openModal("adminPengaduanModal");
@@ -1935,15 +2000,20 @@
                     const status = document.getElementById("apdStatus").value;
 
                     try {
-                        const res = await fetchAPI(`/api/admin/pengaduan/${id}`, {
-                            method: "PUT",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
-                                Accept: "application/json",
+                        const res = await fetchAPI(
+                            `/api/admin/pengaduan/${id}`,
+                            {
+                                method: "PUT",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "X-CSRF-TOKEN": document.querySelector(
+                                        'meta[name="csrf-token"]',
+                                    )?.content,
+                                    Accept: "application/json",
+                                },
+                                body: JSON.stringify({ status }),
                             },
-                            body: JSON.stringify({ status })
-                        });
+                        );
                         if (res.ok) {
                             alert("Status pengaduan berhasil disimpan");
                             _closeModal("adminPengaduanModal");
@@ -1964,51 +2034,59 @@
     // STRUKTUR ORGANISASI
     // ─────────────────────────────────────────────────────────────
     async function initStrukturOrganisasi() {
-        const SO_API = '/api/admin/struktur-organisasi';
+        const SO_API = "/api/admin/struktur-organisasi";
         let soItems = [];
         let soEditId = null;
 
-        const grid    = document.getElementById('soGrid');
-        const empty   = document.getElementById('soEmpty');
-        const search  = document.getElementById('soSearch');
-        const modal   = document.getElementById('soModal');
-        const form    = document.getElementById('soForm');
+        const grid = document.getElementById("soGrid");
+        const empty = document.getElementById("soEmpty");
+        const search = document.getElementById("soSearch");
+        const modal = document.getElementById("soModal");
+        const form = document.getElementById("soForm");
 
-        if (!grid) return;   // guard: page not mounted
+        if (!grid) return; // guard: page not mounted
 
         async function soLoad() {
             try {
-                const res = await fetchAPI(SO_API, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const res = await fetchAPI(SO_API, {
+                    credentials: "same-origin",
+                    headers: { Accept: "application/json" },
+                });
+                if (!res.ok) throw new Error("HTTP " + res.status);
                 const data = await res.json();
                 soItems = Array.isArray(data) ? data : (data?.data ?? []);
                 soRender();
             } catch (e) {
-                console.error('Gagal memuat struktur:', e);
+                console.error("Gagal memuat struktur:", e);
                 soItems = [];
                 soRender();
             }
         }
 
         function soRender() {
-            const q = (search?.value || '').toLowerCase();
-            const filtered = q ? soItems.filter(i => (i.nama + ' ' + i.jabatan).toLowerCase().includes(q)) : soItems;
+            const q = (search?.value || "").toLowerCase();
+            const filtered = q
+                ? soItems.filter((i) =>
+                      (i.nama + " " + i.jabatan).toLowerCase().includes(q),
+                  )
+                : soItems;
 
             if (!filtered.length) {
-                grid.innerHTML = '';
-                if (empty) empty.style.display = 'block';
+                grid.innerHTML = "";
+                if (empty) empty.style.display = "block";
                 return;
             }
-            if (empty) empty.style.display = 'none';
+            if (empty) empty.style.display = "none";
 
-            grid.innerHTML = filtered.map(it => {
-                const fotoEl = it.foto
-                    ? `<img src="/storage/${it.foto}" alt="${it.nama}" />`
-                    : `<i class="fa-solid fa-user so-avatar-icon"></i>`;
-                const parentEl = it.parent_jabatan
-                    ? `<div class="so-parent">Bawahan dari: ${it.parent_jabatan}</div>`
-                    : `<div class="so-parent" style="color:var(--primary);font-weight:800">— Kepala —</div>`;
-                return `
+            grid.innerHTML = filtered
+                .map((it) => {
+                    const fotoEl = it.foto
+                        ? `<img src="/storage/${it.foto}" alt="${it.nama}" />`
+                        : `<i class="fa-solid fa-user so-avatar-icon"></i>`;
+                    const parentEl = it.parent_jabatan
+                        ? `<div class="so-parent">Bawahan dari: ${it.parent_jabatan}</div>`
+                        : `<div class="so-parent" style="color:var(--primary);font-weight:800">— Kepala —</div>`;
+                    return `
                 <div class="so-card">
                     <span class="so-urutan-badge">#${it.urutan}</span>
                     <div class="so-photo">${fotoEl}</div>
@@ -2020,117 +2098,167 @@
                         <button class="btn btn-danger btn-sm" data-so-del="${it.id}"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
-            }).join('');
+                })
+                .join("");
         }
 
         function soOpenModal(item = null) {
             soEditId = item ? item.id : null;
-            document.getElementById('soModalTitle').textContent = item ? 'Edit Anggota' : 'Tambah Anggota';
-            document.getElementById('soId').value    = item?.id || '';
-            document.getElementById('soNama').value  = item?.nama || '';
-            document.getElementById('soJabatan').value = item?.jabatan || '';
-            document.getElementById('soParent').value  = item?.parent_jabatan || '';
-            document.getElementById('soUrutan').value  = item?.urutan ?? 0;
-            document.getElementById('soFoto').value = '';
-            const preview = document.getElementById('soPhotoPreview');
-            const icon    = document.getElementById('soPhotoIcon');
+            document.getElementById("soModalTitle").textContent = item
+                ? "Edit Anggota"
+                : "Tambah Anggota";
+            document.getElementById("soId").value = item?.id || "";
+            document.getElementById("soNama").value = item?.nama || "";
+            document.getElementById("soJabatan").value = item?.jabatan || "";
+            document.getElementById("soParent").value =
+                item?.parent_jabatan || "";
+            document.getElementById("soUrutan").value = item?.urutan ?? 0;
+            document.getElementById("soFoto").value = "";
+            const preview = document.getElementById("soPhotoPreview");
+            const icon = document.getElementById("soPhotoIcon");
             if (item?.foto) {
-                preview.src = '/storage/' + item.foto;
-                preview.style.display = 'block';
-                icon.style.display = 'none';
+                preview.src = "/storage/" + item.foto;
+                preview.style.display = "block";
+                icon.style.display = "none";
             } else {
-                preview.style.display = 'none';
-                icon.style.display = 'block';
+                preview.style.display = "none";
+                icon.style.display = "block";
             }
-            modal.classList.add('open');
-            modal.setAttribute('aria-hidden', 'false');
+            modal.classList.add("open");
+            modal.setAttribute("aria-hidden", "false");
         }
 
         function soCloseModal() {
-            modal.classList.remove('open');
-            modal.setAttribute('aria-hidden', 'true');
+            modal.classList.remove("open");
+            modal.setAttribute("aria-hidden", "true");
             soEditId = null;
         }
 
         // Photo preview
-        document.getElementById('soFoto')?.addEventListener('change', (e) => {
+        document.getElementById("soFoto")?.addEventListener("change", (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = ev => {
-                const preview = document.getElementById('soPhotoPreview');
-                const icon    = document.getElementById('soPhotoIcon');
-                if (preview) { preview.src = ev.target.result; preview.style.display = 'block'; }
-                if (icon) icon.style.display = 'none';
+            reader.onload = (ev) => {
+                const preview = document.getElementById("soPhotoPreview");
+                const icon = document.getElementById("soPhotoIcon");
+                if (preview) {
+                    preview.src = ev.target.result;
+                    preview.style.display = "block";
+                }
+                if (icon) icon.style.display = "none";
             };
             reader.readAsDataURL(file);
         });
 
         // Form submit
-        form?.addEventListener('submit', async (e) => {
+        form?.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('soBtnSimpan');
-            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...'; }
+            const btn = document.getElementById("soBtnSimpan");
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML =
+                    '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+            }
 
             const fd = new FormData();
-            fd.append('nama',           document.getElementById('soNama')?.value.trim() || '');
-            fd.append('jabatan',        document.getElementById('soJabatan')?.value.trim() || '');
-            fd.append('parent_jabatan', document.getElementById('soParent')?.value.trim() || '');
-            fd.append('urutan',         document.getElementById('soUrutan')?.value || 0);
-            const fotoFile = document.getElementById('soFoto')?.files?.[0];
-            if (fotoFile) fd.append('foto', fotoFile);
-            if (soEditId) fd.append('_method', 'PUT');
+            fd.append(
+                "nama",
+                document.getElementById("soNama")?.value.trim() || "",
+            );
+            fd.append(
+                "jabatan",
+                document.getElementById("soJabatan")?.value.trim() || "",
+            );
+            fd.append(
+                "parent_jabatan",
+                document.getElementById("soParent")?.value.trim() || "",
+            );
+            fd.append(
+                "urutan",
+                document.getElementById("soUrutan")?.value || 0,
+            );
+            const fotoFile = document.getElementById("soFoto")?.files?.[0];
+            if (fotoFile) fd.append("foto", fotoFile);
+            if (soEditId) fd.append("_method", "PUT");
 
             const url = soEditId ? `${SO_API}/${soEditId}` : SO_API;
             try {
                 const res = await fetchAPI(url, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content, Accept: 'application/json' },
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "X-CSRF-TOKEN": document.querySelector(
+                            'meta[name="csrf-token"]',
+                        )?.content,
+                        Accept: "application/json",
+                    },
                     body: fd,
                 });
-                if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || 'Gagal'); }
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.message || "Gagal");
+                }
                 soCloseModal();
                 await soLoad();
             } catch (err) {
-                alert('Error: ' + err.message);
+                alert("Error: " + err.message);
             } finally {
-                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan'; }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML =
+                        '<i class="fa-solid fa-floppy-disk"></i> Simpan';
+                }
             }
         });
 
         // Clicks: Tambah, Close, Edit, Delete
-        document.getElementById('soBtnTambah')?.addEventListener('click', () => soOpenModal());
-        document.getElementById('soBtnClose')?.addEventListener('click',  soCloseModal);
-        document.getElementById('soBtnBatal')?.addEventListener('click',  soCloseModal);
-        modal?.addEventListener('click', (e) => { if (e.target === modal) soCloseModal(); });
+        document
+            .getElementById("soBtnTambah")
+            ?.addEventListener("click", () => soOpenModal());
+        document
+            .getElementById("soBtnClose")
+            ?.addEventListener("click", soCloseModal);
+        document
+            .getElementById("soBtnBatal")
+            ?.addEventListener("click", soCloseModal);
+        modal?.addEventListener("click", (e) => {
+            if (e.target === modal) soCloseModal();
+        });
 
         // Delegated: edit / delete buttons inside cards
-        grid.addEventListener('click', async (e) => {
-            const editBtn = e.target.closest('[data-so-edit]');
+        grid.addEventListener("click", async (e) => {
+            const editBtn = e.target.closest("[data-so-edit]");
             if (editBtn) {
                 const id = Number(editBtn.dataset.soEdit);
-                soOpenModal(soItems.find(i => i.id === id));
+                soOpenModal(soItems.find((i) => i.id === id));
                 return;
             }
-            const delBtn = e.target.closest('[data-so-del]');
+            const delBtn = e.target.closest("[data-so-del]");
             if (delBtn) {
-                const id   = Number(delBtn.dataset.soDel);
-                const item = soItems.find(i => i.id === id);
+                const id = Number(delBtn.dataset.soDel);
+                const item = soItems.find((i) => i.id === id);
                 if (!item || !confirm(`Hapus "${item.nama}"?`)) return;
                 try {
                     const res = await fetchAPI(`${SO_API}/${id}`, {
-                        method: 'DELETE',
-                        credentials: 'same-origin',
-                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content, Accept: 'application/json' },
+                        method: "DELETE",
+                        credentials: "same-origin",
+                        headers: {
+                            "X-CSRF-TOKEN": document.querySelector(
+                                'meta[name="csrf-token"]',
+                            )?.content,
+                            Accept: "application/json",
+                        },
                     });
-                    if (!res.ok) throw new Error('Gagal menghapus');
+                    if (!res.ok) throw new Error("Gagal menghapus");
                     await soLoad();
-                } catch (err) { alert(err.message); }
+                } catch (err) {
+                    alert(err.message);
+                }
             }
         });
 
-        search?.addEventListener('input', soRender);
+        search?.addEventListener("input", soRender);
 
         await soLoad();
     }
@@ -2147,8 +2275,10 @@
 
         async function loadData() {
             try {
-                const isTrashed = f?.value === 'trashed';
-                const url = isTrashed ? "/api/admin/surat?trashed=true" : "/api/admin/surat";
+                const isTrashed = f?.value === "trashed";
+                const url = isTrashed
+                    ? "/api/admin/surat?trashed=true"
+                    : "/api/admin/surat";
                 const response = await fetchAPI(url, {
                     credentials: "same-origin",
                     headers: {
@@ -2157,7 +2287,11 @@
                 });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
-                items = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+                items = Array.isArray(data)
+                    ? data
+                    : Array.isArray(data?.data)
+                      ? data.data
+                      : [];
                 render();
             } catch (error) {
                 console.error("Gagal memuat surat", error);
@@ -2178,25 +2312,26 @@
                         .includes(keyword),
                 );
             }
-            if (status && status !== 'trashed') {
+            if (status && status !== "trashed") {
                 filtered = filtered.filter(
                     (it) => (it.status || "").toLowerCase() == status,
                 );
             }
 
             tbody.innerHTML = filtered
-                .map(
-                    (it) => {
-                        const isTrashed = f?.value === 'trashed';
-                        const actionButtons = isTrashed ? `
+                .map((it) => {
+                    const isTrashed = f?.value === "trashed";
+                    const actionButtons = isTrashed
+                        ? `
                             <button class="btn btn-warning btn-sm" data-action="suratRestoreLaravel" data-id="${it.id}"><i class="fa-solid fa-trash-arrow-up"></i> Pulihkan</button>
                             <button class="btn btn-danger btn-sm" data-action="suratForceDeleteLaravel" data-id="${it.id}"><i class="fa-regular fa-trash-can"></i> Hapus Permanen</button>
-                        ` : `
+                        `
+                        : `
                             <button class="btn btn-ghost" data-action="suratDetailLaravel" data-id="${it.id}"><i class="fa-regular fa-eye"></i> Detail</button>
                             <button class="btn btn-ghost" data-action="suratDeleteLaravel" data-id="${it.id}"><i class="fa-regular fa-trash-can"></i> Hapus</button>
                         `;
 
-                        return `
+                    return `
                             <tr>
                                 <td>${it.jenis_surat || "-"}</td>
                                 <td>${it.user?.name || "-"}</td>
@@ -2209,8 +2344,7 @@
                                 </td>
                             </tr>
                         `;
-                    }
-                )
+                })
                 .join("");
 
             if (empty) empty.style.display = filtered.length ? "none" : "block";
@@ -2225,12 +2359,24 @@
             window._suratLaravelBound = true;
 
             document.addEventListener("click", async (e) => {
-                const detail = e.target.closest("[data-action='suratDetailLaravel']");
-                const del = e.target.closest("[data-action='suratDeleteLaravel']");
-                const restore = e.target.closest("[data-action='suratRestoreLaravel']");
-                const force = e.target.closest("[data-action='suratForceDeleteLaravel']");
-                const close = e.target.closest("[data-action='closeSuratModal']");
-                const save = e.target.closest("[data-action='saveSuratStatus']");
+                const detail = e.target.closest(
+                    "[data-action='suratDetailLaravel']",
+                );
+                const del = e.target.closest(
+                    "[data-action='suratDeleteLaravel']",
+                );
+                const restore = e.target.closest(
+                    "[data-action='suratRestoreLaravel']",
+                );
+                const force = e.target.closest(
+                    "[data-action='suratForceDeleteLaravel']",
+                );
+                const close = e.target.closest(
+                    "[data-action='closeSuratModal']",
+                );
+                const save = e.target.closest(
+                    "[data-action='saveSuratStatus']",
+                );
 
                 if (close) {
                     _closeModal("adminSuratModal");
@@ -2241,13 +2387,18 @@
                     const id = restore.dataset.id;
                     if (!confirm("Pulihkan pengajuan surat ini?")) return;
                     try {
-                        const response = await fetchAPI(`/api/admin/surat/${id}/restore`, {
-                            method: "POST",
-                            headers: {
-                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
-                                Accept: "application/json",
+                        const response = await fetchAPI(
+                            `/api/admin/surat/${id}/restore`,
+                            {
+                                method: "POST",
+                                headers: {
+                                    "X-CSRF-TOKEN": document.querySelector(
+                                        'meta[name="csrf-token"]',
+                                    )?.content,
+                                    Accept: "application/json",
+                                },
                             },
-                        });
+                        );
                         if (response.ok) {
                             alert("Pengajuan surat berhasil dipulihkan");
                             loadData();
@@ -2263,17 +2414,29 @@
 
                 if (force) {
                     const id = force.dataset.id;
-                    if (!confirm("Hapus pengajuan surat ini secara PERMANEN beserta seluruh berkasnya? Tindakan ini tidak dapat dibatalkan!")) return;
+                    if (
+                        !confirm(
+                            "Hapus pengajuan surat ini secara PERMANEN beserta seluruh berkasnya? Tindakan ini tidak dapat dibatalkan!",
+                        )
+                    )
+                        return;
                     try {
-                        const response = await fetchAPI(`/api/admin/surat/${id}/force`, {
-                            method: "DELETE",
-                            headers: {
-                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
-                                Accept: "application/json",
+                        const response = await fetchAPI(
+                            `/api/admin/surat/${id}/force`,
+                            {
+                                method: "DELETE",
+                                headers: {
+                                    "X-CSRF-TOKEN": document.querySelector(
+                                        'meta[name="csrf-token"]',
+                                    )?.content,
+                                    Accept: "application/json",
+                                },
                             },
-                        });
+                        );
                         if (response.ok) {
-                            alert("Pengajuan surat berhasil dihapus secara permanen");
+                            alert(
+                                "Pengajuan surat berhasil dihapus secara permanen",
+                            );
                             loadData();
                         } else {
                             alert("Gagal menghapus permanen");
@@ -2287,17 +2450,28 @@
 
                 if (del) {
                     const id = del.dataset.id;
-                    if (!confirm("Hapus pengajuan surat ini (Soft Delete)? Staf/warga tidak akan melihat surat ini, namun Admin dapat memulihkannya kembali."));
+                    if (
+                        !confirm(
+                            "Hapus pengajuan surat ini (Soft Delete)? Staf/warga tidak akan melihat surat ini, namun Admin dapat memulihkannya kembali.",
+                        )
+                    );
                     try {
-                        const response = await fetchAPI(`/api/admin/surat/${id}`, {
-                            method: "DELETE",
-                            headers: {
-                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
-                                Accept: "application/json",
+                        const response = await fetchAPI(
+                            `/api/admin/surat/${id}`,
+                            {
+                                method: "DELETE",
+                                headers: {
+                                    "X-CSRF-TOKEN": document.querySelector(
+                                        'meta[name="csrf-token"]',
+                                    )?.content,
+                                    Accept: "application/json",
+                                },
                             },
-                        });
+                        );
                         if (response.ok) {
-                            alert("Pengajuan surat berhasil dipindahkan ke tempat sampah");
+                            alert(
+                                "Pengajuan surat berhasil dipindahkan ke tempat sampah",
+                            );
                             loadData();
                         } else {
                             alert("Gagal memindahkan ke tempat sampah");
@@ -2313,29 +2487,44 @@
                     const id = detail.dataset.id;
                     try {
                         const res = await fetchAPI(`/api/admin/surat/${id}`, {
-                            headers: { Accept: "application/json" }
+                            headers: { Accept: "application/json" },
                         });
                         const it = await res.json();
                         if (!it) return;
 
                         document.getElementById("asId").value = it.id;
-                        document.getElementById("asJenis").value = it.jenis_surat || "";
-                        document.getElementById("asTanggal").value = _fmtDate(it.created_at || it.tanggal);
-                        document.getElementById("asNama").value = it.user?.name || "";
-                        document.getElementById("asNik").value = it.user?.nik || "";
-                        document.getElementById("asTelp").value = it.user?.telp || "";
-                        document.getElementById("asAlamat").value = `${it.user?.alamat || ""} RT ${it.user?.rt || "-"}/RW ${it.user?.rw || "-"}`;
-                        document.getElementById("asKeperluan").value = it.keperluan || "";
-                        document.getElementById("asStatus").value = (it.status || "menunggu").toLowerCase();
-                        document.getElementById("asCatatan").value = it.catatan_staf ?? it.catatanAdmin ?? "";
+                        document.getElementById("asJenis").value =
+                            it.jenis_surat || "";
+                        document.getElementById("asTanggal").value = _fmtDate(
+                            it.created_at || it.tanggal,
+                        );
+                        document.getElementById("asNama").value =
+                            it.user?.name || "";
+                        document.getElementById("asNik").value =
+                            it.user?.nik || "";
+                        document.getElementById("asTelp").value =
+                            it.user?.telp || "";
+                        document.getElementById("asAlamat").value =
+                            `${it.user?.alamat || ""} RT ${it.user?.rt || "-"}/RW ${it.user?.rw || "-"}`;
+                        document.getElementById("asKeperluan").value =
+                            it.keperluan || "";
+                        document.getElementById("asStatus").value = (
+                            it.status || "menunggu"
+                        ).toLowerCase();
+                        document.getElementById("asCatatan").value =
+                            it.catatan_staf ?? it.catatanAdmin ?? "";
 
-                        const sub = document.getElementById("adminSuratModalSub");
+                        const sub =
+                            document.getElementById("adminSuratModalSub");
                         if (sub) sub.textContent = `ID: ${it.id}`;
 
                         // Render Berkas
-                        const berkasWrap = document.getElementById("asBerkasContainer");
+                        const berkasWrap =
+                            document.getElementById("asBerkasContainer");
                         if (berkasWrap) {
-                            const files = Array.isArray(it.berkas) ? it.berkas : [];
+                            const files = Array.isArray(it.berkas)
+                                ? it.berkas
+                                : [];
                             if (!files.length) {
                                 berkasWrap.innerHTML = `<div class="muted" style="grid-column: 1/-1;">Tidak ada berkas persyaratan yang diunggah.</div>`;
                             } else {
@@ -2343,8 +2532,16 @@
                                     if (!bytes) return "0 B";
                                     const k = 1024;
                                     const sizes = ["B", "KB", "MB", "GB"];
-                                    const i = Math.floor(Math.log(bytes) / Math.log(k));
-                                    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+                                    const i = Math.floor(
+                                        Math.log(bytes) / Math.log(k),
+                                    );
+                                    return (
+                                        parseFloat(
+                                            (bytes / Math.pow(k, i)).toFixed(1),
+                                        ) +
+                                        " " +
+                                        sizes[i]
+                                    );
                                 };
                                 const helperEsc = (str) => {
                                     return String(str || "")
@@ -2355,32 +2552,44 @@
                                         .replace(/'/g, "&#039;");
                                 };
 
-                                berkasWrap.innerHTML = files.map((f) => {
-                                    const isImg = (f.mime || '').startsWith('image/') || (f.fileName || '').match(/\.(jpg|jpeg|png|webp|gif)$/i);
-                                    const thumbUrl = isImg && f.dataUrl ? f.dataUrl : '';
-                                    
-                                    let previewHtml = '';
-                                    if (thumbUrl) {
-                                        previewHtml = `<img src="${thumbUrl}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px 8px 0 0;" />`;
-                                    } else {
-                                        previewHtml = `
+                                berkasWrap.innerHTML = files
+                                    .map((f) => {
+                                        const isImg =
+                                            (f.mime || "").startsWith(
+                                                "image/",
+                                            ) ||
+                                            (f.fileName || "").match(
+                                                /\.(jpg|jpeg|png|webp|gif)$/i,
+                                            );
+                                        const thumbUrl =
+                                            isImg && f.dataUrl ? f.dataUrl : "";
+
+                                        let previewHtml = "";
+                                        if (thumbUrl) {
+                                            previewHtml = `<img src="${thumbUrl}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px 8px 0 0;" />`;
+                                        } else {
+                                            previewHtml = `
                                             <div style="width: 100%; height: 100px; background: rgba(148, 163, 184, 0.1); border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center;">
                                                 <i class="fa-solid fa-file-pdf" style="font-size: 36px; color: #ef4444;"></i>
                                             </div>
                                         `;
-                                    }
+                                        }
 
-                                    const openAction = f.dataUrl ? `href="${f.dataUrl}" target="_blank"` : `href="#" onclick="alert('File tidak dapat dibuka karena ukuran melebihi batas demo.'); return false;"`;
-                                    const downloadAction = f.dataUrl ? `href="${f.dataUrl}" download="${helperEsc(f.fileName)}"` : `href="#" onclick="alert('File tidak dapat didownload karena ukuran melebihi batas demo.'); return false;"`;
+                                        const openAction = f.dataUrl
+                                            ? `href="${f.dataUrl}" target="_blank"`
+                                            : `href="#" onclick="alert('File tidak dapat dibuka karena ukuran melebihi batas demo.'); return false;"`;
+                                        const downloadAction = f.dataUrl
+                                            ? `href="${f.dataUrl}" download="${helperEsc(f.fileName)}"`
+                                            : `href="#" onclick="alert('File tidak dapat didownload karena ukuran melebihi batas demo.'); return false;"`;
 
-                                    return `
+                                        return `
                                         <div class="card" style="border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; background: #fff; box-shadow: none;">
                                             ${previewHtml}
                                             <div style="padding: 8px; display: flex; flex-direction: column; flex: 1;">
-                                                <div style="font-weight: 1000; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${helperEsc(f.fileName)}">${helperEsc(f.fileName || '-')}</div>
-                                                <div style="font-size: 10px; color: var(--muted); margin-top: 2px; font-weight: 700;">${helperEsc(f.requirement || 'Berkas')}</div>
+                                                <div style="font-weight: 1000; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${helperEsc(f.fileName)}">${helperEsc(f.fileName || "-")}</div>
+                                                <div style="font-size: 10px; color: var(--muted); margin-top: 2px; font-weight: 700;">${helperEsc(f.requirement || "Berkas")}</div>
                                                 <div style="font-size: 10px; color: var(--muted); margin-top: 1px;">${helperFmtSize(f.size)}</div>
-                                                
+
                                                 <div style="margin-top: auto; padding-top: 6px; display: flex; gap: 4px; justify-content: flex-end;">
                                                     <a class="btn btn-light btn-sm" ${openAction} style="padding: 2px 6px; border-radius: 4px; font-size: 10px; border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;" title="Lihat">
                                                         <i class="fa-regular fa-eye"></i>
@@ -2392,7 +2601,8 @@
                                             </div>
                                         </div>
                                     `;
-                                }).join('');
+                                    })
+                                    .join("");
                             }
                         }
 
@@ -2406,17 +2616,21 @@
                 if (save) {
                     const id = document.getElementById("asId").value;
                     const status = document.getElementById("asStatus").value;
-                    const catatan = document.getElementById("asCatatan").value?.trim() || "";
+                    const catatan =
+                        document.getElementById("asCatatan").value?.trim() ||
+                        "";
 
                     try {
                         const res = await fetchAPI(`/api/admin/surat/${id}`, {
                             method: "PUT",
                             headers: {
                                 "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
+                                "X-CSRF-TOKEN": document.querySelector(
+                                    'meta[name="csrf-token"]',
+                                )?.content,
                                 Accept: "application/json",
                             },
-                            body: JSON.stringify({ status, catatan })
+                            body: JSON.stringify({ status, catatan }),
                         });
                         if (res.ok) {
                             alert("Status surat berhasil disimpan");
@@ -2497,14 +2711,17 @@
                 let response;
 
                 if (setting?.id) {
-                    response = await fetchAPI(`/api/admin/setting/${setting.id}`, {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Accept: "application/json",
+                    response = await fetchAPI(
+                        `/api/admin/setting/${setting.id}`,
+                        {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Accept: "application/json",
+                            },
+                            body: JSON.stringify(payload),
                         },
-                        body: JSON.stringify(payload),
-                    });
+                    );
                 } else {
                     response = await fetchAPI("/api/admin/setting", {
                         method: "POST",
@@ -2537,49 +2754,107 @@
         }
 
         // --- BERITA ---
-        const btnDeleteBerita = e.target.closest("[data-action='deleteBerita']");
+        // --- BERITA DELETE ---
+        const btnDeleteBerita = e.target.closest(
+            "[data-action='deleteBerita']",
+        );
         if (btnDeleteBerita) {
             const id = btnDeleteBerita.dataset.id;
             if (!confirm("Hapus berita ini?")) return;
             try {
-                await fetchAPI(`/api/admin/berita/${id}`, {
+                const res = await fetchAPI(`/api/admin/berita/${id}`, {
                     method: "DELETE",
                     credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
-                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
+                        "X-CSRF-TOKEN": document.querySelector(
+                            'meta[name="csrf-token"]',
+                        )?.content,
                     },
                 });
-                await initBeritaLaravel();
+                console.log(
+                    "[BERITA DELETE]",
+                    id,
+                    "status=",
+                    res.status,
+                    "ok=",
+                    res.ok,
+                );
+                if (res.ok) {
+                    // Refresh tabel. Pakai _loadData kalau ada, fallback re-init.
+                    if (typeof initBeritaLaravel._loadData === "function") {
+                        await initBeritaLaravel._loadData();
+                    } else {
+                        await initBeritaLaravel();
+                    }
+                } else {
+                    let msg = "HTTP " + res.status;
+                    try {
+                        const clone = res.clone();
+                        const body = await clone.json();
+                        if (body?.message) msg = body.message;
+                        console.error("[BERITA DELETE] body=", body);
+                    } catch (_) {
+                        try {
+                            const txt = await res.text();
+                            console.error(
+                                "[BERITA DELETE] non-JSON body=",
+                                txt.slice(0, 500),
+                            );
+                        } catch (_) {}
+                    }
+                    alert("Gagal menghapus berita: " + msg);
+                }
             } catch (err) {
                 console.error(err);
+                alert("Kesalahan jaringan saat menghapus berita");
             }
             return;
         }
 
+        // --- BERITA EDIT ---
         const btnEditBerita = e.target.closest("[data-action='editBerita']");
         if (btnEditBerita) {
             const id = btnEditBerita.dataset.id;
             try {
                 const response = await fetchAPI(`/api/admin/berita/${id}`, {
                     credentials: "same-origin",
-                    headers: {
-                        Accept: "application/json",
-                    }
+                    headers: { Accept: "application/json" },
                 });
+                console.log(
+                    "[BERITA EDIT]",
+                    id,
+                    "status=",
+                    response.status,
+                    "ok=",
+                    response.ok,
+                );
+                if (!response.ok) {
+                    let msg = "HTTP " + response.status;
+                    try {
+                        const body = await response.json();
+                        if (body?.message) msg = body.message;
+                    } catch (_) {}
+                    alert("Gagal memuat data berita: " + msg);
+                    return;
+                }
                 const item = await response.json();
                 if (document.getElementById("adminModalTitle")) {
-                    document.getElementById("adminModalTitle").textContent = "Edit Berita";
+                    document.getElementById("adminModalTitle").textContent =
+                        "Edit Berita";
                 }
                 openModal("berita", item);
             } catch (err) {
                 console.error(err);
+                alert("Gagal memuat data berita");
             }
             return;
         }
 
         // --- AGENDA ---
-        const btnDeleteAgenda = e.target.closest("[data-action='deleteAgenda']");
+        const btnDeleteAgenda = e.target.closest(
+            "[data-action='deleteAgenda']",
+        );
         if (btnDeleteAgenda) {
             const id = btnDeleteAgenda.dataset.id;
             if (!confirm("Hapus agenda ini?")) return;
@@ -2589,7 +2864,9 @@
                     credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
-                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
+                        "X-CSRF-TOKEN": document.querySelector(
+                            'meta[name="csrf-token"]',
+                        )?.content,
                     },
                 });
                 await initAgendaLaravel();
@@ -2607,11 +2884,12 @@
                     credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
-                    }
+                    },
                 });
                 const item = await response.json();
                 if (document.getElementById("adminModalTitle")) {
-                    document.getElementById("adminModalTitle").textContent = "Edit Agenda";
+                    document.getElementById("adminModalTitle").textContent =
+                        "Edit Agenda";
                 }
                 openModal("agenda", item);
             } catch (err) {
@@ -2621,7 +2899,9 @@
         }
 
         // --- PENGUMUMAN ---
-        const btnDeletePengumuman = e.target.closest("[data-action='deletePengumuman']");
+        const btnDeletePengumuman = e.target.closest(
+            "[data-action='deletePengumuman']",
+        );
         if (btnDeletePengumuman) {
             const id = btnDeletePengumuman.dataset.id;
             if (!confirm("Hapus pengumuman ini?")) return;
@@ -2631,7 +2911,9 @@
                     credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
-                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content,
+                        "X-CSRF-TOKEN": document.querySelector(
+                            'meta[name="csrf-token"]',
+                        )?.content,
                     },
                 });
                 await initPengumumanLaravel();
@@ -2641,7 +2923,9 @@
             return;
         }
 
-        const btnEditPengumuman = e.target.closest("[data-action='editPengumuman']");
+        const btnEditPengumuman = e.target.closest(
+            "[data-action='editPengumuman']",
+        );
         if (btnEditPengumuman) {
             const id = btnEditPengumuman.dataset.id;
             try {
@@ -2649,11 +2933,12 @@
                     credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
-                    }
+                    },
                 });
                 const item = await response.json();
                 if (document.getElementById("adminModalTitle")) {
-                    document.getElementById("adminModalTitle").textContent = "Edit Pengumuman";
+                    document.getElementById("adminModalTitle").textContent =
+                        "Edit Pengumuman";
                 }
                 openModal("pengumuman", item);
             } catch (err) {
@@ -3110,7 +3395,7 @@
                 </td>
                 <td>
                     <div style="display:flex;align-items:center;gap:10px">
-                        <img src="${item.foto_pimpinan ? '/storage/' + item.foto_pimpinan : 'assets/images/avatar-placeholder.svg'}" style="width:30px;height:30px;border-radius:50%;object-fit:cover" />
+                        <img src="${item.foto_pimpinan ? "/storage/" + item.foto_pimpinan : "assets/images/avatar-placeholder.svg"}" style="width:30px;height:30px;border-radius:50%;object-fit:cover" />
                         <div>
                             <div style="font-weight:bold">${item.nama_pimpinan ?? "-"}</div>
                             <div class="muted" style="font-size:11px">${item.jabatan_pimpinan ?? "-"}</div>
@@ -3160,25 +3445,31 @@
         function resetForm() {
             if (form) form.reset();
             document.getElementById("ukId").value = "";
-            document.getElementById("ukFotoPreview").src = "assets/images/avatar-placeholder.svg";
+            document.getElementById("ukFotoPreview").src =
+                "assets/images/avatar-placeholder.svg";
             document.getElementById("ukTimTbody").innerHTML = "";
         }
 
         // Preview uploaded image
-        document.getElementById("ukFotoPimpinan")?.addEventListener("change", (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    document.getElementById("ukFotoPreview").src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+        document
+            .getElementById("ukFotoPimpinan")
+            ?.addEventListener("change", (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        document.getElementById("ukFotoPreview").src =
+                            event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
 
-        document.getElementById("ukAddStaffBtn")?.addEventListener("click", () => {
-            addStaffRow();
-        });
+        document
+            .getElementById("ukAddStaffBtn")
+            ?.addEventListener("click", () => {
+                addStaffRow();
+            });
 
         await loadData();
 
@@ -3212,24 +3503,62 @@
                 const id = document.getElementById("ukId").value;
                 const formData = new FormData();
 
-                formData.append("jenis", document.getElementById("ukJenis").value);
-                formData.append("nama_unit", document.getElementById("ukNamaUnit").value);
-                formData.append("nama_pimpinan", document.getElementById("ukNamaPimpinan").value);
-                formData.append("jabatan_pimpinan", document.getElementById("ukJabatanPimpinan").value);
-                formData.append("nip_pimpinan", document.getElementById("ukNipPimpinan").value);
-                formData.append("pendidikan_pimpinan", document.getElementById("ukPendidikanPimpinan").value);
-                formData.append("kontak", document.getElementById("ukKontak").value);
-                formData.append("email", document.getElementById("ukEmail").value);
-                formData.append("alamat", document.getElementById("ukAlamat").value);
-                formData.append("riwayat_jabatan", document.getElementById("ukRiwayatJabatan").value);
-                formData.append("tugas", document.getElementById("ukTugas").value);
-                formData.append("kewenangan", document.getElementById("ukKewenangan").value);
+                formData.append(
+                    "jenis",
+                    document.getElementById("ukJenis").value,
+                );
+                formData.append(
+                    "nama_unit",
+                    document.getElementById("ukNamaUnit").value,
+                );
+                formData.append(
+                    "nama_pimpinan",
+                    document.getElementById("ukNamaPimpinan").value,
+                );
+                formData.append(
+                    "jabatan_pimpinan",
+                    document.getElementById("ukJabatanPimpinan").value,
+                );
+                formData.append(
+                    "nip_pimpinan",
+                    document.getElementById("ukNipPimpinan").value,
+                );
+                formData.append(
+                    "pendidikan_pimpinan",
+                    document.getElementById("ukPendidikanPimpinan").value,
+                );
+                formData.append(
+                    "kontak",
+                    document.getElementById("ukKontak").value,
+                );
+                formData.append(
+                    "email",
+                    document.getElementById("ukEmail").value,
+                );
+                formData.append(
+                    "alamat",
+                    document.getElementById("ukAlamat").value,
+                );
+                formData.append(
+                    "riwayat_jabatan",
+                    document.getElementById("ukRiwayatJabatan").value,
+                );
+                formData.append(
+                    "tugas",
+                    document.getElementById("ukTugas").value,
+                );
+                formData.append(
+                    "kewenangan",
+                    document.getElementById("ukKewenangan").value,
+                );
 
                 // Collect dynamic staff rows
                 const staff = [];
                 document.querySelectorAll("#ukTimTbody tr").forEach((tr) => {
                     const nama = tr.querySelector(".staff-nama")?.value.trim();
-                    const jabatan = tr.querySelector(".staff-jabatan")?.value.trim();
+                    const jabatan = tr
+                        .querySelector(".staff-jabatan")
+                        ?.value.trim();
                     const nip = tr.querySelector(".staff-nip")?.value.trim();
                     if (nama || jabatan) {
                         staff.push({ nama, jabatan, nip });
@@ -3237,7 +3566,8 @@
                 });
                 formData.append("tim_pegawai", JSON.stringify(staff));
 
-                const photoFile = document.getElementById("ukFotoPimpinan").files[0];
+                const photoFile =
+                    document.getElementById("ukFotoPimpinan").files[0];
                 if (photoFile) {
                     formData.append("foto_pimpinan", photoFile);
                 }
@@ -3248,7 +3578,9 @@
                     formData.append("_method", "PUT"); // Laravel method spoofing
                 }
 
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
                 const response = await fetchAPI(url, {
                     method: "POST", // Always POST for FormData upload with spoofing
                     headers: {
@@ -3278,26 +3610,36 @@
             document.getElementById("ukId").value = item.id;
             document.getElementById("ukJenis").value = item.jenis ?? "";
             document.getElementById("ukNamaUnit").value = item.nama_unit ?? "";
-            document.getElementById("ukNamaPimpinan").value = item.nama_pimpinan ?? "";
-            document.getElementById("ukJabatanPimpinan").value = item.jabatan_pimpinan ?? "";
-            document.getElementById("ukNipPimpinan").value = item.nip_pimpinan ?? "";
-            document.getElementById("ukPendidikanPimpinan").value = item.pendidikan_pimpinan ?? "";
+            document.getElementById("ukNamaPimpinan").value =
+                item.nama_pimpinan ?? "";
+            document.getElementById("ukJabatanPimpinan").value =
+                item.jabatan_pimpinan ?? "";
+            document.getElementById("ukNipPimpinan").value =
+                item.nip_pimpinan ?? "";
+            document.getElementById("ukPendidikanPimpinan").value =
+                item.pendidikan_pimpinan ?? "";
             document.getElementById("ukKontak").value = item.kontak ?? "";
             document.getElementById("ukEmail").value = item.email ?? "";
             document.getElementById("ukAlamat").value = item.alamat ?? "";
-            document.getElementById("ukRiwayatJabatan").value = item.riwayat_jabatan ?? "";
+            document.getElementById("ukRiwayatJabatan").value =
+                item.riwayat_jabatan ?? "";
             document.getElementById("ukTugas").value = item.tugas ?? "";
-            document.getElementById("ukKewenangan").value = item.kewenangan ?? "";
+            document.getElementById("ukKewenangan").value =
+                item.kewenangan ?? "";
 
             if (item.foto_pimpinan) {
-                document.getElementById("ukFotoPreview").src = `/storage/${item.foto_pimpinan}`;
+                document.getElementById("ukFotoPreview").src =
+                    `/storage/${item.foto_pimpinan}`;
             } else {
-                document.getElementById("ukFotoPreview").src = "assets/images/avatar-placeholder.svg";
+                document.getElementById("ukFotoPreview").src =
+                    "assets/images/avatar-placeholder.svg";
             }
 
             // Populate staff table
-            const staffList = Array.isArray(item.tim_pegawai) ? item.tim_pegawai : [];
-            staffList.forEach(st => addStaffRow(st));
+            const staffList = Array.isArray(item.tim_pegawai)
+                ? item.tim_pegawai
+                : [];
+            staffList.forEach((st) => addStaffRow(st));
 
             formCard.hidden = false;
             formCard.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -3306,13 +3648,15 @@
         window.deleteUnitKerja = async function (id) {
             if (!confirm("Hapus Unit Kerja ini?")) return;
 
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            const csrf = document.querySelector(
+                'meta[name="csrf-token"]',
+            )?.content;
             await fetchAPI(`/api/admin/unit-kerja/${id}`, {
                 method: "DELETE",
                 headers: {
                     "X-CSRF-TOKEN": csrf,
                     Accept: "application/json",
-                }
+                },
             });
 
             await loadData();
@@ -3342,12 +3686,18 @@
         function renderSyarat() {
             const container = document.getElementById("fSrvSyaratList");
             if (!container) return;
-            container.innerHTML = draftSyarat.map((item, idx) => `
+            container.innerHTML =
+                draftSyarat
+                    .map(
+                        (item, idx) => `
                 <div class="array-row" style="display:flex;gap:8px;margin-bottom:8px">
                     <input class="input syarat-input" value="${item ?? ""}" placeholder="Tulis persyaratan..." required>
                     <button type="button" class="btn btn-danger btn-sm" onclick="removeSyarat(${idx})">Hapus</button>
                 </div>
-            `).join("") || '<div class="muted" style="padding: 10px 0;">Belum ada persyaratan.</div>';
+            `,
+                    )
+                    .join("") ||
+                '<div class="muted" style="padding: 10px 0;">Belum ada persyaratan.</div>';
         }
 
         window.removeSyarat = (idx) => {
@@ -3359,7 +3709,10 @@
         function renderSteps() {
             const container = document.getElementById("fSrvStepList");
             if (!container) return;
-            container.innerHTML = draftSteps.map((item, idx) => `
+            container.innerHTML =
+                draftSteps
+                    .map(
+                        (item, idx) => `
                 <div class="array-row" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;border:1px solid var(--border);padding:12px;border-radius:10px;background:#f8fafc;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <strong>Langkah ${idx + 1}</strong>
@@ -3368,7 +3721,10 @@
                     <input class="input step-judul" value="${item.judul ?? ""}" placeholder="Judul langkah (contoh: Isi Form Online)..." required>
                     <textarea class="input step-desc" rows="2" placeholder="Deskripsi detail langkah..." required>${item.deskripsi ?? ""}</textarea>
                 </div>
-            `).join("") || '<div class="muted" style="padding: 10px 0;">Belum ada tahapan proses.</div>';
+            `,
+                    )
+                    .join("") ||
+                '<div class="muted" style="padding: 10px 0;">Belum ada tahapan proses.</div>';
         }
 
         window.removeStep = (idx) => {
@@ -3390,12 +3746,20 @@
                 ["number", "Number Input (Angka)"],
                 ["file", "File Upload (Unggah File)"],
             ];
-            container.innerHTML = draftFields.map((item, idx) => {
-                const optionsStr = Array.isArray(item.options) ? item.options.join(", ") : (item.options || "");
-                const typeOpts = typeOptions.map(([val, label]) => `
+            container.innerHTML =
+                draftFields
+                    .map((item, idx) => {
+                        const optionsStr = Array.isArray(item.options)
+                            ? item.options.join(", ")
+                            : item.options || "";
+                        const typeOpts = typeOptions
+                            .map(
+                                ([val, label]) => `
                     <option value="${val}" ${item.type === val ? "selected" : ""}>${label}</option>
-                `).join("");
-                return `
+                `,
+                            )
+                            .join("");
+                        return `
                 <div class="array-row" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;border:1px solid var(--border);padding:12px;border-radius:10px;background:#f8fafc;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <strong>Field Input Dinamis ${idx + 1}</strong>
@@ -3422,7 +3786,9 @@
                     </div>
                 </div>
                 `;
-            }).join("") || '<div class="muted" style="padding: 10px 0;">Belum ada field tambahan.</div>';
+                    })
+                    .join("") ||
+                '<div class="muted" style="padding: 10px 0;">Belum ada field tambahan.</div>';
         }
 
         window.removeField = (idx) => {
@@ -3435,28 +3801,49 @@
             // Syarat
             const syaratContainer = document.getElementById("fSrvSyaratList");
             if (syaratContainer) {
-                draftSyarat = [...syaratContainer.querySelectorAll(".syarat-input")].map(el => el.value.trim());
+                draftSyarat = [
+                    ...syaratContainer.querySelectorAll(".syarat-input"),
+                ].map((el) => el.value.trim());
             }
             // Langkah
             const stepContainer = document.getElementById("fSrvStepList");
             if (stepContainer) {
-                draftSteps = [...stepContainer.querySelectorAll(".array-row")].map(row => {
+                draftSteps = [
+                    ...stepContainer.querySelectorAll(".array-row"),
+                ].map((row) => {
                     return {
-                        judul: row.querySelector(".step-judul")?.value.trim() || "",
-                        deskripsi: row.querySelector(".step-desc")?.value.trim() || "",
+                        judul:
+                            row.querySelector(".step-judul")?.value.trim() ||
+                            "",
+                        deskripsi:
+                            row.querySelector(".step-desc")?.value.trim() || "",
                     };
                 });
             }
             // Fields
             const fieldsContainer = document.getElementById("fSrvFormList");
             if (fieldsContainer) {
-                draftFields = [...fieldsContainer.querySelectorAll(".array-row")].map(row => {
-                    const label = row.querySelector(".field-label")?.value.trim() || "";
-                    const type = row.querySelector(".field-type")?.value || "text";
-                    const optionsRaw = row.querySelector(".field-options")?.value || "";
-                    const options = optionsRaw.split(",").map(s => s.trim()).filter(Boolean);
-                    const required = !!row.querySelector(".field-required")?.checked;
-                    const key = label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/(^_|_$)/g, "") || "field_" + Math.random().toString(36).slice(2, 6);
+                draftFields = [
+                    ...fieldsContainer.querySelectorAll(".array-row"),
+                ].map((row) => {
+                    const label =
+                        row.querySelector(".field-label")?.value.trim() || "";
+                    const type =
+                        row.querySelector(".field-type")?.value || "text";
+                    const optionsRaw =
+                        row.querySelector(".field-options")?.value || "";
+                    const options = optionsRaw
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                    const required =
+                        !!row.querySelector(".field-required")?.checked;
+                    const key =
+                        label
+                            .toLowerCase()
+                            .replace(/[^a-z0-9]+/g, "_")
+                            .replace(/(^_|_$)/g, "") ||
+                        "field_" + Math.random().toString(36).slice(2, 6);
                     return { key, label, type, required, options };
                 });
             }
@@ -3466,9 +3853,10 @@
             try {
                 const response = await fetchAPI("/api/admin/pelayanan");
                 const data = await response.json();
-                tbody.innerHTML = data
-                    .map(
-                        (item) => `
+                tbody.innerHTML =
+                    data
+                        .map(
+                            (item) => `
                     <tr>
                         <td><b>${item.nama ?? "-"}</b></td>
                         <td><code>${item.slug ?? "-"}</code></td>
@@ -3478,8 +3866,8 @@
                             </span>
                         </td>
                         <td>
-                            <span class="badge ${item.status === 'aktif' ? 'badge-done' : 'badge-wait'}" style="cursor: pointer" onclick="togglePelayananStatus(${item.id}, '${item.status}')">
-                                ${item.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
+                            <span class="badge ${item.status === "aktif" ? "badge-done" : "badge-wait"}" style="cursor: pointer" onclick="togglePelayananStatus(${item.id}, '${item.status}')">
+                                ${item.status === "aktif" ? "Aktif" : "Nonaktif"}
                             </span>
                         </td>
                         <td class="text-right">
@@ -3498,8 +3886,9 @@
                         </td>
                     </tr>
                 `,
-                    )
-                    .join("") || `<tr><td colspan="5" class="muted" style="text-align:center;padding:24px;">Belum ada pelayanan dikonfigurasi.</td></tr>`;
+                        )
+                        .join("") ||
+                    `<tr><td colspan="5" class="muted" style="text-align:center;padding:24px;">Belum ada pelayanan dikonfigurasi.</td></tr>`;
             } catch (error) {
                 console.error("Pelayanan Load Error:", error);
             }
@@ -3511,41 +3900,49 @@
         const btnInsertVar = document.getElementById("btnInsertVar");
 
         // 1. Setup formatting commands
-        document.querySelectorAll(".word-editor-toolbar .toolbar-btn").forEach(btn => {
-            btn.addEventListener("click", function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                const cmd = this.dataset.cmd;
-                document.execCommand(cmd, false, null);
-                editorCanvas.focus();
+        document
+            .querySelectorAll(".word-editor-toolbar .toolbar-btn")
+            .forEach((btn) => {
+                btn.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const cmd = this.dataset.cmd;
+                    document.execCommand(cmd, false, null);
+                    editorCanvas.focus();
+                });
             });
-        });
 
         // 2. Formatting dropdown listeners
-        document.getElementById("editorStyle")?.addEventListener("change", function(e) {
-            document.execCommand("formatBlock", false, this.value);
-            editorCanvas.focus();
-        });
+        document
+            .getElementById("editorStyle")
+            ?.addEventListener("change", function (e) {
+                document.execCommand("formatBlock", false, this.value);
+                editorCanvas.focus();
+            });
 
-        document.getElementById("editorFont")?.addEventListener("change", function(e) {
-            document.execCommand("fontName", false, this.value);
-            editorCanvas.focus();
-        });
+        document
+            .getElementById("editorFont")
+            ?.addEventListener("change", function (e) {
+                document.execCommand("fontName", false, this.value);
+                editorCanvas.focus();
+            });
 
-        document.getElementById("editorSize")?.addEventListener("change", function(e) {
-            document.execCommand("fontSize", false, this.value);
-            editorCanvas.focus();
-        });
+        document
+            .getElementById("editorSize")
+            ?.addEventListener("change", function (e) {
+                document.execCommand("fontSize", false, this.value);
+                editorCanvas.focus();
+            });
 
         // 3. Toggle variables dropdown
-        btnInsertVar?.addEventListener("click", function(e) {
+        btnInsertVar?.addEventListener("click", function (e) {
             e.preventDefault();
             e.stopPropagation();
             const isVisible = varDropdownMenu.style.display === "block";
             varDropdownMenu.style.display = isVisible ? "none" : "block";
         });
 
-        document.addEventListener("click", function() {
+        document.addEventListener("click", function () {
             if (varDropdownMenu) {
                 varDropdownMenu.style.display = "none";
             }
@@ -3557,7 +3954,7 @@
             const sel = window.getSelection();
             if (sel.getRangeAt && sel.rangeCount) {
                 let range = sel.getRangeAt(0);
-                
+
                 // Ensure selection range falls inside the editor canvas
                 let node = range.commonAncestorContainer;
                 let isInside = false;
@@ -3568,7 +3965,7 @@
                     }
                     node = node.parentNode;
                 }
-                
+
                 if (!isInside) {
                     // Force caret at the end of the canvas
                     range = document.createRange();
@@ -3577,11 +3974,11 @@
                     sel.removeAllRanges();
                     sel.addRange(range);
                 }
-                
+
                 range.deleteContents();
                 const textNode = document.createTextNode(placeholder);
                 range.insertNode(textNode);
-                
+
                 // Set caret after the inserted tag
                 range.setStartAfter(textNode);
                 range.setEndAfter(textNode);
@@ -3610,7 +4007,7 @@
                 <a class="dropdown-item btn-insert-var-item" href="#" data-var="rt">RT ({{rt}})</a>
                 <a class="dropdown-item btn-insert-var-item" href="#" data-var="rw">RW ({{rw}})</a>
                 <a class="dropdown-item btn-insert-var-item" href="#" data-var="telp">No. Telepon ({{telp}})</a>
-                
+
                 <div class="dropdown-header">Sistem & Pejabat</div>
                 <a class="dropdown-item btn-insert-var-item" href="#" data-var="nomor_surat">Nomor Surat ({{nomor_surat}})</a>
                 <a class="dropdown-item btn-insert-var-item" href="#" data-var="tanggal">Tanggal Hari Ini ({{tanggal}})</a>
@@ -3618,35 +4015,38 @@
                 <a class="dropdown-item btn-insert-var-item" href="#" data-var="lurah_nip">NIP Lurah ({{lurah_nip}})</a>
             `;
 
-            const validFields = draftFields.filter(f => f.label && f.key);
+            const validFields = draftFields.filter((f) => f.label && f.key);
             if (validFields.length > 0) {
                 html += `<div class="dropdown-header">Variabel Form Pengajuan</div>`;
-                validFields.forEach(f => {
+                validFields.forEach((f) => {
                     html += `<a class="dropdown-item btn-insert-var-item" href="#" data-var="${f.key}">${f.label} ({{${f.key}}})</a>`;
                 });
             }
 
             varDropdownMenu.innerHTML = html;
 
-            varDropdownMenu.querySelectorAll(".btn-insert-var-item").forEach(item => {
-                item.addEventListener("click", function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    insertPlaceholderAtCursor(`{{${this.dataset.var}}}`);
-                    varDropdownMenu.style.display = "none";
+            varDropdownMenu
+                .querySelectorAll(".btn-insert-var-item")
+                .forEach((item) => {
+                    item.addEventListener("click", function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        insertPlaceholderAtCursor(`{{${this.dataset.var}}}`);
+                        varDropdownMenu.style.display = "none";
+                    });
                 });
-            });
         }
 
         // Hook renderFields to update dropdown list in real-time
         const originalRenderFields = renderFields;
-        renderFields = function() {
+        renderFields = function () {
             originalRenderFields();
             const container = document.getElementById("fSrvFormList");
             if (container) {
                 setTimeout(() => {
-                    const labelInputs = container.querySelectorAll(".field-label");
-                    labelInputs.forEach(input => {
+                    const labelInputs =
+                        container.querySelectorAll(".field-label");
+                    labelInputs.forEach((input) => {
                         input.addEventListener("input", () => {
                             syncDrafts();
                             updateVariableDropdown();
@@ -3675,11 +4075,13 @@
             openModal();
         });
 
-        document.getElementById("btnAddSyarat")?.addEventListener("click", () => {
-            syncDrafts();
-            draftSyarat.push("");
-            renderSyarat();
-        });
+        document
+            .getElementById("btnAddSyarat")
+            ?.addEventListener("click", () => {
+                syncDrafts();
+                draftSyarat.push("");
+                renderSyarat();
+            });
 
         document.getElementById("btnAddStep")?.addEventListener("click", () => {
             syncDrafts();
@@ -3687,13 +4089,23 @@
             renderSteps();
         });
 
-        document.getElementById("btnAddField")?.addEventListener("click", () => {
-            syncDrafts();
-            draftFields.push({ key: "", label: "", type: "text", required: false, options: [] });
-            renderFields();
-        });
+        document
+            .getElementById("btnAddField")
+            ?.addEventListener("click", () => {
+                syncDrafts();
+                draftFields.push({
+                    key: "",
+                    label: "",
+                    type: "text",
+                    required: false,
+                    options: [],
+                });
+                renderFields();
+            });
 
-        document.getElementById("srvRefreshBtn")?.addEventListener("click", loadData);
+        document
+            .getElementById("srvRefreshBtn")
+            ?.addEventListener("click", loadData);
 
         document.addEventListener("click", (e) => {
             if (e.target.closest("[data-action='closeSrvModal']")) {
@@ -3709,7 +4121,8 @@
                 syncDrafts();
 
                 if (editorCanvas) {
-                    document.getElementById("fSrvTemplate").value = editorCanvas.innerHTML;
+                    document.getElementById("fSrvTemplate").value =
+                        editorCanvas.innerHTML;
                 }
 
                 const id = document.getElementById("fSrvId").value;
@@ -3720,19 +4133,25 @@
                     biaya: document.getElementById("fSrvBiaya").value,
                     online: document.getElementById("fSrvOnline").checked,
                     syarat: draftSyarat.filter(Boolean),
-                    langkah: draftSteps.filter(s => s.judul || s.deskripsi),
-                    form_fields: draftFields.filter(f => f.label),
+                    langkah: draftSteps.filter((s) => s.judul || s.deskripsi),
+                    form_fields: draftFields.filter((f) => f.label),
                     jam_pelayanan: document.getElementById("fSrvJam").value,
                     lokasi: document.getElementById("fSrvLokasi").value,
                     catatan: document.getElementById("fSrvCatatan").value,
-                    template_html: document.getElementById("fSrvTemplate").value,
+                    template_html:
+                        document.getElementById("fSrvTemplate").value,
                     teks_tombol: document.getElementById("fSrvTombol").value,
-                    deskripsi_surat: document.getElementById("fSrvDeskripsiSurat").value,
-                    status: document.getElementById("fSrvStatus").checked ? 'aktif' : 'nonaktif',
+                    deskripsi_surat:
+                        document.getElementById("fSrvDeskripsiSurat").value,
+                    status: document.getElementById("fSrvStatus").checked
+                        ? "aktif"
+                        : "nonaktif",
                 };
 
                 let response;
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
 
                 if (id) {
                     response = await fetchAPI(`/api/admin/pelayanan/${id}`, {
@@ -3768,7 +4187,7 @@
 
         function getDefaultTemplateHtml(kode) {
             const k = (kode || "").toUpperCase();
-            
+
             const blockPemohon = `
 <table class="data-table">
   <tr><td class="field-label">Nama Lengkap</td><td class="sep">:</td><td><strong>{{nama}}</strong></td></tr>
@@ -3783,72 +4202,72 @@
   <tr><td class="field-label">RT / RW</td><td class="sep">:</td><td>{{rt}} / {{rw}}</td></tr>
 </table>`;
 
-            switch(k) {
-                case 'SKTM':
+            switch (k) {
+                case "SKTM":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang berdomisili pada alamat tersebut di atas, dan yang bersangkutan <strong>TIDAK MAMPU / KURANG MAMPU</strong> secara ekonomi.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKDOM':
-                case 'SKDM':
+                case "SKDOM":
+                case "SKDM":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga yang berdomisili / bertempat tinggal secara <strong>{{jenis_domisili}}</strong> di Kelurahan Duren Mekar sejak <strong>{{sejak_tahun}}</strong>.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKKEHIDUPAN':
+                case "SKKEHIDUPAN":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan dengan sesungguhnya bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang berdomisili pada alamat tersebut di atas dan pada saat surat keterangan ini dibuat, yang bersangkutan <strong>MASIH HIDUP</strong>.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini kami buat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKBELUMNIK':
+                case "SKBELUMNIK":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar dan berdasarkan data yang ada pada kami, yang bersangkutan <strong>BELUM MEMILIKI NOMOR INDUK KEPENDUDUKAN (NIK)</strong>.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKWIRASWASTA':
+                case "SKWIRASWASTA":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang menjalankan usaha/wirausaha dengan keterangan sebagai berikut :</p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Usaha</td><td class="sep">:</td><td>{{nama_usaha}}</td></tr>\n  <tr><td class="field-label">Jenis Usaha</td><td class="sep">:</td><td>{{jenis_usaha}}</td></tr>\n  <tr><td class="field-label">Alamat Usaha</td><td class="sep">:</td><td>{{alamat_usaha}}</td></tr>\n  <tr><td class="field-label">Perkiraan Pendapatan</td><td class="sep">:</td><td>Rp {{pendapatan}} / bulan</td></tr>\n</table>\n<p style="margin-top: 15px;">Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKPINDAH':
+                case "SKPINDAH":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang akan <strong>PINDAH TEMPAT TINGGAL</strong> ke :</p>\n<table class="data-table">\n  <tr><td class="field-label">Alamat Tujuan</td><td class="sep">:</td><td>{{alamat_tujuan}}</td></tr>\n  <tr><td class="field-label">Kelurahan/Desa</td><td class="sep">:</td><td>{{kel_tujuan}}</td></tr>\n  <tr><td class="field-label">Kecamatan</td><td class="sep">:</td><td>{{kec_tujuan}}</td></tr>\n  <tr><td class="field-label">Kota/Kabupaten</td><td class="sep">:</td><td>{{kota_tujuan}}</td></tr>\n  <tr><td class="field-label">Alasan Pindah</td><td class="sep">:</td><td>{{alasan_pindah}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKKEMATIAN':
+                case "SKKEMATIAN":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Almarhum/ah</td><td class="sep">:</td><td><strong>{{nama_alm}}</strong></td></tr>\n  <tr><td class="field-label">Tempat / Tgl Lahir</td><td class="sep">:</td><td>{{tempat_lahir_alm}}, {{tgl_lahir_alm}}</td></tr>\n  <tr><td class="field-label">NIK</td><td class="sep">:</td><td>{{nik_alm}}</td></tr>\n  <tr><td class="field-label">Agama</td><td class="sep">:</td><td>{{agama_alm}}</td></tr>\n  <tr><td class="field-label">Tanggal Meninggal</td><td class="sep">:</td><td>{{tgl_meninggal}}</td></tr>\n  <tr><td class="field-label">Tempat Meninggal</td><td class="sep">:</td><td>{{tempat_meninggal}}</td></tr>\n  <tr><td class="field-label">Sebab Kematian</td><td class="sep">:</td><td>{{sebab_kematian}}</td></tr>\n  <tr><td class="field-label">Alamat Terakhir</td><td class="sep">:</td><td>{{alamat_alm}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKKELAHIRAN':
+                case "SKKELAHIRAN":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa telah lahir seorang anak dengan keterangan sebagai berikut :</p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Anak</td><td class="sep">:</td><td><strong>{{nama_anak}}</strong></td></tr>\n  <tr><td class="field-label">Jenis Kelamin</td><td class="sep">:</td><td>{{jk_anak}}</td></tr>\n  <tr><td class="field-label">Tempat Lahir</td><td class="sep">:</td><td>{{tempat_lahir_anak}}</td></tr>\n  <tr><td class="field-label">Tanggal Lahir</td><td class="sep">:</td><td>{{tgl_lahir_anak}}</td></tr>\n  <tr><td class="field-label">Nama Ayah</td><td class="sep">:</td><td>{{nama_ayah}}</td></tr>\n  <tr><td class="field-label">Nama Ibu</td><td class="sep">:</td><td>{{nama_ibu}}</td></tr>\n  <tr><td class="field-label">Alamat Orang Tua</td><td class="sep">:</td><td>{{alamat_ortu}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKGAJISWASTA':
+                case "SKGAJISWASTA":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang bekerja sebagai <strong>{{jabatan}}</strong> di <strong>{{nama_perusahaan}}</strong> dengan penghasilan rata-rata <strong>Rp {{penghasilan}}</strong> per bulan.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKGAJIPNS':
+                case "SKGAJIPNS":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang berstatus sebagai <strong>Pegawai Negeri Sipil (PNS)</strong> pada instansi <strong>{{instansi}}</strong>, Golongan <strong>{{golongan}}</strong>, dengan penghasilan rata-rata <strong>Rp {{penghasilan}}</strong> per bulan.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKPEMILIKAN':
+                case "SKPEMILIKAN":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang memiliki sebidang tanah dengan keterangan :</p>\n<table class="data-table">\n  <tr><td class="field-label">Luas Tanah</td><td class="sep">:</td><td>{{luas_tanah}} m²</td></tr>\n  <tr><td class="field-label">Lokasi Tanah</td><td class="sep">:</td><td>{{lokasi_tanah}}</td></tr>\n  <tr><td class="field-label">Bukti Kepemilikan</td><td class="sep">:</td><td>{{bukti_kepemilikan}}</td></tr>\n  <tr><td class="field-label">Nomor Sertifikat</td><td class="sep">:</td><td>{{no_sertifikat}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKTIDAKBUTA':
+                case "SKTIDAKBUTA":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang berdasarkan pengetahuan dan pengamatan kami, yang bersangkutan <strong>TIDAK BUTA HURUF</strong> dan mampu membaca serta menulis dengan baik.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKSENGKETA':
+                case "SKSENGKETA":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang memiliki tanah/bangunan di <strong>{{alamat_tanah}}</strong>, dan berdasarkan pengetahuan kami, tanah/bangunan tersebut <strong>TIDAK DALAM SENGKETA</strong> dengan pihak manapun.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'SKBERSIH':
+                case "SKBERSIH":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar yang berdasarkan pengetahuan dan pengamatan kami selama ini, yang bersangkutan <strong>BERKELAKUAN BAIK</strong>, tidak pernah terlibat dalam tindak pidana dan tidak pernah melakukan perbuatan yang bertentangan dengan norma masyarakat.</p>\n<p>Surat keterangan ini dibuat untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'N1':
+                case "N1":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah benar warga Kelurahan Duren Mekar dan bermaksud untuk <strong>MELANGSUNGKAN PERNIKAHAN</strong> dengan :</p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Calon Pasangan</td><td class="sep">:</td><td><strong>{{nama_pasangan}}</strong></td></tr>\n  <tr><td class="field-label">Tempat / Tgl Lahir</td><td class="sep">:</td><td>{{ttl_pasangan}}</td></tr>\n  <tr><td class="field-label">NIK Calon Pasangan</td><td class="sep">:</td><td>{{nik_pasangan}}</td></tr>\n  <tr><td class="field-label">Alamat Calon Pasangan</td><td class="sep">:</td><td>{{alamat_pasangan}}</td></tr>\n  <tr><td class="field-label">Rencana Menikah</td><td class="sep">:</td><td>{{rencana_nikah}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Demikian surat keterangan ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya di Kantor Urusan Agama setempat.</p>`;
 
-                case 'N2':
+                case "N2":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Adalah anak dari :</p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Ayah</td><td class="sep">:</td><td>{{nama_ayah}}</td></tr>\n  <tr><td class="field-label">Nama Ibu</td><td class="sep">:</td><td>{{nama_ibu}}</td></tr>\n  <tr><td class="field-label">Alamat Orang Tua</td><td class="sep">:</td><td>{{alamat_ortu}}</td></tr>\n  <tr><td class="field-label">Status Perkawinan Ortu</td><td class="sep">:</td><td>{{status_ortu}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Demikian surat keterangan asal usul ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya di Kantor Urusan Agama setempat.</p>`;
 
-                case 'N4':
+                case "N4":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Ayah</td><td class="sep">:</td><td><strong>{{nama_ayah}}</strong></td></tr>\n  <tr><td class="field-label">Tempat / Tgl Lahir</td><td class="sep">:</td><td>{{ttl_ayah}}</td></tr>\n  <tr><td class="field-label">Pekerjaan Ayah</td><td class="sep">:</td><td>{{pekerjaan_ayah}}</td></tr>\n  <tr><td class="field-label">Nama Ibu</td><td class="sep">:</td><td><strong>{{nama_ibu}}</strong></td></tr>\n  <tr><td class="field-label">Tempat / Tgl Lahir Ibu</td><td class="sep">:</td><td>{{ttl_ibu}}</td></tr>\n  <tr><td class="field-label">Pekerjaan Ibu</td><td class="sep">:</td><td>{{pekerjaan_ibu}}</td></tr>\n  <tr><td class="field-label">Alamat Orang Tua</td><td class="sep">:</td><td>{{alamat_ortu}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Demikian surat keterangan tentang orang tua ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya di Kantor Urusan Agama setempat.</p>`;
 
-                case 'PENGANTAR':
+                case "PENGANTAR":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, memberikan surat pengantar kepada :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Untuk keperluan : <strong>{{keperluan}}</strong> pada instansi/lembaga <strong>{{tujuan_instansi}}</strong>.</p>\n<p>Kepada yang berwenang diharapkan dapat memberikan bantuan sebagaimana mestinya.</p>\n<p>Demikian surat pengantar ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'PENGANTARSKCK':
+                case "PENGANTARSKCK":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, memberikan surat pengantar guna keperluan pembuatan Surat Keterangan Catatan Kepolisian (SKCK) kepada :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Kepada Yth. Kepala Kepolisian Sektor / Resort Kota Depok agar berkenan membantu yang bersangkutan dalam pembuatan <strong>SKCK</strong>.</p>\n<p>Demikian surat pengantar ini dibuat dengan sebenarnya.</p>`;
 
-                case 'PENGANTARPINDAH':
+                case "PENGANTARPINDAH":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Bermaksud pindah tempat tinggal ke : <strong>{{alamat_tujuan}}</strong>, Kelurahan <strong>{{kel_tujuan}}</strong>, Kecamatan <strong>{{kec_tujuan}}</strong>, Kota/Kabupaten <strong>{{kota_tujuan}}</strong>.</p>\n<p>Kepada pihak yang berwenang di tempat tujuan agar berkenan menerima dan membantu yang bersangkutan mengurus kepindahannya.</p>\n<p>Demikian surat pengantar ini dibuat dengan sebenarnya.</p>`;
 
-                case 'REKOMENDASI':
+                case "REKOMENDASI":
                     return `<p>Yang bertanda tangan di bawah ini, Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, dengan ini memberikan <strong>REKOMENDASI</strong> kepada :</p>\n\${blockPemohon}\n<p style="margin-top: 15px;">Untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Berdasarkan pengamatan dan pengetahuan kami, yang bersangkutan adalah warga yang baik, bertanggung jawab, dan layak mendapat rekomendasi untuk keperluan tersebut.</p>\n<p>Demikian surat rekomendasi ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>`;
 
-                case 'KUASA':
+                case "KUASA":
                     return `<p>Yang bertanda tangan di bawah ini, selaku Lurah Duren Mekar, Kecamatan Bojongsari, Kota Depok, menerangkan bahwa :</p>\n<p><strong>PEMBERI KUASA :</strong></p>\n\${blockPemohon}\n<p style="margin-top: 15px;"><strong>Memberikan kuasa penuh kepada :</strong></p>\n<table class="data-table">\n  <tr><td class="field-label">Nama Penerima Kuasa</td><td class="sep">:</td><td><strong>{{nama_penerima}}</strong></td></tr>\n  <tr><td class="field-label">NIK Penerima Kuasa</td><td class="sep">:</td><td>{{nik_penerima}}</td></tr>\n  <tr><td class="field-label">Hubungan</td><td class="sep">:</td><td>{{hubungan}}</td></tr>\n  <tr><td class="field-label">Alamat Penerima</td><td class="sep">:</td><td>{{alamat_penerima}}</td></tr>\n</table>\n<p style="margin-top: 15px;">Untuk keperluan : <strong>{{keperluan}}</strong>.</p>\n<p>Surat kuasa ini dibuat dengan sebenarnya tanpa paksaan dari pihak manapun.</p>`;
 
                 default:
@@ -3869,18 +4288,24 @@
             document.getElementById("fSrvJam").value = item.jam_pelayanan ?? "";
             document.getElementById("fSrvLokasi").value = item.lokasi ?? "";
             document.getElementById("fSrvCatatan").value = item.catatan ?? "";
-            
+
             const rawTemplate = item.template?.konten_html ?? "";
-            const defaultTemplate = getDefaultTemplateHtml(item.slug || item.kode_surat);
-            const templateHtml = rawTemplate.trim() !== "" ? rawTemplate : defaultTemplate;
-            
+            const defaultTemplate = getDefaultTemplateHtml(
+                item.slug || item.kode_surat,
+            );
+            const templateHtml =
+                rawTemplate.trim() !== "" ? rawTemplate : defaultTemplate;
+
             document.getElementById("fSrvTemplate").value = templateHtml;
             if (editorCanvas) {
                 editorCanvas.innerHTML = templateHtml;
             }
-            document.getElementById("fSrvTombol").value = item.teks_tombol ?? "";
-            document.getElementById("fSrvDeskripsiSurat").value = item.deskripsi_surat ?? "";
-            document.getElementById("fSrvStatus").checked = (item.status === 'aktif');
+            document.getElementById("fSrvTombol").value =
+                item.teks_tombol ?? "";
+            document.getElementById("fSrvDeskripsiSurat").value =
+                item.deskripsi_surat ?? "";
+            document.getElementById("fSrvStatus").checked =
+                item.status === "aktif";
 
             draftSyarat = item.syarat ?? [];
             draftSteps = item.langkah ?? [];
@@ -3894,12 +4319,14 @@
         };
 
         window.togglePelayananStatus = async function (id, currentStatus) {
-            const nextStatus = currentStatus === 'aktif' ? 'nonaktif' : 'aktif';
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            const nextStatus = currentStatus === "aktif" ? "nonaktif" : "aktif";
+            const csrf = document.querySelector(
+                'meta[name="csrf-token"]',
+            )?.content;
             try {
                 const getRes = await fetchAPI(`/api/admin/pelayanan/${id}`);
                 const item = await getRes.json();
-                
+
                 const payload = {
                     nama: item.nama,
                     slug: item.slug,
@@ -3912,7 +4339,7 @@
                     jam_pelayanan: item.jam_pelayanan,
                     lokasi: item.lokasi,
                     catatan: item.catatan,
-                    template_html: item.template?.konten_html || '',
+                    template_html: item.template?.konten_html || "",
                     teks_tombol: item.teks_tombol,
                     deskripsi_surat: item.deskripsi_surat,
                     status: nextStatus,
@@ -3927,7 +4354,7 @@
                     },
                     body: JSON.stringify(payload),
                 });
-                
+
                 if (response.ok) {
                     await loadData();
                 } else {
@@ -3940,13 +4367,15 @@
 
         window.deletePelayanan = async function (id) {
             if (!confirm("Hapus pelayanan ini?")) return;
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            const csrf = document.querySelector(
+                'meta[name="csrf-token"]',
+            )?.content;
             await fetchAPI(`/api/admin/pelayanan/${id}`, {
                 method: "DELETE",
                 headers: {
                     "X-CSRF-TOKEN": csrf,
                     Accept: "application/json",
-                }
+                },
             });
 
             await loadData();
@@ -4017,14 +4446,17 @@
                 let response;
 
                 if (setting?.id) {
-                    response = await fetchAPI(`/api/admin/setting/${setting.id}`, {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Accept: "application/json",
+                    response = await fetchAPI(
+                        `/api/admin/setting/${setting.id}`,
+                        {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Accept: "application/json",
+                            },
+                            body: JSON.stringify(payload),
                         },
-                        body: JSON.stringify(payload),
-                    });
+                    );
                 } else {
                     response = await fetchAPI("/api/admin/setting", {
                         method: "POST",
@@ -4188,7 +4620,8 @@
             document.getElementById("userName").value = user.name ?? "";
             document.getElementById("userEmail").value = user.email ?? "";
             document.getElementById("userRole").value = user.role ?? "warga";
-            document.getElementById("userStatus").value = user.status ?? "aktif";
+            document.getElementById("userStatus").value =
+                user.status ?? "aktif";
 
             document.getElementById("adminUserModal")?.classList.add("open");
         };
@@ -4243,7 +4676,7 @@
             try {
                 const res = await fetchAPI("/api/admin/master-penandatangan", {
                     credentials: "same-origin",
-                    headers: { Accept: "application/json" }
+                    headers: { Accept: "application/json" },
                 });
                 if (!res.ok) throw new Error("Gagal memuat data penandatangan");
                 allItems = await res.json();
@@ -4259,10 +4692,11 @@
             let items = allItems;
 
             if (query) {
-                items = items.filter(it => 
-                    (it.nama || "").toLowerCase().includes(query) ||
-                    (it.nip || "").toLowerCase().includes(query) ||
-                    (it.jabatan || "").toLowerCase().includes(query)
+                items = items.filter(
+                    (it) =>
+                        (it.nama || "").toLowerCase().includes(query) ||
+                        (it.nip || "").toLowerCase().includes(query) ||
+                        (it.jabatan || "").toLowerCase().includes(query),
                 );
             }
 
@@ -4274,12 +4708,13 @@
 
             if (empty) empty.style.display = "none";
 
-            tbody.innerHTML = items.map(it => {
-                const statusBadge = it.status_aktif 
-                    ? `<span class="badge badge-done" style="background:rgba(34,197,94,.12);color:#16a34a">Aktif</span>`
-                    : `<span class="badge badge-neutral" style="background:rgba(148,163,184,.22);color:#334155">Nonaktif</span>`;
-                
-                return `
+            tbody.innerHTML = items
+                .map((it) => {
+                    const statusBadge = it.status_aktif
+                        ? `<span class="badge badge-done" style="background:rgba(34,197,94,.12);color:#16a34a">Aktif</span>`
+                        : `<span class="badge badge-neutral" style="background:rgba(148,163,184,.22);color:#334155">Nonaktif</span>`;
+
+                    return `
                 <tr>
                     <td><b>${it.nama}</b></td>
                     <td>${it.jabatan}</td>
@@ -4297,7 +4732,8 @@
                     </td>
                 </tr>
                 `;
-            }).join("");
+                })
+                .join("");
         }
 
         await loadData();
@@ -4313,19 +4749,26 @@
         // Form submit
         const form = document.getElementById("adminPenandatanganForm");
         if (form) {
-            form.addEventListener("submit", async function(e) {
+            form.addEventListener("submit", async function (e) {
                 e.preventDefault();
                 const id = document.getElementById("penandatanganId").value;
                 const payload = {
                     nama: document.getElementById("penandatanganNama").value,
-                    jabatan: document.getElementById("penandatanganJabatan").value,
+                    jabatan: document.getElementById("penandatanganJabatan")
+                        .value,
                     nip: document.getElementById("penandatanganNip").value,
-                    status_aktif: document.getElementById("penandatanganStatus").value === "1",
+                    status_aktif:
+                        document.getElementById("penandatanganStatus").value ===
+                        "1",
                 };
 
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
                 const method = id ? "PUT" : "POST";
-                const url = id ? `/api/admin/master-penandatangan/${id}` : "/api/admin/master-penandatangan";
+                const url = id
+                    ? `/api/admin/master-penandatangan/${id}`
+                    : "/api/admin/master-penandatangan";
 
                 try {
                     const res = await fetchAPI(url, {
@@ -4333,17 +4776,21 @@
                         headers: {
                             "Content-Type": "application/json",
                             "X-CSRF-TOKEN": csrf,
-                            Accept: "application/json"
+                            Accept: "application/json",
                         },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(payload),
                     });
 
                     if (!res.ok) {
                         const errData = await res.json();
-                        throw new Error(errData.message || "Gagal menyimpan data");
+                        throw new Error(
+                            errData.message || "Gagal menyimpan data",
+                        );
                     }
 
-                    document.getElementById("adminPenandatanganModal")?.classList.remove("open");
+                    document
+                        .getElementById("adminPenandatanganModal")
+                        ?.classList.remove("open");
                     await loadData();
                 } catch (err) {
                     alert(err.message);
@@ -4353,39 +4800,63 @@
 
         // Global click handler in admin context
         document.addEventListener("click", async (e) => {
-            const btnCreate = e.target.closest("[data-action='penandatanganCreate']");
-            const btnEdit = e.target.closest("[data-action='penandatanganEdit']");
-            const btnDelete = e.target.closest("[data-action='penandatanganDelete']");
-            const btnClose = e.target.closest("[data-action='penandatanganClose']");
+            const btnCreate = e.target.closest(
+                "[data-action='penandatanganCreate']",
+            );
+            const btnEdit = e.target.closest(
+                "[data-action='penandatanganEdit']",
+            );
+            const btnDelete = e.target.closest(
+                "[data-action='penandatanganDelete']",
+            );
+            const btnClose = e.target.closest(
+                "[data-action='penandatanganClose']",
+            );
 
             if (btnClose) {
-                document.getElementById("adminPenandatanganModal")?.classList.remove("open");
+                document
+                    .getElementById("adminPenandatanganModal")
+                    ?.classList.remove("open");
             }
 
             if (btnCreate) {
-                document.getElementById("adminPenandatanganModalTitle").textContent = "Tambah Penandatangan";
+                document.getElementById(
+                    "adminPenandatanganModalTitle",
+                ).textContent = "Tambah Penandatangan";
                 document.getElementById("penandatanganId").value = "";
                 document.getElementById("penandatanganNama").value = "";
                 document.getElementById("penandatanganJabatan").value = "";
                 document.getElementById("penandatanganNip").value = "";
                 document.getElementById("penandatanganStatus").value = "1";
-                document.getElementById("adminPenandatanganModal")?.classList.add("open");
+                document
+                    .getElementById("adminPenandatanganModal")
+                    ?.classList.add("open");
             }
 
             if (btnEdit) {
                 const id = btnEdit.dataset.id;
                 try {
-                    const res = await fetchAPI(`/api/admin/master-penandatangan/${id}`);
-                    if (!res.ok) throw new Error("Gagal mengambil data penandatangan");
+                    const res = await fetchAPI(
+                        `/api/admin/master-penandatangan/${id}`,
+                    );
+                    if (!res.ok)
+                        throw new Error("Gagal mengambil data penandatangan");
                     const it = await res.json();
 
-                    document.getElementById("adminPenandatanganModalTitle").textContent = "Edit Penandatangan";
+                    document.getElementById(
+                        "adminPenandatanganModalTitle",
+                    ).textContent = "Edit Penandatangan";
                     document.getElementById("penandatanganId").value = it.id;
-                    document.getElementById("penandatanganNama").value = it.nama;
-                    document.getElementById("penandatanganJabatan").value = it.jabatan;
+                    document.getElementById("penandatanganNama").value =
+                        it.nama;
+                    document.getElementById("penandatanganJabatan").value =
+                        it.jabatan;
                     document.getElementById("penandatanganNip").value = it.nip;
-                    document.getElementById("penandatanganStatus").value = it.status_aktif ? "1" : "0";
-                    document.getElementById("adminPenandatanganModal")?.classList.add("open");
+                    document.getElementById("penandatanganStatus").value =
+                        it.status_aktif ? "1" : "0";
+                    document
+                        .getElementById("adminPenandatanganModal")
+                        ?.classList.add("open");
                 } catch (err) {
                     alert(err.message);
                 }
@@ -4393,16 +4864,26 @@
 
             if (btnDelete) {
                 const id = btnDelete.dataset.id;
-                if (!confirm("Apakah Anda yakin ingin menghapus pejabat penandatangan ini?")) return;
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                if (
+                    !confirm(
+                        "Apakah Anda yakin ingin menghapus pejabat penandatangan ini?",
+                    )
+                )
+                    return;
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
                 try {
-                    const res = await fetchAPI(`/api/admin/master-penandatangan/${id}`, {
-                        method: "DELETE",
-                        headers: {
-                            "X-CSRF-TOKEN": csrf,
-                            Accept: "application/json"
-                        }
-                    });
+                    const res = await fetchAPI(
+                        `/api/admin/master-penandatangan/${id}`,
+                        {
+                            method: "DELETE",
+                            headers: {
+                                "X-CSRF-TOKEN": csrf,
+                                Accept: "application/json",
+                            },
+                        },
+                    );
                     if (!res.ok) throw new Error("Gagal menghapus data");
                     await loadData();
                 } catch (err) {
@@ -4452,6 +4933,5 @@
         if (name === "admin/users") initUsersLaravel();
         if (name === "admin/struktur-organisasi") initStrukturOrganisasi();
         if (name === "admin/laporan") initLaporan();
-
     });
 })();
