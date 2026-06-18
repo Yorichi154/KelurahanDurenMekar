@@ -53,11 +53,52 @@ Route::get('/public/pengumuman', [PengumumanController::class, 'index']);
 Route::get('/public/lembaga', [LembagaController::class, 'index']);
 Route::get('/public/unit-kerja', [UnitKerjaController::class, 'index']);
 Route::get('/public/pelayanan', [PelayananController::class, 'index']);
-Route::get('/public/setting', [SettingController::class, 'index']);
 Route::get('/public/faq', [FaqController::class, 'index']);
 Route::get('/public/rtrw', [RtrwController::class, 'index']);
 Route::get('/public/galeri', [GaleriController::class, 'index']);
-Route::get('/public/struktur-organisasi', [StrukturOrganisasiController::class, 'index']);
+
+// ── Setting publik: return flat JSON (visi, misi, site_name, dll) ──
+Route::get('/public/setting', function () {
+    $s = \App\Models\Setting::first();
+    if (!$s) {
+        return response()->json([
+            'site_name'       => 'Kelurahan Duren Mekar',
+            'visi'            => '',
+            'misi'            => '',
+            'lurah_name'      => '',
+            'address'         => '',
+            'phone'           => '',
+            'email'           => '',
+            'instagram'       => '',
+            'jam_pelayanan'   => '',
+            'luas_wilayah'    => '',
+            'jumlah_penduduk' => 0,
+            'jumlah_rt'       => 0,
+            'jumlah_rw'       => 0,
+        ]);
+    }
+    return response()->json([
+        'site_name'       => $s->site_name,
+        'visi'            => $s->visi,
+        'misi'            => $s->misi,
+        'lurah_name'      => $s->lurah_name,
+        'address'         => $s->address,
+        'phone'           => $s->phone,
+        'email'           => $s->email,
+        'instagram'       => $s->instagram,
+        'jam_pelayanan'   => $s->jam_pelayanan,
+        'luas_wilayah'    => $s->luas_wilayah,
+        'jumlah_penduduk' => $s->jumlah_penduduk,
+        'jumlah_rt'       => $s->jumlah_rt,
+        'jumlah_rw'       => $s->jumlah_rw,
+    ]);
+});
+
+// ── Struktur organisasi publik: return array langsung ──
+Route::get('/public/struktur-organisasi', function () {
+    $items = \App\Models\StrukturOrganisasi::orderBy('urutan')->get();
+    return response()->json($items->values());
+});
 
 Route::get('/public/stats', function () {
     $setting = \App\Models\Setting::first();

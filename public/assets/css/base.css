@@ -3,83 +3,84 @@
    Theme: biru muda modern
 ========================= */
 :root {
-  --container: 1200px;
+    --container: 1200px;
 
-  /* ===== GOV ULTRA MODERN (PUBLIK) ===== */
-  --primary: #0f2f76;
-  --primary-700: #0b2561;
-  --primary-800: #081c4a; /* ✅ tambahan untuk klik */
-  --primary-500: #1d4ed8;
-  --primary-soft: #eaf2ff;
+    /* ===== GOV ULTRA MODERN (PUBLIK) ===== */
+    --primary: #1d56c9;
+    --primary-700: #13408f;
+    --primary-800: #0a2a66; /* ✅ tambahan untuk klik */
+    --primary-500: #2f6df0;
+    --primary-soft: #eef2fb;
 
-  --bg: #eef3fb;
-  --surface: #ffffff;
+    --bg: #f4f7fd;
+    --surface: #ffffff;
 
-  --text: #0f172a; /* ✅ tambahan */
-  --muted: #64748b; /* ✅ tambahan */
+    --text: #10172a; /* ✅ tambahan */
+    --muted: #586173; /* ✅ tambahan */
 
-  --field-bg: #f8fafc; /* ✅ tambahan */
+    --field-bg: #f8fafc; /* ✅ tambahan */
 
-  --border: rgba(15, 47, 118, 0.12);
+    --border: #e7ebf3;
 
-  --shadow: 0 18px 45px rgba(15, 47, 118, 0.18);
-  --shadow-sm: 0 10px 26px rgba(15, 47, 118, 0.1);
-  --shadow-lg: 0 25px 60px rgba(15, 47, 118, 0.25); /* opsional */
+    --shadow: 0 10px 30px -12px rgba(16, 23, 42, 0.12);
+    --shadow-sm: 0 6px 18px -8px rgba(16, 23, 42, 0.1);
+    --shadow-lg: 0 20px 48px -10px rgba(16, 23, 42, 0.18); /* opsional */
 
-  --radius: 18px;
-  --radius-sm: 14px;
+    --radius: 22px;
+    --radius-sm: 16px;
 }
 
 /* Reset */
 *,
 *::before,
 *::after {
-  box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 html,
 body {
-  height: 100%;
-  overflow-x: hidden;
+    height: 100%;
+    overflow-x: hidden;
 }
 
 body {
-  margin: 0;
-  font-family:
-    "Segoe UI",
-    system-ui,
-    -apple-system,
-    Arial,
-    sans-serif;
-  color: var(--text);
-  background: var(--bg);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    font-family:
+        "Plus Jakarta Sans",
+        "Segoe UI",
+        system-ui,
+        -apple-system,
+        Arial,
+        sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 img {
-  max-width: 100%;
-  display: block;
+    max-width: 100%;
+    display: block;
 }
 
 a {
-  color: inherit;
-  text-decoration: none;
+    color: inherit;
+    text-decoration: none;
 }
 
 button,
 input,
 select,
 textarea {
-  font: inherit;
-  color: inherit;
+    font: inherit;
+    color: inherit;
 }
 
 ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
 h1,
@@ -87,44 +88,44 @@ h2,
 h3,
 h4,
 p {
-  margin: 0;
+    margin: 0;
 }
 
 :focus-visible {
-  outline: 3px solid rgba(46, 115, 255, 0.35);
-  outline-offset: 2px;
+    outline: 3px solid rgba(46, 115, 255, 0.35);
+    outline-offset: 2px;
 }
 
 /* Utilities */
 .container {
-  width: min(var(--container), calc(100% - 48px));
-  margin-inline: auto;
+    width: min(var(--container), calc(100% - 48px));
+    margin-inline: auto;
 }
 
 .stack {
-  display: grid;
-  gap: 12px;
+    display: grid;
+    gap: 12px;
 }
 
 .stack-lg {
-  display: grid;
-  gap: 18px;
+    display: grid;
+    gap: 18px;
 }
 
 .muted {
-  color: var(--muted);
+    color: var(--muted);
 }
 
 .hidden {
-  display: none !important;
+    display: none !important;
 }
 
 /* ===== Dashboard (ADMIN/STAFF/WARGA) -> FLAT MINIMAL ===== */
 body.is-admin,
 body.is-staf,
 body.is-warga {
-  --bg: #f5f7fb;
-  --border: #e2e8f0;
-  --shadow: none;
-  --shadow-sm: none;
+    --bg: #f5f7fb;
+    --border: #e2e8f0;
+    --shadow: none;
+    --shadow-sm: none;
 }

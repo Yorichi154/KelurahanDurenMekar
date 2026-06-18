@@ -36,6 +36,7 @@
 
 
     <script src="{{ asset('assets/js/public/public.js') }}" defer></script>
+    <script src="/assets/js/public/home_sections.js" defer></script>
     <script src="{{ asset('assets/js/admin/admin.js') }}" defer></script>
     <script src="{{ asset('assets/js/staf/staf.js') }}" defer></script>
     <script src="{{ asset('assets/js/staf/buat-surat.js') }}" defer></script>

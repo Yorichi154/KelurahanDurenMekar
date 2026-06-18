@@ -1,135 +1,358 @@
 <section class="home-page">
-    <div class="container">
-        <div class="home-hero">
-            <div class="container hero-inner">
-                <div class="hero-text">
-                    <h1>Selamat Datang di Portal Kelurahan Duren Mekar</h1>
-                    <p>
-                        Platform pelayanan untuk mempermudah warga Duren Mekar
-                        dalam mengurus berbagai keperluan administrasi
-                        kelurahan.
-                    </p>
-                    <div class="hero-actions">
-                        <a class="btn btn-light" href="#login">
-                            <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
-                            Login
-                        </a>
-                        <a class="btn btn-outline" href="#register">
-                            <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
-                            Daftar
-                        </a>
-                    </div>
+    <!-- ========== HERO ========== -->
+    <div class="home-hero">
+        <div class="hero-bg" aria-hidden="true">
+            <span class="blob blob--1"></span>
+            <span class="blob blob--2"></span>
+            <span class="dotgrid"></span>
+        </div>
+
+        <div class="container hero-inner">
+            <div class="hero-text">
+                <div class="hero-badge">
+                    <span
+                        >Selamat Datang
+                        <span class="badge-wave">&#x1F44B;</span></span
+                    >
+                </div>
+                <h1>Selamat Datang di Portal<br />Kelurahan Duren Mekar</h1>
+                <p>
+                    Platform pelayanan untuk mempermudah warga Duren Mekar dalam
+                    mengurus berbagai keperluan administrasi kelurahan.
+                </p>
+
+                <div class="hero-actions" id="heroGuestActions">
+                    <a
+                        class="btn btn-light"
+                        href="#pelayanan"
+                        data-page="pelayanan"
+                    >
+                        <i
+                            class="fa-solid fa-file-signature"
+                            aria-hidden="true"
+                        ></i>
+                        Ajukan Surat Online
+                    </a>
+                    <a
+                        class="btn btn-outline"
+                        href="#layanan"
+                        data-page="layanan"
+                    >
+                        Lihat Semua Layanan
+                        <i
+                            class="fa-solid fa-arrow-right"
+                            aria-hidden="true"
+                        ></i>
+                    </a>
                 </div>
 
-                <div class="hero-media">
-                    <div class="hero-slider" id="heroSlider">
-                        <div class="hero-slides-track" id="heroSlidesTrack">
-                            <div class="hero-slide">
-                                <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1200&auto=format&fit=crop"
-                                    alt="Pelayanan Kelurahan" id="heroStaticImg" loading="lazy" />
+                <div class="home-stats">
+                    <div class="stat-card">
+                        <span class="stat-icon"
+                            ><i class="fa-solid fa-people-group"></i
+                        ></span>
+                        <span class="stat-text"
+                            ><strong id="stat-total-warga">0</strong
+                            ><small>Warga Terdaftar</small></span
+                        >
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-icon"
+                            ><i class="fa-solid fa-house-user"></i
+                        ></span>
+                        <span class="stat-text"
+                            ><strong id="stat-total-rtrw">0</strong
+                            ><small>RT / RW</small></span
+                        >
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-icon"
+                            ><i class="fa-solid fa-list-check"></i
+                        ></span>
+                        <span class="stat-text"
+                            ><strong id="stat-layanan-aktif">0</strong
+                            ><small>Layanan Aktif</small></span
+                        >
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-icon"
+                            ><i class="fa-solid fa-file-circle-check"></i
+                        ></span>
+                        <span class="stat-text"
+                            ><strong id="stat-surat-diproses">0</strong
+                            ><small>Surat Diproses</small></span
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Slideshow dari Galeri -->
+            <div class="hero-media">
+                <div class="hero-photo-card" id="heroSlider">
+                    <div class="hero-slides-track" id="heroSlidesTrack">
+                        <!-- Diisi otomatis dari API galeri -->
+                        <div class="hero-slide">
+                            <img
+                                src="https://images.unsplash.com/photo-1577415124269-fc1140a69e91?q=80&w=1200&auto=format&fit=crop"
+                                alt="Kantor Kelurahan"
+                                loading="eager"
+                            />
+                            <div class="hero-slide-caption">
+                                Kelurahan Duren Mekar
                             </div>
                         </div>
                     </div>
+                    <div class="hero-locpill">
+                        <span class="hero-locpill-icon"
+                            ><i class="fa-solid fa-location-dot"></i
+                        ></span>
+                        <span>
+                            <strong>Kelurahan Duren Mekar</strong>
+                            <small>Kecamatan Bojongsari, Kota Depok</small>
+                        </span>
+                    </div>
+                    <!-- Dots dibuat oleh JS -->
                 </div>
             </div>
         </div>
 
-        <div class="home-stats">
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fa-solid fa-people-group" aria-hidden="true"></i>
+        <svg
+            class="hero-wave"
+            viewBox="0 0 1440 90"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+        >
+            <path
+                d="M0,40 C360,100 1080,0 1440,50 L1440,90 L0,90 Z"
+                fill="#f4f7fd"
+            />
+        </svg>
+    </div>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <div class="home-body">
+        <!-- ROW 1: Staf Kelurahan + Visi & Misi -->
+        <div class="home-duo-row">
+            <!-- AGENDA MENDATANG (kotak biru) -->
+            <div class="home-card home-agenda-card">
+                <div class="section-head">
+                    <h2>
+                        <i class="fa-regular fa-calendar-check"></i> Agenda
+                        Mendatang
+                    </h2>
+                    <a
+                        class="link-more nav-link"
+                        href="#agenda"
+                        data-page="agenda"
+                    >
+                        Lihat Semua <i class="fa-solid fa-arrow-right"></i>
+                    </a>
                 </div>
-                <strong id="stat-total-warga"></strong>
-                <span class="muted">Total Warga</span>
+                <div id="homeAgendaList" class="agenda-list">
+                    <div class="loading-card">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Memuat
+                        agenda...
+                    </div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fa-solid fa-house-user" aria-hidden="true"></i>
+
+            <!-- VISI MISI (kotak hitam) -->
+            <div class="home-card home-visimisi-card">
+                <div class="visimisi-header">
+                    <div class="visimisi-icon">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+                    <h2>Visi &amp; Misi</h2>
                 </div>
-                <strong id="stat-total-rtrw"></strong>
-                <span class="muted">RT / RW</span>
+                <div class="visimisi-visi">
+                    <h4><i class="fa-solid fa-eye"></i> Visi</h4>
+                    <p id="homeVisiText">Memuat...</p>
+                </div>
+                <div class="visimisi-misi">
+                    <h4><i class="fa-solid fa-flag"></i> Misi</h4>
+                    <ul id="homeMisiList" class="visimisi-misi-list">
+                        <li>Memuat...</li>
+                    </ul>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+        </div>
+
+        <!-- ROW 2: Layanan Kami + Berita Terbaru -->
+        <div class="home-panels">
+            <div class="panel-services">
+                <div class="section-head">
+                    <h2>Layanan Kami</h2>
+                    <a
+                        class="link-more nav-link"
+                        href="#pelayanan"
+                        data-page="pelayanan"
+                        >Lihat Semua <i class="fa-solid fa-arrow-right"></i
+                    ></a>
                 </div>
-                <strong id="stat-layanan-aktif"></strong>
-                <span class="muted">Layanan Aktif</span>
+                <div class="service-grid">
+                    <a
+                        class="service-card"
+                        href="#pelayanan"
+                        data-page="pelayanan"
+                    >
+                        <div class="svc-icon svc-icon--blue">
+                            <i class="fa-solid fa-file-signature"></i>
+                        </div>
+                        <h4>Surat Online</h4>
+                        <p>Ajukan surat secara online dengan mudah</p>
+                        <span class="svc-go"
+                            ><i class="fa-solid fa-arrow-right"></i
+                        ></span>
+                    </a>
+                    <a
+                        class="service-card"
+                        href="#layanan"
+                        data-page="layanan"
+                        data-layanan="pelaporan"
+                    >
+                        <div class="svc-icon svc-icon--purple">
+                            <i class="fa-solid fa-comments"></i>
+                        </div>
+                        <h4>Pengaduan Masyarakat</h4>
+                        <p>Sampaikan aspirasi atau laporan Anda</p>
+                        <span class="svc-go"
+                            ><i class="fa-solid fa-arrow-right"></i
+                        ></span>
+                    </a>
+                    <a class="service-card" href="#agenda" data-page="agenda">
+                        <div class="svc-icon svc-icon--green">
+                            <i class="fa-regular fa-calendar"></i>
+                        </div>
+                        <h4>Agenda Kegiatan</h4>
+                        <p>Informasi kegiatan kelurahan terbaru</p>
+                        <span class="svc-go"
+                            ><i class="fa-solid fa-arrow-right"></i
+                        ></span>
+                    </a>
+                    <a class="service-card" href="#berita" data-page="berita">
+                        <div class="svc-icon svc-icon--orange">
+                            <i class="fa-regular fa-newspaper"></i>
+                        </div>
+                        <h4>Berita Terkini</h4>
+                        <p>Informasi terbaru seputar kelurahan</p>
+                        <span class="svc-go"
+                            ><i class="fa-solid fa-arrow-right"></i
+                        ></span>
+                    </a>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fa-solid fa-file-circle-check" aria-hidden="true"></i>
+
+            <div class="panel-news">
+                <div class="section-head">
+                    <h2>Berita Terbaru</h2>
+                    <a
+                        class="link-more nav-link"
+                        href="#berita"
+                        data-page="berita"
+                        >Lihat Semua <i class="fa-solid fa-arrow-right"></i
+                    ></a>
                 </div>
-                <strong id="stat-surat-diproses"></strong>
-                <span class="muted">Surat Diproses</span>
+                <div id="homeNewsGrid" class="news-grid">
+                    <div class="loading-card">Memuat berita terbaru...</div>
+                </div>
             </div>
         </div>
 
-        <div style="height: 18px"></div>
-
-        <div class="section-head">
-            <h2>Layanan Kami</h2>
-            <a class="link-more" href="#layanan">Lihat Semua ›</a>
-        </div>
-
-        <div class="service-grid">
-            <a class="service-card nav-link" href="#pelayanan" data-page="pelayanan">
-                <div class="svc-icon">
-                    <i class="fa-solid fa-file-signature" aria-hidden="true"></i>
+        <!-- ROW 3: Galeri + Pengumuman -->
+        <div class="home-duo-row">
+            <!-- GALERI (kotak kuning) -->
+            <div class="home-card home-galeri-card">
+                <div class="section-head">
+                    <h2><i class="fa-regular fa-images"></i> Galeri Foto</h2>
+                    <a
+                        class="link-more nav-link"
+                        href="#galeri"
+                        data-page="galeri"
+                        >Lihat Semua <i class="fa-solid fa-arrow-right"></i
+                    ></a>
                 </div>
-                <h4>Surat</h4>
-                <p>
-                    Lihat daftar surat keterangan Kelurahan Duren Mekar (Online &amp; Offline).
-                </p>
-            </a>
-
-            <a class="service-card nav-link" href="#layanan" data-page="layanan" data-layanan="pelaporan">
-                <div class="svc-icon">
-                    <i class="fa-solid fa-comments" aria-hidden="true"></i>
+                <div id="homeGaleriGrid" class="home-galeri-grid">
+                    <div class="loading-card" style="grid-column: 1/-1">
+                        Memuat galeri...
+                    </div>
                 </div>
-                <h4>Pelaporan</h4>
-                <p>Sampaikan aspirasi dan pengaduan warga secara digital.</p>
-            </a>
+            </div>
 
-            <a class="service-card nav-link" href="#layanan" data-page="layanan" data-layanan="kontak">
-                <div class="svc-icon">
-                    <i class="fa-solid fa-people-roof" aria-hidden="true"></i>
+            <!-- PENGUMUMAN (kotak hijau) -->
+            <div class="home-card home-pengumuman-card">
+                <div class="section-head">
+                    <h2><i class="fa-solid fa-bullhorn"></i> Pengumuman</h2>
+                    <a
+                        class="link-more nav-link"
+                        href="#pengumuman"
+                        data-page="pengumuman"
+                        >Lihat Semua <i class="fa-solid fa-arrow-right"></i
+                    ></a>
                 </div>
-                <h4>Kontak RT / RW</h4>
-                <p>Lihat kontak pengurus RT/RW untuk koordinasi lingkungan.</p>
-            </a>
+                <div id="homePengumumanList" class="home-pengumuman-list">
+                    <div class="loading-card">Memuat pengumuman...</div>
+                </div>
+            </div>
         </div>
 
-        <div style="height: 18px"></div>
+        <!-- Agenda sudah ada di ROW 1 -->
 
-        <div class="section-head">
-            <h2>Berita Terkini</h2>
-            <a class="link-more" href="#berita">Lihat Semua ›</a>
-        </div>
-
-        <div id="homeNewsGrid" class="news-grid">
-            <div class="loading-card">Memuat berita terbaru...</div>
-        </div>
-
-        <div style="height: 18px"></div>
-
-        <div class="section-head">
-            <h2>Agenda Mendatang</h2>
-            <a class="link-more" href="#agenda">Lihat Semua ›</a>
-        </div>
-
-        <div id="homeAgendaList" class="agenda-list">
-            <div class="loading-card">Memuat agenda...</div>
-        </div>
-
-        <div class="home-cta">
+        <!-- CTA -->
+        <div class="home-cta" id="heroGuestCta">
             <h3>Mulai Gunakan Layanan Digital Kami</h3>
-            <p>Daftar sekarang dan nikmati kemudahan layanan kelurahan.</p>
+            <p>
+                Daftar sekarang dan nikmati kemudahan layanan kelurahan Duren
+                Mekar.
+            </p>
             <div class="cta-actions">
-                <a class="btn btn-light" href="#register"><i class="fa-solid fa-user-plus" aria-hidden="true"></i>
-                    Daftar Sekarang</a>
-                <a class="btn btn-outline" href="#kontak"><i class="fa-solid fa-phone" aria-hidden="true"></i>
-                    Hubungi Kami</a>
+                <a class="btn btn-primary" href="#register" data-page="register"
+                    ><i class="fa-solid fa-user-plus"></i> Daftar Sekarang</a
+                >
+                <a class="btn btn-secondary" href="#kontak" data-page="kontak"
+                    ><i class="fa-solid fa-phone"></i> Hubungi Kami</a
+                >
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== FEATURES STRIP ========== -->
+    <div class="home-features">
+        <div class="container features-inner">
+            <div class="feature-item">
+                <span class="feature-icon feature-icon--blue"
+                    ><i class="fa-solid fa-shield-halved"></i
+                ></span>
+                <div>
+                    <h4>Pelayanan Cepat &amp; Mudah</h4>
+                    <p>Proses pelayanan yang cepat, mudah dan transparan</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon feature-icon--green"
+                    ><i class="fa-solid fa-lock"></i
+                ></span>
+                <div>
+                    <h4>Data Aman &amp; Terpercaya</h4>
+                    <p>Kami menjaga keamanan data pribadi Anda</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon feature-icon--purple"
+                    ><i class="fa-solid fa-clock"></i
+                ></span>
+                <div>
+                    <h4>Layanan 24/7</h4>
+                    <p>Akses layanan kapan saja dan di mana saja</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon feature-icon--orange"
+                    ><i class="fa-solid fa-heart"></i
+                ></span>
+                <div>
+                    <h4>Untuk Warga Duren Mekar</h4>
+                    <p>Melayani masyarakat dengan sepenuh hati</p>
+                </div>
             </div>
         </div>
     </div>

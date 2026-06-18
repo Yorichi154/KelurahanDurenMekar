@@ -1,19 +1,31 @@
 <section class="galeri-page">
-  <div class="container">
-
-    <h1>Galeri Foto</h1>
-    <p>Dokumentasi kegiatan kelurahan</p>
-
-    <div class="galeri-filter" id="galeriFilter">
-      <button class="filter-btn active" data-filter="all">Semua</button>
-      <button class="filter-btn" data-filter="Kegiatan">Kegiatan</button>
-      <button class="filter-btn" data-filter="Kesehatan">Kesehatan</button>
-      <button class="filter-btn" data-filter="Acara">Acara</button>
-      <button class="filter-btn" data-filter="Pembangunan">Pembangunan</button>
+    <!-- Page Banner -->
+    <div class="page-banner">
+        <div class="container page-banner-inner">
+            <div class="page-banner-icon">
+                <i class="fa-regular fa-images" aria-hidden="true"></i>
+            </div>
+            <div>
+                <h1>Galeri Foto</h1>
+                <p>Dokumentasi kegiatan Kelurahan Duren Mekar.</p>
+            </div>
+        </div>
     </div>
 
-    <div class="galeri-grid" id="galeriGrid"></div>
-  </div>
-</section>
+    <!-- Content -->
+    <div class="container page-content">
+        <div class="galeri-filter" id="galeriFilter">
+            <button class="filter-btn active" data-filter="all">Semua</button>
+            <button class="filter-btn" data-filter="Kegiatan">Kegiatan</button>
+            <button class="filter-btn" data-filter="Kesehatan">
+                Kesehatan
+            </button>
+            <button class="filter-btn" data-filter="Acara">Acara</button>
+            <button class="filter-btn" data-filter="Pembangunan">
+                Pembangunan
+            </button>
+        </div>
 
-<script src="assets/js/public/galeri.js"></script>
+        <div class="galeri-grid" id="galeriGrid"></div>
+    </div>
+</section>

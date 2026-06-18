@@ -1,28 +1,44 @@
+<div class="page-banner">
+    <div class="container">
+        <div class="page-banner-inner">
+            <div class="page-banner-icon">
+                <i class="fa-solid fa-bullhorn"></i>
+            </div>
+            <div>
+                <h1>Pengumuman Kelurahan</h1>
+                <p>
+                    Informasi resmi dari Kelurahan Duren Mekar untuk masyarakat.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <section class="page pengumuman-page">
-    <div class="container page-wrap">
-
-        <header class="page-header">
-            <h1>Pengumuman Kelurahan</h1>
-            <p>Informasi resmi dari Kelurahan Duren Mekar...</p>
-        </header>
-
-        <div class="pengumuman-filters">
-            <div class="filter-field">
-                <label for="filterKategori">Kategori</label>
+    <div class="container page-wrap" style="padding-top: 32px">
+        <!-- Filter bar -->
+        <div class="peng-filters">
+            <div class="peng-filter-field">
+                <label for="filterKategori"
+                    ><i class="fa-solid fa-filter"></i> Kategori</label
+                >
                 <select id="filterKategori">
                     <option value="">Semua</option>
-                    <!-- dst -->
                 </select>
             </div>
-
-            <div class="filter-field">
-                <label for="filterCari">Cari</label>
-                <input id="filterCari" type="search" placeholder="Cari judul / isi pengumuman" />
+            <div class="peng-filter-field peng-filter-search">
+                <label for="filterCari"
+                    ><i class="fa-solid fa-magnifying-glass"></i> Cari</label
+                >
+                <input
+                    id="filterCari"
+                    type="search"
+                    placeholder="Cari judul / isi pengumuman..."
+                />
             </div>
         </div>
 
-        <div id="pengumumanList" class="pengumuman-empty">
-            Belum ada pengumuman...
-        </div>
+        <!-- List pengumuman -->
+        <div id="pengumumanList" class="peng-list"></div>
     </div>
 </section>

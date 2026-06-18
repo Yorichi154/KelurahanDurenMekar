@@ -232,7 +232,7 @@ async function loadComponents() {
         ]);
         const headerEl = document.getElementById("header");
         const footerEl = document.getElementById("footer");
-        if (headerEl) headerEl.innerHTML = headerHTML;
+        if (headerEl) { headerEl.innerHTML = headerHTML; headerEl.classList.add("header"); }
         if (footerEl) footerEl.innerHTML = footerHTML;
 
         setupNavigation();
