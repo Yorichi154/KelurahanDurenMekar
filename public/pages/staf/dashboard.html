@@ -61,13 +61,30 @@
   </aside>
 
   <div class="staf-main">
-    <div class="staf-top">
-      <div>
-        <h1>Dashboard Staf</h1>
-        <div class="muted" style="font-weight:700">Ringkasan surat, pengaduan, dan pengumuman</div>
-      </div>
-
-      <div class="top-actions">
+    <div class="staf-top dash-topbar">
+      <div class="dash-topbar-title">Portal Staf Duren Mekar</div>
+      <div class="top-actions dash-topbar-actions">
+        <div class="dash-clock" id="dashClock">
+          <i class="fa-regular fa-clock"></i>
+          <span class="dash-clock-meta">
+            <span class="dash-clock-time" id="dashClockTime">--:--:--</span>
+            <span class="dash-clock-date" id="dashClockDate">&mdash;</span>
+          </span>
+        </div>
+        <span class="dash-divider"></span>
+        <div class="dash-quick-top">
+          <a class="dash-quick-top-btn nav-link" data-page="staf/buat-surat" href="#staf/buat-surat"><i class="fa-solid fa-pen-to-square"></i><span>Buat Surat</span></a>
+          <a class="dash-quick-top-btn nav-link" data-page="staf/surat" href="#staf/surat"><i class="fa-solid fa-inbox"></i><span>Surat Masuk</span></a>
+        </div>
+        <span class="dash-divider"></span>
+        <a class="btn btn-ghost nav-link" data-page="home" href="#home"><i class="fa-solid fa-arrow-left"></i> Kembali ke Publik</a>
+        <div class="dash-user">
+          <span class="dash-user-meta">
+            <span class="dash-user-name" data-bind="userName">Staf</span>
+            <span class="dash-user-role">Staf Kelurahan</span>
+          </span>
+          <span class="dash-user-avatar"><i class="fa-solid fa-user-gear"></i></span>
+        </div>
       </div>
     </div>
 

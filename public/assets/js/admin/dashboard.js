@@ -1,27 +1,10 @@
-const surat = JSON.parse(localStorage.getItem("surat")) || [];
-const pengaduan = JSON.parse(localStorage.getItem("pengaduan")) || [];
-
-document.getElementById("totalSurat").innerText = surat.length;
-document.getElementById("totalPengaduan").innerText = pengaduan.length;
-
-const tbody = document.getElementById("tableSurat");
-
-surat.forEach((s, i) => {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td>${s.nama}</td>
-    <td>${s.jenis}</td>
-    <td>${s.status}</td>
+const surat=JSON.parse(localStorage.getItem("surat"))||[],pengaduan=JSON.parse(localStorage.getItem("pengaduan"))||[];document.getElementById("totalSurat").innerText=surat.length,document.getElementById("totalPengaduan").innerText=pengaduan.length;const tbody=document.getElementById("tableSurat");surat.forEach((t,e)=>{const a=document.createElement("tr");a.innerHTML=`
+    <td>${t.nama}</td>
+    <td>${t.jenis}</td>
+    <td>${t.status}</td>
     <td>
-      <button onclick="updateStatus(${i}, 'diproses')">Proses</button>
-      <button onclick="updateStatus(${i}, 'selesai')">Selesai</button>
+      <button onclick="updateStatus(${e}, 'diproses')">Proses</button>
+      <button onclick="updateStatus(${e}, 'selesai')">Selesai</button>
     </td>
-  `;
-  tbody.appendChild(tr);
-});
+  `,tbody.appendChild(a)});function updateStatus(t,e){surat[t].status=e,localStorage.setItem("surat",JSON.stringify(surat)),location.reload()}
 
-function updateStatus(index, status) {
-  surat[index].status = status;
-  localStorage.setItem("surat", JSON.stringify(surat));
-  location.reload();
-}

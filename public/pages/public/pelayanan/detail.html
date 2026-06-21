@@ -1,107 +1,452 @@
 <section class="service-page">
-    <div class="container page-wrap">
+    <!-- PAGE BANNER -->
+    <div class="page-banner">
+        <div class="container">
+            <div class="page-banner-inner">
+                <div class="page-banner-icon">
+                    <i class="fa-solid fa-file-lines"></i>
+                </div>
+                <div>
+                    <h1 id="srvTitle">Detail Layanan</h1>
+                    <p id="srvDeskripsi">
+                        Informasi lengkap tentang layanan ini.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <div
+        class="container page-wrap"
+        style="padding-top: 28px; padding-bottom: 40px"
+    >
         <!-- KEMBALI -->
-        <div style="margin-bottom: 18px;">
-            <a href="#pelayanan" class="btn btn-ghost" style="padding: 8px 14px; font-size: 13px; gap: 6px; border-radius: 10px;">
+        <div style="margin-bottom: 20px">
+            <a
+                href="#pelayanan"
+                class="btn btn-ghost"
+                data-page="pelayanan"
+                style="
+                    padding: 9px 16px;
+                    font-size: 13px;
+                    gap: 6px;
+                    border-radius: 12px;
+                    border: 1.5px solid #e0e7ff;
+                    color: #1d56c9;
+                    font-weight: 700;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                "
+            >
                 <i class="fa-solid fa-arrow-left"></i> Kembali ke Daftar Layanan
             </a>
         </div>
 
-        <!-- HEADER LAYANAN -->
-        <header class="page-header">
-            <h1 class="page-title" id="srvTitle">Judul Layanan</h1>
-            <div id="srvDeskripsi" class="muted" style="margin-top: 8px; font-size: 15px; font-weight: 700; line-height: 1.5;"></div>
-            <div class="service-header-meta" style="margin-top: 12px;">
-                <span id="srvStatusBadge" class="badge"></span>
-            </div>
-            <div class="service-actions" id="srvActionButtons">
-                <!-- tombol Ajukan Online / Info Lokasi diisi dari JS -->
-            </div>
-        </header>
+        <!-- STATUS BADGE + ACTION BUTTONS -->
+        <div
+            style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 12px;
+                margin-bottom: 24px;
+            "
+        >
+            <div id="srvStatusBadge"></div>
+            <div class="service-actions" id="srvActionButtons"></div>
+        </div>
 
-        <!-- NOTICE GUEST (hanya muncul jika belum login dan layanan = online) -->
-        <section class="service-offline-notice" id="srvOnlineGuestNotice" style="display:none;">
-            <div class="card card-warning" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px;">
-                <div class="card-body" style="color: #d97706; padding: 16px;">
-                    <p style="margin:0 0 6px 0; font-weight: 800;"><i class="fa-solid fa-circle-exclamation"></i> Layanan ini dapat diajukan secara online setelah login.</p>
-                    <p style="margin:0; font-size:13px; font-weight:700;">Silakan login terlebih dahulu menggunakan akun Warga untuk melakukan pengajuan secara online.</p>
+        <!-- NOTICE GUEST -->
+        <section
+            id="srvOnlineGuestNotice"
+            style="display: none; margin-bottom: 20px"
+        >
+            <div
+                style="
+                    background: rgba(245, 158, 11, 0.08);
+                    border: 1.5px solid rgba(245, 158, 11, 0.3);
+                    border-radius: 16px;
+                    padding: 18px;
+                    display: flex;
+                    gap: 14px;
+                    align-items: flex-start;
+                "
+            >
+                <div
+                    style="
+                        width: 42px;
+                        height: 42px;
+                        background: rgba(245, 158, 11, 0.15);
+                        border-radius: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #d97706;
+                        font-size: 20px;
+                        flex-shrink: 0;
+                    "
+                >
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                </div>
+                <div>
+                    <p
+                        style="
+                            margin: 0 0 5px;
+                            font-weight: 800;
+                            color: #92400e;
+                            font-size: 14px;
+                        "
+                    >
+                        Layanan ini dapat diajukan secara online setelah login.
+                    </p>
+                    <p
+                        style="
+                            margin: 0;
+                            font-size: 13px;
+                            font-weight: 600;
+                            color: #b45309;
+                        "
+                    >
+                        Silakan login terlebih dahulu menggunakan akun Warga
+                        untuk melakukan pengajuan secara online.
+                    </p>
                 </div>
             </div>
         </section>
 
-        <!-- NOTICE OFFLINE (hanya muncul kalau tipe = offline) -->
-        <section class="service-offline-notice" id="srvOfflineNotice" style="display:none;">
-            <div class="card card-warning">
-                <div class="card-body">
-                    <p><strong>Layanan ini tidak dapat diajukan secara online.</strong></p>
-                    <p>Silakan datang langsung ke Kantor Kelurahan dengan membawa dokumen persyaratan yang lengkap.</p>
+        <!-- NOTICE OFFLINE -->
+        <section
+            id="srvOfflineNotice"
+            style="display: none; margin-bottom: 20px"
+        >
+            <div
+                style="
+                    background: rgba(239, 68, 68, 0.07);
+                    border: 1.5px solid rgba(239, 68, 68, 0.25);
+                    border-radius: 16px;
+                    padding: 18px;
+                    display: flex;
+                    gap: 14px;
+                    align-items: flex-start;
+                "
+            >
+                <div
+                    style="
+                        width: 42px;
+                        height: 42px;
+                        background: rgba(239, 68, 68, 0.12);
+                        border-radius: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #dc2626;
+                        font-size: 20px;
+                        flex-shrink: 0;
+                    "
+                >
+                    <i class="fa-solid fa-store-slash"></i>
+                </div>
+                <div>
+                    <p
+                        style="
+                            margin: 0 0 5px;
+                            font-weight: 800;
+                            color: #991b1b;
+                            font-size: 14px;
+                        "
+                    >
+                        Layanan ini tidak dapat diajukan secara online.
+                    </p>
+                    <p
+                        style="
+                            margin: 0;
+                            font-size: 13px;
+                            font-weight: 600;
+                            color: #b91c1c;
+                        "
+                    >
+                        Silakan datang langsung ke Kantor Kelurahan dengan
+                        membawa dokumen persyaratan yang lengkap.
+                    </p>
                 </div>
             </div>
         </section>
 
         <!-- PERSYARATAN -->
-        <section class="service-section">
-            <h2 class="section-title">Persyaratan</h2>
-            <div class="card">
-                <div class="card-body">
-                    <ol class="numbered-list" id="srvSyaratList">
-                        <!-- diisi JS -->
-                    </ol>
+        <section class="service-section" style="margin-bottom: 20px">
+            <div
+                style="
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 14px;
+                "
+            >
+                <div
+                    style="
+                        width: 38px;
+                        height: 38px;
+                        background: linear-gradient(135deg, #1d56c9, #2563eb);
+                        border-radius: 10px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #fff;
+                        font-size: 16px;
+                    "
+                >
+                    <i class="fa-solid fa-clipboard-list"></i>
                 </div>
+                <h2
+                    class="section-title"
+                    style="
+                        margin: 0;
+                        font-family: &quot;Plus Jakarta Sans&quot;, sans-serif;
+                        font-weight: 800;
+                        font-size: 17px;
+                        color: #0f2f76;
+                    "
+                >
+                    Persyaratan
+                </h2>
+            </div>
+            <div
+                style="
+                    background: #fff;
+                    border: 1px solid rgba(29, 86, 201, 0.1);
+                    border-radius: 16px;
+                    padding: 20px;
+                    box-shadow: 0 2px 12px rgba(29, 86, 201, 0.07);
+                "
+            >
+                <ol class="numbered-list" id="srvSyaratList"></ol>
             </div>
         </section>
 
         <!-- PROSES -->
-        <section class="service-section">
-            <h2 class="section-title" id="srvStepsTitle">Proses Online</h2>
-            <div class="card">
-                <div class="card-body">
-                    <div class="timeline" id="srvSteps">
-                        <!-- diisi JS -->
-                    </div>
+        <section class="service-section" style="margin-bottom: 20px">
+            <div
+                style="
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 14px;
+                "
+            >
+                <div
+                    style="
+                        width: 38px;
+                        height: 38px;
+                        background: linear-gradient(135deg, #7c3aed, #a78bfa);
+                        border-radius: 10px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #fff;
+                        font-size: 16px;
+                    "
+                >
+                    <i class="fa-solid fa-diagram-next"></i>
                 </div>
+                <h2
+                    id="srvStepsTitle"
+                    class="section-title"
+                    style="
+                        margin: 0;
+                        font-family: &quot;Plus Jakarta Sans&quot;, sans-serif;
+                        font-weight: 800;
+                        font-size: 17px;
+                        color: #0f2f76;
+                    "
+                >
+                    Proses Online
+                </h2>
+            </div>
+            <div
+                style="
+                    background: #fff;
+                    border: 1px solid rgba(29, 86, 201, 0.1);
+                    border-radius: 16px;
+                    padding: 20px;
+                    box-shadow: 0 2px 12px rgba(29, 86, 201, 0.07);
+                "
+            >
+                <div class="timeline" id="srvSteps"></div>
             </div>
         </section>
 
         <!-- INFORMASI PENTING -->
-        <section class="service-section">
-            <h2 class="section-title">Informasi Penting</h2>
-            <div class="card">
-                <div class="card-body info-grid">
-
+        <section class="service-section" style="margin-bottom: 20px">
+            <div
+                style="
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 14px;
+                "
+            >
+                <div
+                    style="
+                        width: 38px;
+                        height: 38px;
+                        background: linear-gradient(135deg, #059669, #34d399);
+                        border-radius: 10px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #fff;
+                        font-size: 16px;
+                    "
+                >
+                    <i class="fa-solid fa-circle-info"></i>
+                </div>
+                <h2
+                    class="section-title"
+                    style="
+                        margin: 0;
+                        font-family: &quot;Plus Jakarta Sans&quot;, sans-serif;
+                        font-weight: 800;
+                        font-size: 17px;
+                        color: #0f2f76;
+                    "
+                >
+                    Informasi Penting
+                </h2>
+            </div>
+            <div
+                style="
+                    background: #fff;
+                    border: 1px solid rgba(29, 86, 201, 0.1);
+                    border-radius: 16px;
+                    padding: 20px;
+                    box-shadow: 0 2px 12px rgba(29, 86, 201, 0.07);
+                "
+            >
+                <div class="info-grid">
                     <div class="info-block">
-                        <h3 class="section-title-sm">
-                            <i class="fa-regular fa-clock"></i> Waktu Pelayanan
+                        <h3
+                            class="section-title-sm"
+                            style="
+                                display: flex;
+                                align-items: center;
+                                gap: 7px;
+                                color: #1e3a8a;
+                                font-size: 13px;
+                                font-weight: 800;
+                                margin-bottom: 8px;
+                            "
+                        >
+                            <i
+                                class="fa-regular fa-clock"
+                                style="color: #1d56c9"
+                            ></i>
+                            Waktu Pelayanan
                         </h3>
-                        <p id="srvJamPelayanan"></p>
+                        <p
+                            id="srvJamPelayanan"
+                            style="
+                                font-size: 13.5px;
+                                color: #374151;
+                                font-weight: 600;
+                                line-height: 1.6;
+                            "
+                        ></p>
                     </div>
-
                     <div class="info-block">
-                        <h3 class="section-title-sm">
-                            <i class="fa-solid fa-location-dot"></i> Lokasi
+                        <h3
+                            class="section-title-sm"
+                            style="
+                                display: flex;
+                                align-items: center;
+                                gap: 7px;
+                                color: #1e3a8a;
+                                font-size: 13px;
+                                font-weight: 800;
+                                margin-bottom: 8px;
+                            "
+                        >
+                            <i
+                                class="fa-solid fa-location-dot"
+                                style="color: #dc2626"
+                            ></i>
+                            Lokasi
                         </h3>
-                        <p id="srvLokasi"></p>
+                        <p
+                            id="srvLokasi"
+                            style="
+                                font-size: 13.5px;
+                                color: #374151;
+                                font-weight: 600;
+                                line-height: 1.6;
+                            "
+                        ></p>
                     </div>
-
                     <div class="info-block">
-                        <h3 class="section-title-sm">
-                            <i class="fa-regular fa-circle-check"></i> Catatan
+                        <h3
+                            class="section-title-sm"
+                            style="
+                                display: flex;
+                                align-items: center;
+                                gap: 7px;
+                                color: #1e3a8a;
+                                font-size: 13px;
+                                font-weight: 800;
+                                margin-bottom: 8px;
+                            "
+                        >
+                            <i
+                                class="fa-regular fa-circle-check"
+                                style="color: #059669"
+                            ></i>
+                            Catatan
                         </h3>
-                        <ul class="bullets" id="srvCatatanList"></ul>
+                        <ul
+                            class="bullets"
+                            id="srvCatatanList"
+                            style="
+                                font-size: 13.5px;
+                                color: #374151;
+                                font-weight: 600;
+                            "
+                        ></ul>
                     </div>
-
                 </div>
             </div>
         </section>
 
-        <!-- CTA BAWAH (khusus online) -->
-        <section class="service-section" id="srvBottomCta" style="text-align:center;display:none;">
-            <button class="btn btn-solid" id="srvBottomButton">
+        <!-- CTA BAWAH -->
+        <section
+            class="service-section"
+            id="srvBottomCta"
+            style="text-align: center; display: none; padding: 24px 0 8px"
+        >
+            <button
+                class="btn btn-solid"
+                id="srvBottomButton"
+                style="
+                    background: linear-gradient(135deg, #1d56c9, #2563eb);
+                    color: #fff;
+                    border: none;
+                    border-radius: 14px;
+                    padding: 14px 32px;
+                    font-size: 15px;
+                    font-weight: 800;
+                    box-shadow: 0 6px 20px rgba(29, 86, 201, 0.3);
+                    cursor: pointer;
+                    font-family: &quot;Plus Jakarta Sans&quot;, sans-serif;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 10px;
+                    transition:
+                        transform 0.2s,
+                        box-shadow 0.2s;
+                "
+            >
                 <i class="fa-regular fa-file-lines"></i>
                 <span id="srvBottomButtonText">Ajukan Layanan Online</span>
             </button>
         </section>
-
     </div>
 </section>

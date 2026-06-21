@@ -29,6 +29,7 @@ class UserSeeder extends Seeder
             'email' => 'warga@kelurahan.id',
             'password' => Hash::make('warga123'),
             'role' => 'warga',
+            'email_verified_at' => now(),
         ]);
     }
 }

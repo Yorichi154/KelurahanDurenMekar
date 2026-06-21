@@ -1,197 +1,52 @@
-// assets/js/staf/staf.js
-
-const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-
-async function initStafDashboardLaravel() {
-    const response = await fetch("/api/staf/dashboard");
-
-    const data = await response.json();
-
-    const suratMenunggu = document.getElementById("metricSuratMenunggu");
-
-    const pengaduanAktif = document.getElementById("metricPengaduanAktif");
-
-    const totalPengajuan = document.getElementById("metricTotalPengajuan");
-
-    if (suratMenunggu) suratMenunggu.textContent = data.surat_menunggu;
-
-    if (pengaduanAktif) pengaduanAktif.textContent = data.pengaduan_aktif;
-
-    if (totalPengajuan) totalPengajuan.textContent = data.total_pengajuan;
-
-    const listSurat = document.getElementById("listSuratMenunggu");
-
-    if (listSurat) {
-        listSurat.innerHTML = data.surat_terbaru
-            .map(
-                (item) => `
+var $;const csrfToken=($=document.querySelector('meta[name="csrf-token"]'))==null?void 0:$.content;async function initStafDashboardLaravel(){const t=await(await fetch("/api/staf/dashboard")).json(),i=document.getElementById("metricSuratMenunggu"),n=document.getElementById("metricPengaduanAktif"),l=document.getElementById("metricTotalPengajuan");i&&(i.textContent=t.surat_menunggu),n&&(n.textContent=t.pengaduan_aktif),l&&(l.textContent=t.total_pengajuan);const o=document.getElementById("listSuratMenunggu");o&&(o.innerHTML=t.surat_terbaru.map(d=>{var a,s;return`
 
                 <div class="stack-item">
 
                     <strong>
-                        ${item.jenis_surat}
+                        ${d.jenis_surat}
                     </strong>
 
                     <div class="muted">
 
-                        ${item.user?.name ?? "-"}
+                        ${(s=(a=d.user)==null?void 0:a.name)!=null?s:"-"}
 
                     </div>
 
                 </div>
 
-            `,
-            )
-            .join("");
-    }
-
-    const listPengaduan = document.getElementById("listPengaduanTerbaru");
-
-    if (listPengaduan) {
-        listPengaduan.innerHTML = data.pengaduan_terbaru
-            .map(
-                (item) => `
+            `}).join(""));const r=document.getElementById("listPengaduanTerbaru");r&&(r.innerHTML=t.pengaduan_terbaru.map(d=>{var a,s;return`
 
                 <div class="stack-item">
 
                     <strong>
-                        ${item.judul}
+                        ${d.judul}
                     </strong>
 
                     <div class="muted">
 
-                        ${item.user?.name ?? "-"}
+                        ${(s=(a=d.user)==null?void 0:a.name)!=null?s:"-"}
 
                     </div>
 
                 </div>
 
-            `,
-            )
-            .join("");
-    }
-}
-function fmtDate(date) {
-    if (!date) return "-";
-
-    return new Date(date).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    });
-}
-function statusBadge(status) {
-    const s = String(status || "").toLowerCase();
-    const map = {
-        menunggu: "badge-wait",
-        diproses: "badge-proses",
-        selesai: "badge-done",
-        siap_diambil: "badge-done",
-        ditolak: "badge-reject",
-    };
-    const textMap = {
-        menunggu: "Menunggu",
-        diproses: "Diproses",
-        selesai: "Selesai",
-        ditolak: "Ditolak",
-        siap_diambil: "Siap Diambil",
-    };
-    const cls = map[s] || "badge-neutral";
-    const label = textMap[s] || status;
-    return `
-        <span class="badge ${cls}">
-            ${label}
+            `}).join(""))}function fmtDate(e){return e?new Date(e).toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"}):"-"}function statusBadge(e){const t=String(e||"").toLowerCase(),i={menunggu:"badge-wait",diproses:"badge-proses",selesai:"badge-done",siap_diambil:"badge-done",ditolak:"badge-reject"},n={menunggu:"Menunggu",diproses:"Diproses",selesai:"Selesai",ditolak:"Ditolak",siap_diambil:"Siap Diambil"},l=i[t]||"badge-neutral",o=n[t]||e;return`
+        <span class="badge ${l}">
+            ${o}
         </span>
-    `;
-}
-
-const esc = (str) => {
-    return String(str || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-};
-
-const fmtSize = (bytes) => {
-    if (!bytes) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
-};
-
-let currentDetailSurat = null;
-
-async function openStafSuratDetail(id) {
-    try {
-        const res = await fetch(`/api/staf/surat/${id}`, {
-            headers: { Accept: "application/json" }
-        });
-        const surat = await res.json();
-        if (!surat) return;
-        currentDetailSurat = surat;
-
-        const modal = document.getElementById("suratDetailModal");
-        const title = document.getElementById("suratDetailTitle");
-        const sub = document.getElementById("suratDetailSub");
-        const body = document.getElementById("suratDetailBody");
-
-        if (title) title.textContent = surat.jenis_surat || "Detail Surat";
-        if (sub) sub.textContent = `ID Pengajuan #${surat.id}`;
-
-        const berkasList = Array.isArray(surat.berkas) ? surat.berkas : [];
-
-        let statusText = "Menunggu Validasi";
-        let statusPillClass = "badge-wait";
-        if (surat.status === "diproses") {
-            statusText = "Sedang Diproses";
-            statusPillClass = "badge-proses";
-        } else if (surat.status === "selesai") {
-            statusText = "Selesai";
-            statusPillClass = "badge-done";
-        } else if (surat.status === "siap_diambil") {
-            statusText = "Siap Diambil";
-            statusPillClass = "badge-done";
-        } else if (surat.status === "ditolak") {
-            statusText = "Ditolak";
-            statusPillClass = "badge-reject";
-        }
-
-        let extraFieldsHtml = "";
-        const dataSurat = (surat.data_surat && typeof surat.data_surat === "object") ? surat.data_surat : {};
-        const standardKeys = ["user_id", "nama", "nik", "telp", "rt", "rw", "alamat", "keperluan"];
-        const customEntries = Object.entries(dataSurat).filter(([k]) => !standardKeys.includes(k));
-
-        if (customEntries.length > 0) {
-            extraFieldsHtml = `
+    `}const esc=e=>String(e||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"),fmtSize=e=>{if(!e)return"0 B";const t=1024,i=["B","KB","MB","GB"],n=Math.floor(Math.log(e)/Math.log(t));return parseFloat((e/Math.pow(t,n)).toFixed(1))+" "+i[n]};let currentDetailSurat=null;async function openStafSuratDetail(e){var t,i,n,l,o,r;try{const a=await(await fetch(`/api/staf/surat/${e}`,{headers:{Accept:"application/json"}})).json();if(!a)return;currentDetailSurat=a;const s=document.getElementById("suratDetailModal"),c=document.getElementById("suratDetailTitle"),m=document.getElementById("suratDetailSub"),h=document.getElementById("suratDetailBody");c&&(c.textContent=a.jenis_surat||"Detail Surat"),m&&(m.textContent=`ID Pengajuan #${a.id}`);const x=Array.isArray(a.berkas)?a.berkas:[];let y="Menunggu Validasi",w="badge-wait";a.status==="diproses"?(y="Sedang Diproses",w="badge-proses"):a.status==="selesai"?(y="Selesai",w="badge-done"):a.status==="siap_diambil"?(y="Siap Diambil",w="badge-done"):a.status==="ditolak"&&(y="Ditolak",w="badge-reject");let f="";const g=a.data_surat&&typeof a.data_surat=="object"?a.data_surat:{},u=["user_id","nama","nik","telp","rt","rw","alamat","keperluan"],b=Object.entries(g).filter(([p])=>!u.includes(p));b.length>0&&(f=`
             <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border);">
               <h5 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 1000; color: var(--primary);">Detail Form Pengajuan</h5>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px;">
-                ${customEntries.map(([key, val]) => {
-                    const formattedLabel = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-                    let valHtml = "";
-                    if (typeof val === "string" && val.startsWith("data:image/")) {
-                        valHtml = `<img src="${val}" style="max-width:100%; max-height:150px; border-radius:8px; display:block; margin-top:4px; border:1px solid var(--border);" />`;
-                    } else if (typeof val === "string" && val.startsWith("data:application/pdf")) {
-                        valHtml = `<a href="${val}" target="_blank" class="btn btn-light btn-sm" style="margin-top:4px; font-weight:bold; font-size:11px; padding:4px 8px; border:1px solid var(--border); border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> Buka Dokumen PDF</a>`;
-                    } else {
-                        valHtml = `<div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(val)}</div>`;
-                    }
-                    return `
+                ${b.map(([p,k])=>{const E=p.replace(/_/g," ").replace(/\b\w/g,B=>B.toUpperCase());let v="";return typeof k=="string"&&k.startsWith("data:image/")?v=`<img src="${k}" style="max-width:100%; max-height:150px; border-radius:8px; display:block; margin-top:4px; border:1px solid var(--border);" />`:typeof k=="string"&&k.startsWith("data:application/pdf")?v=`<a href="${k}" target="_blank" class="btn btn-light btn-sm" style="margin-top:4px; font-weight:bold; font-size:11px; padding:4px 8px; border:1px solid var(--border); border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> Buka Dokumen PDF</a>`:v=`<div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(k)}</div>`,`
                       <div>
-                        <label style="font-size: 11px; color: var(--muted); font-weight: 900; text-transform: uppercase;">${esc(formattedLabel)}</label>
-                        ${valHtml}
+                        <label style="font-size: 11px; color: var(--muted); font-weight: 900; text-transform: uppercase;">${esc(E)}</label>
+                        ${v}
                       </div>
-                    `;
-                }).join("")}
+                    `}).join("")}
               </div>
             </div>
-            `;
-        }
-
-        let bodyHtml = `
+            `);let S=`
 <div class="surat-detail-grid" style="display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start;">
   <!-- LEFT COLUMN -->
   <div style="display: flex; flex-direction: column; gap: 20px;">
@@ -200,85 +55,70 @@ async function openStafSuratDetail(id) {
       <div class="card-body" style="padding: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <h4 style="margin: 0; font-size: 16px; font-weight: 1000;">Data Pemohon</h4>
-          <span class="badge ${statusPillClass}">${statusText}</span>
+          <span class="badge ${w}">${y}</span>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;">
           <div>
             <label style="font-size: 11px; color: var(--muted); font-weight: 900; text-transform: uppercase;">Nama Lengkap</label>
-            <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(surat.user?.name || '-')}</div>
+            <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(((t=a.user)==null?void 0:t.name)||"-")}</div>
           </div>
           <div>
             <label style="font-size: 11px; color: var(--muted); font-weight: 900; text-transform: uppercase;">NIK</label>
-            <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(surat.user?.nik || '-')}</div>
+            <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(((i=a.user)==null?void 0:i.nik)||"-")}</div>
           </div>
           <div>
             <label style="font-size: 11px; color: var(--muted); font-weight: 900; text-transform: uppercase;">No. Telepon</label>
-            <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(surat.user?.telp || '-')}</div>
+            <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(((n=a.user)==null?void 0:n.telp)||"-")}</div>
           </div>
           <div>
             <label style="font-size: 11px; color: var(--muted); font-weight: 900; text-transform: uppercase;">Tanggal Pengajuan</label>
-            <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${fmtDate(surat.created_at)}</div>
+            <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${fmtDate(a.created_at)}</div>
           </div>
           <div style="grid-column: span 2;">
             <label style="font-size: 11px; color: var(--muted); font-weight: 900; text-transform: uppercase;">Alamat</label>
-            <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(surat.user?.alamat || '-')}, RT ${esc(surat.user?.rt || '-')}/RW ${esc(surat.user?.rw || '-')}</div>
+            <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(((l=a.user)==null?void 0:l.alamat)||"-")}, RT ${esc(((o=a.user)==null?void 0:o.rt)||"-")}/RW ${esc(((r=a.user)==null?void 0:r.rw)||"-")}</div>
           </div>
           <div style="grid-column: span 2;">
             <label style="font-size: 11px; color: var(--muted); font-weight: 900; text-transform: uppercase;">Keperluan</label>
-            <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(surat.keperluan || '-')}</div>
+            <div style="font-weight: 1000; margin-top: 4px; color: var(--text);">${esc(a.keperluan||"-")}</div>
           </div>
         </div>
-        ${extraFieldsHtml}
+        ${f}
       </div>
     </div>
     
     <!-- Berkas Lampiran Section -->
     <div>
-      <h4 style="margin: 0 0 12px; font-size: 16px; font-weight: 1000;">Berkas Lampiran (${berkasList.length})</h4>
-      ${berkasList.length === 0 ? `
+      <h4 style="margin: 0 0 12px; font-size: 16px; font-weight: 1000;">Berkas Lampiran (${x.length})</h4>
+      ${x.length===0?`
         <div class="muted" style="padding: 12px; background: rgba(148, 163, 184, 0.05); border: 1px dashed var(--border); border-radius: 12px;">
           Tidak ada berkas persyaratan yang diunggah.
         </div>
-      ` : `
+      `:`
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px;">
-          ${berkasList.map((f) => {
-            const isImg = (f.mime || '').startsWith('image/') || (f.fileName || '').match(/\.(jpg|jpeg|png|webp|gif)$/i);
-            const thumbUrl = isImg && f.dataUrl ? f.dataUrl : '';
-            
-            let previewHtml = '';
-            if (thumbUrl) {
-              previewHtml = `<img src="${thumbUrl}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 10px 10px 0 0;" />`;
-            } else {
-              previewHtml = `
+          ${x.map(p=>{const E=((p.mime||"").startsWith("image/")||(p.fileName||"").match(/\.(jpg|jpeg|png|webp|gif)$/i))&&p.dataUrl?p.dataUrl:"";let v="";E?v=`<img src="${E}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 10px 10px 0 0;" />`:v=`
                 <div style="width: 100%; height: 120px; background: rgba(148, 163, 184, 0.1); border-radius: 10px 10px 0 0; display: flex; align-items: center; justify-content: center;">
                   <i class="fa-solid fa-file-pdf" style="font-size: 48px; color: #ef4444;"></i>
                 </div>
-              `;
-            }
-            
-            const openAction = f.dataUrl ? `href="${f.dataUrl}" target="_blank"` : `href="#" onclick="alert('File tidak dapat dibuka karena ukuran melebihi batas demo.'); return false;"`;
-            const downloadAction = f.dataUrl ? `href="${f.dataUrl}" download="${esc(f.fileName)}"` : `href="#" onclick="alert('File tidak dapat didownload karena ukuran melebihi batas demo.'); return false;"`;
-            
-            return `
+              `;const B=p.dataUrl?`href="${p.dataUrl}" target="_blank"`:`href="#" onclick="alert('File tidak dapat dibuka karena ukuran melebihi batas demo.'); return false;"`,I=p.dataUrl?`href="${p.dataUrl}" download="${esc(p.fileName)}"`:`href="#" onclick="alert('File tidak dapat didownload karena ukuran melebihi batas demo.'); return false;"`;return`
               <div class="card" style="box-shadow: var(--shadow-sm); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; background: #fff;">
-                ${previewHtml}
+                ${v}
                 <div style="padding: 10px; display: flex; flex-direction: column; flex: 1; min-height: 80px;">
-                  <div style="font-weight: 1000; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${esc(f.fileName)}">${esc(f.fileName || '-')}</div>
-                  <div style="font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 700;">${esc(f.requirement || 'Berkas')}</div>
-                  <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">${fmtSize(f.size)}</div>
+                  <div style="font-weight: 1000; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${esc(p.fileName)}">${esc(p.fileName||"-")}</div>
+                  <div style="font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 700;">${esc(p.requirement||"Berkas")}</div>
+                  <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">${fmtSize(p.size)}</div>
                   
                   <div style="margin-top: auto; padding-top: 8px; display: flex; gap: 6px; justify-content: flex-end;">
-                    <a class="btn btn-light btn-sm" ${openAction} style="padding: 4px 8px; border-radius: 6px; font-size: 12px; border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Lihat">
+                    <a class="btn btn-light btn-sm" ${B} style="padding: 4px 8px; border-radius: 6px; font-size: 12px; border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Lihat">
                       <i class="fa-regular fa-eye"></i>
                     </a>
-                    <a class="btn btn-light btn-sm" ${downloadAction} style="padding: 4px 8px; border-radius: 6px; font-size: 12px; border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Unduh">
+                    <a class="btn btn-light btn-sm" ${I} style="padding: 4px 8px; border-radius: 6px; font-size: 12px; border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Unduh">
                       <i class="fa-solid fa-download"></i>
                     </a>
                   </div>
                 </div>
               </div>
-            `;
-          }).join('')}
+            `}).join("")}
         </div>
       `}
     </div>
@@ -296,7 +136,7 @@ async function openStafSuratDetail(id) {
           </div>
           <div>
             <div style="font-weight: 1000; font-size: 13px;">Pengajuan Diterima</div>
-            <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">${fmtDate(surat.created_at)}</div>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">${fmtDate(a.created_at)}</div>
           </div>
         </div>
       </div>
@@ -306,10 +146,10 @@ async function openStafSuratDetail(id) {
     <div class="card" style="box-shadow: var(--shadow); border: 1px solid var(--border); border-radius: 14px; background: #fff;">
       <div class="card-body" style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
         <h4 style="margin: 0 0 4px; font-size: 14px; font-weight: 1000;">Validasi Berkas</h4>
-        <button class="btn btn-success accept-surat" data-id="${surat.id}" style="width: 100%; border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; background: #22c55e; color: white; border: none; cursor: pointer; transition: transform 0.1s ease;">
+        <button class="btn btn-success accept-surat" data-id="${a.id}" style="width: 100%; border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; background: #22c55e; color: white; border: none; cursor: pointer; transition: transform 0.1s ease;">
           <i class="fa-solid fa-check-double"></i> Setujui & Proses
         </button>
-        <button class="btn btn-danger reject-surat" data-id="${surat.id}" style="width: 100%; border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; background: #ef4444; color: white; border: none; cursor: pointer; transition: transform 0.1s ease;">
+        <button class="btn btn-danger reject-surat" data-id="${a.id}" style="width: 100%; border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; background: #ef4444; color: white; border: none; cursor: pointer; transition: transform 0.1s ease;">
           <i class="fa-solid fa-ban"></i> Tolak Pengajuan
         </button>
       </div>
@@ -324,124 +164,42 @@ async function openStafSuratDetail(id) {
   </a>
 </div>
 
-${surat.status !== 'selesai' && surat.status !== 'ditolak' ? `
+${a.status!=="selesai"&&a.status!=="ditolak"?`
 <!-- Upload Surat Button in Detail -->
 <div style="margin-top: 12px;">
-  <button class="btn btn-success open-kirim-surat-from-detail" data-id="${surat.id}" style="width: 100%; border-radius: 12px; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; background: #16a34a; color: white; border: none; cursor: pointer;">
+  <button class="btn btn-success open-kirim-surat-from-detail" data-id="${a.id}" style="width: 100%; border-radius: 12px; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; background: #16a34a; color: white; border: none; cursor: pointer;">
     <i class="fa-solid fa-paper-plane"></i> Upload & Kirim Surat ke Warga
   </button>
 </div>
-` : ''}
+`:""}
 
-${surat.file_surat ? `
+${a.file_surat?`
 <!-- Download Link -->
 <div style="margin-top: 12px;">
-  <a href="/storage/${surat.file_surat}" target="_blank" class="card" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; box-shadow: var(--shadow-sm); border: 2px solid rgba(34,197,94,.22); border-radius: 12px; text-decoration: none; font-weight: 800; color: #16a34a; background: rgba(34,197,94,.04); transition: background 0.15s ease;">
+  <a href="/storage/${a.file_surat}" target="_blank" class="card" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; box-shadow: var(--shadow-sm); border: 2px solid rgba(34,197,94,.22); border-radius: 12px; text-decoration: none; font-weight: 800; color: #16a34a; background: rgba(34,197,94,.04); transition: background 0.15s ease;">
     <i class="fa-solid fa-file-pdf" style="font-size: 18px;"></i> Download Surat (PDF)
   </a>
 </div>
-` : ''}
-        `;
-
-        if (body) body.innerHTML = bodyHtml;
-        if (modal) {
-            modal.classList.add("open");
-            modal.setAttribute("aria-hidden", "false");
-        }
-    } catch (error) {
-        console.error("Gagal memuat detail surat:", error);
-    }
-}
-
-async function updateStafSuratStatus(id, status) {
-    try {
-        const response = await fetch(`/api/staf/surat/${id}/status`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN": csrfToken,
-                Accept: "application/json",
-            },
-            body: JSON.stringify({ status }),
-        });
-
-        if (!response.ok) {
-            throw new Error("Gagal memperbarui status surat");
-        }
-
-        alert(`Status surat berhasil diperbarui ke ${status}`);
-        
-        // Close modal
-        const modal = document.getElementById("suratDetailModal");
-        if (modal) {
-            modal.classList.remove("open");
-            modal.setAttribute("aria-hidden", "true");
-        }
-
-        // Refresh table
-        initStafSuratLaravel();
-    } catch (error) {
-        console.error(error);
-        alert("Gagal memperbarui status surat");
-    }
-}
-
-async function initStafSuratLaravel() {
-    const tbody = document.getElementById("suratTbody");
-    const filterWrap = document.getElementById("suratFilter");
-    const searchInput = document.getElementById("suratSearch");
-
-    if (!tbody) return;
-
-    let allData = [];
-
-    async function loadAndRender() {
-        try {
-            const res = await fetch("/api/staf/surat");
-            allData = await res.json();
-            renderTable();
-        } catch (err) {
-            console.error(err);
-        }
-    }
-
-    function renderTable() {
-        const q = (searchInput?.value || '').toLowerCase();
-        let filtered = allData;
-
-        if (q) {
-            filtered = filtered.filter(s => {
-                const hay = `${s.user?.name || ''} ${s.jenis_surat || ''} ${s.keperluan || ''}`.toLowerCase();
-                return hay.includes(q);
-            });
-        }
-
-        const emptyEl = document.getElementById("suratEmpty");
-        if (emptyEl) {
-            emptyEl.style.display = filtered.length ? "none" : "block";
-        }
-
-        tbody.innerHTML = filtered
-            .map(
-                (surat) => `
+`:""}
+        `;h&&(h.innerHTML=S),s&&(s.classList.add("open"),s.setAttribute("aria-hidden","false"))}catch(d){console.error("Gagal memuat detail surat:",d)}}async function updateStafSuratStatus(e,t){try{if(!(await fetch(`/api/staf/surat/${e}/status`,{method:"PUT",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrfToken,Accept:"application/json"},body:JSON.stringify({status:t})})).ok)throw new Error("Gagal memperbarui status surat");alert(`Status surat berhasil diperbarui ke ${t}`);const n=document.getElementById("suratDetailModal");n&&(n.classList.remove("open"),n.setAttribute("aria-hidden","true")),initStafSuratLaravel()}catch(i){console.error(i),alert("Gagal memperbarui status surat")}}async function initStafSuratLaravel(){const e=document.getElementById("suratTbody"),t=document.getElementById("suratFilter"),i=document.getElementById("suratSearch");if(!e)return;let n=[];async function l(){try{n=await(await fetch("/api/staf/surat")).json(),o()}catch(r){console.error(r)}}function o(){const r=((i==null?void 0:i.value)||"").toLowerCase();let d=n;r&&(d=d.filter(s=>{var m;return`${((m=s.user)==null?void 0:m.name)||""} ${s.jenis_surat||""} ${s.keperluan||""}`.toLowerCase().includes(r)}));const a=document.getElementById("suratEmpty");a&&(a.style.display=d.length?"none":"block"),e.innerHTML=d.map(s=>{var c,m,h,x,y,w;return`
             <tr>
-                <td>${fmtDate(surat.created_at)}</td>
+                <td>${fmtDate(s.created_at)}</td>
 
-                <td>${surat.user?.name ?? "-"}</td>
+                <td>${(m=(c=s.user)==null?void 0:c.name)!=null?m:"-"}</td>
 
-                <td>${surat.user?.rt ?? "-"}/${surat.user?.rw ?? "-"}</td>
+                <td>${(x=(h=s.user)==null?void 0:h.rt)!=null?x:"-"}/${(w=(y=s.user)==null?void 0:y.rw)!=null?w:"-"}</td>
 
-                <td>${surat.jenis_surat}</td>
+                <td>${s.jenis_surat}</td>
 
-                <td>${surat.keperluan}</td>
+                <td>${s.keperluan}</td>
 
-                <td>${statusBadge(surat.status)}</td>
+                <td>${statusBadge(s.status)}</td>
 
                 <td>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
                         <button
                             class="btn btn-primary btn-sm view-surat-detail"
-                            data-id="${surat.id}"
+                            data-id="${s.id}"
                             style="padding: 6px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; border: none; cursor: pointer; color: white;"
                         >
                             <i class="fa-solid fa-eye"></i> Detail
@@ -449,37 +207,37 @@ async function initStafSuratLaravel() {
 
                         <select
                             class="surat-status"
-                            data-id="${surat.id}"
+                            data-id="${s.id}"
                             style="padding: 6px; border-radius: 6px; border: 1px solid var(--border); background: #fff;"
                         >
-                            <option value="menunggu" ${surat.status === "menunggu" ? "selected" : ""}>Menunggu</option>
-                            <option value="diproses" ${surat.status === "diproses" ? "selected" : ""}>Diproses</option>
-                            <option value="selesai" ${surat.status === "selesai" ? "selected" : ""}>Selesai</option>
-                            <option value="ditolak" ${surat.status === "ditolak" ? "selected" : ""}>Ditolak</option>
+                            <option value="menunggu" ${s.status==="menunggu"?"selected":""}>Menunggu</option>
+                            <option value="diproses" ${s.status==="diproses"?"selected":""}>Diproses</option>
+                            <option value="selesai" ${s.status==="selesai"?"selected":""}>Selesai</option>
+                            <option value="ditolak" ${s.status==="ditolak"?"selected":""}>Ditolak</option>
                         </select>
 
                         <button
                             class="btn save-surat"
-                            data-id="${surat.id}"
+                            data-id="${s.id}"
                             style="padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 12px; background: var(--primary); color: white; border: none; cursor: pointer;">
                             Simpan
                         </button>
 
                         <button
                             class="btn btn-success btn-sm open-kirim-surat"
-                            data-id="${surat.id}"
+                            data-id="${s.id}"
                             style="padding: 6px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; background: #16a34a; color: #fff; border: none; cursor: pointer;"
                             title="Upload & Kirim Surat ke Warga"
                         >
                             <i class="fa-solid fa-paper-plane"></i> Kirim Surat
                         </button>
-                        ${surat.file_surat ? `
-                        <a href="/storage/${surat.file_surat}" target="_blank" class="btn btn-primary btn-sm" style="padding: 6px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; text-decoration: none; display: flex; align-items: center; gap: 4px; background: #2563eb; color: white; border: none;">
+                        ${s.file_surat?`
+                        <a href="/storage/${s.file_surat}" target="_blank" class="btn btn-primary btn-sm" style="padding: 6px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; text-decoration: none; display: flex; align-items: center; gap: 4px; background: #2563eb; color: white; border: none;">
                             <i class="fa-solid fa-download"></i> Download
-                        </a>` : ''}
+                        </a>`:""}
                         <button
                             class="btn btn-danger btn-sm delete-surat"
-                            data-id="${surat.id}"
+                            data-id="${s.id}"
                             style="padding: 6px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; background: #dc2626; color: white; border: none; cursor: pointer;"
                             title="Hapus Surat"
                         >
@@ -488,399 +246,33 @@ async function initStafSuratLaravel() {
                     </div>
                 </td>
             </tr>
-        `,
-            )
-            .join("");
-    }
-
-    // Search handler
-    if (searchInput) {
-        searchInput.addEventListener('input', renderTable);
-    }
-
-    await loadAndRender();
-
-    // Store refresh function globally
-    window._refreshStafSurat = loadAndRender;
-}
-
-// Bind modal-related click events for Staf
-document.addEventListener("click", async (e) => {
-    const viewBtn = e.target.closest(".view-surat-detail");
-    if (viewBtn) {
-        const id = viewBtn.dataset.id;
-        openStafSuratDetail(id);
-        return;
-    }
-
-    // Open Kirim Surat modal from table
-    const kirimBtn = e.target.closest(".open-kirim-surat");
-    if (kirimBtn) {
-        const id = kirimBtn.dataset.id;
-        openKirimSuratModal(id);
-        return;
-    }
-
-    const delBtn = e.target.closest(".delete-surat");
-    if (delBtn) {
-        const id = delBtn.dataset.id;
-        if (confirm("Hapus surat ini? Aksi ini tidak dapat dibatalkan.")) {
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-            try {
-                const res = await fetch(`/api/staf/surat/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': csrf,
-                        'Accept': 'application/json'
-                    }
-                });
-                if (!res.ok) throw new Error('Gagal menghapus surat');
-                if (typeof window._refreshStafSurat === 'function') {
-                    window._refreshStafSurat();
-                }
-            } catch (err) {
-                alert(err.message);
-            }
-        }
-        return;
-    }
-
-    // Open Kirim Surat modal from detail modal
-    const kirimFromDetail = e.target.closest(".open-kirim-surat-from-detail");
-    if (kirimFromDetail) {
-        const id = kirimFromDetail.dataset.id;
-        // Close detail modal first
-        const detailModal = document.getElementById("suratDetailModal");
-        if (detailModal) {
-            detailModal.classList.remove("open");
-            detailModal.setAttribute("aria-hidden", "true");
-        }
-        openKirimSuratModal(id);
-        return;
-    }
-
-    if (e.target.closest("[data-action='closeModal']")) {
-        // Move focus away before hiding to prevent aria-hidden focus warning
-        if (document.activeElement && document.activeElement.closest('.modal')) {
-            document.activeElement.blur();
-        }
-        const suratModal = document.getElementById("suratDetailModal");
-        if (suratModal) {
-            suratModal.classList.remove("open");
-            suratModal.setAttribute("aria-hidden", "true");
-        }
-        const kirimModal = document.getElementById("kirimSuratModal");
-        if (kirimModal) {
-            kirimModal.classList.remove("open");
-            kirimModal.setAttribute("aria-hidden", "true");
-        }
-        return;
-    }
-
-    const reviewBtn = e.target.closest(".btn-staf-review");
-    if (reviewBtn) {
-        const id = reviewBtn.dataset.id;
-        openStafPengaduanDetail(id);
-        return;
-    }
-
-    const acceptBtn = e.target.closest(".accept-surat");
-    if (acceptBtn) {
-        const id = acceptBtn.dataset.id;
-        if (confirm("Setujui dan proses pengajuan surat ini?")) {
-            await updateStafSuratStatus(id, "diproses");
-            if (currentDetailSurat && String(currentDetailSurat.id) === String(id)) {
-                sessionStorage.setItem('prefill_surat', JSON.stringify(currentDetailSurat));
-                if (window.navigateTo) {
-                    window.navigateTo("staf/buat-surat");
-                } else {
-                    window.location.hash = "#staf/buat-surat";
-                }
-            }
-        }
-        return;
-    }
-
-    const rejectBtn = e.target.closest(".reject-surat");
-    if (rejectBtn) {
-        const id = rejectBtn.dataset.id;
-        if (confirm("Tolak pengajuan surat ini?")) {
-            await updateStafSuratStatus(id, "ditolak");
-        }
-        return;
-    }
-});
-
-// ── Kirim Surat Modal ─────────────────────────────────────────
-function openKirimSuratModal(suratId) {
-    const modal = document.getElementById("kirimSuratModal");
-    const idInput = document.getElementById("kirimSuratId");
-    const fileInput = document.getElementById("kirimSuratFile");
-    const noteInput = document.getElementById("kirimSuratNote");
-
-    if (!modal || !idInput) return;
-
-    idInput.value = suratId;
-    if (fileInput) fileInput.value = '';
-    if (noteInput) noteInput.value = '';
-
-    modal.classList.add("open");
-    modal.setAttribute("aria-hidden", "false");
-}
-
-// Handle Kirim Surat form submit
-document.addEventListener("submit", async (e) => {
-    if (!e.target.matches("#kirimSuratForm")) return;
-    e.preventDefault();
-
-    const form = e.target;
-    const suratId = document.getElementById("kirimSuratId")?.value;
-    const fileInput = document.getElementById("kirimSuratFile");
-    const submitBtn = form.querySelector('button[type="submit"]');
-
-    if (!suratId || !fileInput?.files?.length) {
-        alert("Silakan pilih file PDF terlebih dahulu.");
-        return;
-    }
-
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-    const formData = new FormData();
-    formData.append('file_surat', fileInput.files[0]);
-
-    // Disable button during upload
-    const origHtml = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengunggah...';
-
-    try {
-        const res = await fetch(`/api/staf/surat/${suratId}/upload-hasil`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': csrf,
-                'Accept': 'application/json',
-            },
-            body: formData,
-        });
-
-        if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.message || `HTTP error! status: ${res.status}`);
-        }
-
-        alert('Surat berhasil dikirim ke warga!');
-
-        // Close modal
-        const modal = document.getElementById("kirimSuratModal");
-        if (modal) {
-            modal.classList.remove("open");
-            modal.setAttribute("aria-hidden", "true");
-        }
-
-        // Refresh table
-        if (typeof window._refreshStafSurat === 'function') {
-            window._refreshStafSurat();
-        } else {
-            initStafSuratLaravel();
-        }
-    } catch (err) {
-        console.error('Upload surat gagal:', err);
-        alert('Gagal mengirim surat: ' + err.message);
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = origHtml;
-    }
-});
-
-document.addEventListener("click", async (e) => {
-    if (!e.target.classList.contains("save-pengumuman")) return;
-
-    const id = e.target.dataset.id;
-
-    const status = document.querySelector(
-        `.pengumuman-status[data-id="${id}"]`,
-    ).value;
-
-    await fetch(`/api/public/pengumuman`, {
-        method: "GET",
-    });
-
-    alert("Fitur manajemen pengumuman hanya untuk admin");
-});
-
-document.addEventListener("click", async (e) => {
-    if (!e.target.classList.contains("save-surat")) return;
-
-    const id = e.target.dataset.id;
-    const status = document.querySelector(`.surat-status[data-id="${id}"]`).value;
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-
-    try {
-        const response = await fetch(`/api/staf/surat/${id}/status`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN": csrf,
-                Accept: "application/json",
-            },
-            body: JSON.stringify({ status }),
-        });
-
-        if (!response.ok) {
-            throw new Error("Gagal menyimpan status surat");
-        }
-
-        alert("Status surat berhasil diperbarui");
-        initStafSuratLaravel();
-    } catch (err) {
-        console.error(err);
-        alert("Gagal menyimpan status surat");
-    }
-});
-
-document.addEventListener("click", async (e) => {
-    if (!e.target.classList.contains("save-pengaduan")) return;
-
-    const id = e.target.dataset.id;
-
-    const status = document.querySelector(
-        `.pengaduan-status[data-id="${id}"]`,
-    ).value;
-
-    try {
-        const response = await fetch(`/api/staf/pengaduan/${id}/status`, {
-            method: "PUT",
-
-            headers: {
-                "Content-Type": "application/json",
-
-                "X-CSRF-TOKEN": csrfToken,
-
-                Accept: "application/json",
-            },
-
-            body: JSON.stringify({
-                status,
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error("Gagal menyimpan status pengaduan");
-        }
-
-        alert("Status pengaduan berhasil diperbarui");
-        initStafPengaduanLaravel();
-    } catch (err) {
-        console.error(err);
-        alert("Gagal menyimpan status pengaduan");
-    }
-});
-
-async function openStafPengaduanDetail(id) {
-    try {
-        const res = await fetch(`/api/staf/pengaduan/${id}`, {
-            headers: { Accept: "application/json" }
-        });
-        const item = await res.json();
-        if (!item) return;
-
-        document.getElementById("stafDetailPelapor").textContent = item.user?.name || "-";
-        document.getElementById("stafDetailJudul").textContent = item.judul || "-";
-        document.getElementById("stafDetailKategori").textContent = item.kategori || "-";
-        document.getElementById("stafDetailTanggal").textContent = fmtDate(item.created_at);
-        document.getElementById("stafDetailLokasi").textContent = item.lokasi || "-";
-        document.getElementById("stafDetailIsi").textContent = item.isi || "";
-        document.getElementById("stafDetailStatus").innerHTML = statusBadge(item.status);
-
-        // Populate modal form
-        document.getElementById("stafModalId").value = item.id;
-        document.getElementById("stafModalStatus").value = item.status;
-        const fileInput = document.getElementById("stafModalFotoTindakLanjut");
-        if (fileInput) fileInput.value = "";
-
-        // Populate follow up preview
-        const modalPreview = document.getElementById("stafModalFotoPreview");
-        if (modalPreview) {
-            if (item.foto_tindak_lanjut) {
-                modalPreview.src = item.foto_tindak_lanjut.startsWith("data:") || item.foto_tindak_lanjut.startsWith("http")
-                    ? item.foto_tindak_lanjut
-                    : "/storage/" + item.foto_tindak_lanjut;
-                modalPreview.style.display = "block";
-            } else {
-                modalPreview.src = "";
-                modalPreview.style.display = "none";
-            }
-        }
-
-        const img = document.getElementById("stafDetailImg");
-        const pdfLink = document.getElementById("stafDetailPdf");
-        const noLampiran = document.getElementById("stafDetailNoLampiran");
-
-        if (img && pdfLink && noLampiran) {
-            img.style.display = "none";
-            pdfLink.style.display = "none";
-            noLampiran.style.display = "none";
-
-            if (item.lampiran) {
-                const fileUrl = item.lampiran.startsWith("data:") || item.lampiran.startsWith("http")
-                    ? item.lampiran
-                    : "/storage/" + item.lampiran;
-                
-                if (item.lampiran.toLowerCase().endsWith(".pdf")) {
-                    pdfLink.href = fileUrl;
-                    pdfLink.style.display = "inline-block";
-                } else {
-                    img.src = fileUrl;
-                    img.style.display = "block";
-                }
-            } else {
-                noLampiran.style.display = "inline";
-            }
-        }
-
-        document.getElementById("stafPengaduanDetailModal").classList.add("open");
-    } catch (error) {
-        console.error("Gagal memuat detail pengaduan:", error);
-    }
-}
-
-async function initStafPengaduanLaravel() {
-    const tbody = document.getElementById("pengaduanTbody");
-
-    if (!tbody) return;
-
-    const res = await fetch("/api/staf/pengaduan");
-
-    const data = await res.json();
-
-    tbody.innerHTML = data
-        .map(
-            (item) => `
+        `}).join("")}i&&i.addEventListener("input",o),await l(),window._refreshStafSurat=l}document.addEventListener("click",async e=>{var a;const t=e.target.closest(".view-surat-detail");if(t){const s=t.dataset.id;openStafSuratDetail(s);return}const i=e.target.closest(".open-kirim-surat");if(i){const s=i.dataset.id;openKirimSuratModal(s);return}const n=e.target.closest(".delete-surat");if(n){const s=n.dataset.id;if(confirm("Hapus surat ini? Aksi ini tidak dapat dibatalkan.")){const c=(a=document.querySelector('meta[name="csrf-token"]'))==null?void 0:a.content;try{if(!(await fetch(`/api/staf/surat/${s}`,{method:"DELETE",headers:{"X-CSRF-TOKEN":c,Accept:"application/json"}})).ok)throw new Error("Gagal menghapus surat");typeof window._refreshStafSurat=="function"&&window._refreshStafSurat()}catch(m){alert(m.message)}}return}const l=e.target.closest(".open-kirim-surat-from-detail");if(l){const s=l.dataset.id,c=document.getElementById("suratDetailModal");c&&(c.classList.remove("open"),c.setAttribute("aria-hidden","true")),openKirimSuratModal(s);return}if(e.target.closest("[data-action='closeModal']")){document.activeElement&&document.activeElement.closest(".modal")&&document.activeElement.blur();const s=document.getElementById("suratDetailModal");s&&(s.classList.remove("open"),s.setAttribute("aria-hidden","true"));const c=document.getElementById("kirimSuratModal");c&&(c.classList.remove("open"),c.setAttribute("aria-hidden","true"));return}const o=e.target.closest(".btn-staf-review");if(o){const s=o.dataset.id;openStafPengaduanDetail(s);return}const r=e.target.closest(".accept-surat");if(r){const s=r.dataset.id;confirm("Setujui dan proses pengajuan surat ini?")&&(await updateStafSuratStatus(s,"diproses"),currentDetailSurat&&String(currentDetailSurat.id)===String(s)&&(sessionStorage.setItem("prefill_surat",JSON.stringify(currentDetailSurat)),window.navigateTo?window.navigateTo("staf/buat-surat"):window.location.hash="#staf/buat-surat"));return}const d=e.target.closest(".reject-surat");if(d){const s=d.dataset.id;confirm("Tolak pengajuan surat ini?")&&await updateStafSuratStatus(s,"ditolak");return}});function openKirimSuratModal(e){const t=document.getElementById("kirimSuratModal"),i=document.getElementById("kirimSuratId"),n=document.getElementById("kirimSuratFile"),l=document.getElementById("kirimSuratNote");!t||!i||(i.value=e,n&&(n.value=""),l&&(l.value=""),t.classList.add("open"),t.setAttribute("aria-hidden","false"))}document.addEventListener("submit",async e=>{var a,s,c;if(!e.target.matches("#kirimSuratForm"))return;e.preventDefault();const t=e.target,i=(a=document.getElementById("kirimSuratId"))==null?void 0:a.value,n=document.getElementById("kirimSuratFile"),l=t.querySelector('button[type="submit"]');if(!i||!((s=n==null?void 0:n.files)!=null&&s.length)){alert("Silakan pilih file PDF terlebih dahulu.");return}const o=(c=document.querySelector('meta[name="csrf-token"]'))==null?void 0:c.content,r=new FormData;r.append("file_surat",n.files[0]);const d=l.innerHTML;l.disabled=!0,l.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Mengunggah...';try{const m=await fetch(`/api/staf/surat/${i}/upload-hasil`,{method:"POST",headers:{"X-CSRF-TOKEN":o,Accept:"application/json"},body:r});if(!m.ok){const x=await m.json().catch(()=>({}));throw new Error(x.message||`HTTP error! status: ${m.status}`)}alert("Surat berhasil dikirim ke warga!");const h=document.getElementById("kirimSuratModal");h&&(h.classList.remove("open"),h.setAttribute("aria-hidden","true")),typeof window._refreshStafSurat=="function"?window._refreshStafSurat():initStafSuratLaravel()}catch(m){console.error("Upload surat gagal:",m),alert("Gagal mengirim surat: "+m.message)}finally{l.disabled=!1,l.innerHTML=d}}),document.addEventListener("click",async e=>{if(!e.target.classList.contains("save-pengumuman"))return;const t=e.target.dataset.id,i=document.querySelector(`.pengumuman-status[data-id="${t}"]`).value;await fetch("/api/public/pengumuman",{method:"GET"}),alert("Fitur manajemen pengumuman hanya untuk admin")}),document.addEventListener("click",async e=>{var l;if(!e.target.classList.contains("save-surat"))return;const t=e.target.dataset.id,i=document.querySelector(`.surat-status[data-id="${t}"]`).value,n=(l=document.querySelector('meta[name="csrf-token"]'))==null?void 0:l.content;try{if(!(await fetch(`/api/staf/surat/${t}/status`,{method:"PUT",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":n,Accept:"application/json"},body:JSON.stringify({status:i})})).ok)throw new Error("Gagal menyimpan status surat");alert("Status surat berhasil diperbarui"),initStafSuratLaravel()}catch(o){console.error(o),alert("Gagal menyimpan status surat")}}),document.addEventListener("click",async e=>{if(!e.target.classList.contains("save-pengaduan"))return;const t=e.target.dataset.id,i=document.querySelector(`.pengaduan-status[data-id="${t}"]`).value;try{if(!(await fetch(`/api/staf/pengaduan/${t}/status`,{method:"PUT",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrfToken,Accept:"application/json"},body:JSON.stringify({status:i})})).ok)throw new Error("Gagal menyimpan status pengaduan");alert("Status pengaduan berhasil diperbarui"),initStafPengaduanLaravel()}catch(n){console.error(n),alert("Gagal menyimpan status pengaduan")}});async function openStafPengaduanDetail(e){var t;try{const n=await(await fetch(`/api/staf/pengaduan/${e}`,{headers:{Accept:"application/json"}})).json();if(!n)return;document.getElementById("stafDetailPelapor").textContent=((t=n.user)==null?void 0:t.name)||"-",document.getElementById("stafDetailJudul").textContent=n.judul||"-",document.getElementById("stafDetailKategori").textContent=n.kategori||"-",document.getElementById("stafDetailTanggal").textContent=fmtDate(n.created_at),document.getElementById("stafDetailLokasi").textContent=n.lokasi||"-",document.getElementById("stafDetailIsi").textContent=n.isi||"",document.getElementById("stafDetailStatus").innerHTML=statusBadge(n.status),document.getElementById("stafModalId").value=n.id,document.getElementById("stafModalStatus").value=n.status;const l=document.getElementById("stafModalFotoTindakLanjut");l&&(l.value="");const o=document.getElementById("stafModalFotoPreview");o&&(n.foto_tindak_lanjut?(o.src=n.foto_tindak_lanjut.startsWith("data:")||n.foto_tindak_lanjut.startsWith("http")?n.foto_tindak_lanjut:"/storage/"+n.foto_tindak_lanjut,o.style.display="block"):(o.src="",o.style.display="none"));const r=document.getElementById("stafDetailImg"),d=document.getElementById("stafDetailPdf"),a=document.getElementById("stafDetailNoLampiran");if(r&&d&&a)if(r.style.display="none",d.style.display="none",a.style.display="none",n.lampiran){const s=n.lampiran.startsWith("data:")||n.lampiran.startsWith("http")?n.lampiran:"/storage/"+n.lampiran;n.lampiran.toLowerCase().endsWith(".pdf")?(d.href=s,d.style.display="inline-block"):(r.src=s,r.style.display="block")}else a.style.display="inline";document.getElementById("stafPengaduanDetailModal").classList.add("open")}catch(i){console.error("Gagal memuat detail pengaduan:",i)}}async function initStafPengaduanLaravel(){const e=document.getElementById("pengaduanTbody");if(!e)return;const i=await(await fetch("/api/staf/pengaduan")).json();e.innerHTML=i.map(o=>{var r,d;return`
         <tr>
 
-            <td>${fmtDate(item.created_at)}</td>
+            <td>${fmtDate(o.created_at)}</td>
 
-            <td>${item.user?.name ?? "-"}</td>
+            <td>${(d=(r=o.user)==null?void 0:r.name)!=null?d:"-"}</td>
 
-            <td>${item.judul}</td>
+            <td>${o.judul}</td>
 
-            <td>${statusBadge(item.status)}</td>
+            <td>${statusBadge(o.status)}</td>
 
             <td>
 
                 <select
                     class="pengaduan-status"
-                    data-id="${item.id}"
+                    data-id="${o.id}"
                     style="padding: 6px; border-radius: 6px; border: 1px solid var(--border); background: #fff;"
                 >
-                    <option value="menunggu" ${item.status === "menunggu" ? "selected" : ""}>Menunggu</option>
-                    <option value="diproses" ${item.status === "diproses" ? "selected" : ""}>Diproses</option>
-                    <option value="selesai" ${item.status === "selesai" ? "selected" : ""}>Selesai</option>
-                    <option value="ditolak" ${item.status === "ditolak" ? "selected" : ""}>Ditolak</option>
+                    <option value="menunggu" ${o.status==="menunggu"?"selected":""}>Menunggu</option>
+                    <option value="diproses" ${o.status==="diproses"?"selected":""}>Diproses</option>
+                    <option value="selesai" ${o.status==="selesai"?"selected":""}>Selesai</option>
+                    <option value="ditolak" ${o.status==="ditolak"?"selected":""}>Ditolak</option>
                 </select>
 
                 <button
                     class="btn btn-primary save-pengaduan"
-                    data-id="${item.id}"
+                    data-id="${o.id}"
                     style="padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 12px; background: var(--primary); color: white; border: none; cursor: pointer;"
                 >
                     Simpan
@@ -888,7 +280,7 @@ async function initStafPengaduanLaravel() {
 
                 <button
                     class="btn btn-ghost btn-staf-review"
-                    data-id="${item.id}"
+                    data-id="${o.id}"
                     style="margin-left: 5px; min-width: 60px; padding: 6px 12px; font-weight: 800; border-radius: 8px; cursor: pointer;"
                 >
                     Review
@@ -897,694 +289,55 @@ async function initStafPengaduanLaravel() {
             </td>
 
         </tr>
-    `,
-        )
-        .join("");
-
-    // Handle form submit in modal
-    const statusForm = document.getElementById("stafPengaduanStatusForm");
-    if (statusForm && !statusForm.dataset.listenerBound) {
-        statusForm.dataset.listenerBound = "true";
-        statusForm.addEventListener("submit", async (ev) => {
-            ev.preventDefault();
-            const id = document.getElementById("stafModalId").value;
-            const status = document.getElementById("stafModalStatus").value;
-            const fileInput = document.getElementById("stafModalFotoTindakLanjut");
-            const file = fileInput?.files?.[0] || null;
-
-            const submitBtn = statusForm.querySelector("button[type='submit']");
-            const origHtml = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-
-            try {
-                const formData = new FormData();
-                formData.append("status", status);
-                formData.append("_method", "PUT");
-                if (file) {
-                    formData.append("foto_tindak_lanjut", file);
-                }
-
-                const response = await fetch(`/api/staf/pengaduan/${id}/status`, {
-                    method: "POST", // POST with spoofing PUT
-                    headers: {
-                        "X-CSRF-TOKEN": csrfToken,
-                        Accept: "application/json",
-                    },
-                    body: formData,
-                });
-
-                if (!response.ok) {
-                    const err = await response.json().catch(() => ({}));
-                    throw new Error(err.message || "Gagal memperbarui tindak lanjut");
-                }
-
-                alert("Tindak lanjut pengaduan berhasil disimpan");
-                document.getElementById("stafPengaduanDetailModal")?.classList.remove("open");
-                initStafPengaduanLaravel(); // Refresh table
-            } catch (err) {
-                console.error(err);
-                alert("Gagal memperbarui tindak lanjut: " + err.message);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = origHtml;
-            }
-        });
-    }
-
-    // Modal file preview change listener
-    const stafModalFile = document.getElementById("stafModalFotoTindakLanjut");
-    if (stafModalFile && !stafModalFile.dataset.listenerBound) {
-        stafModalFile.dataset.listenerBound = "true";
-        stafModalFile.addEventListener("change", (e) => {
-            const file = e.target.files[0];
-            const preview = document.getElementById("stafModalFotoPreview");
-            if (file && preview) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    preview.src = event.target.result;
-                    preview.style.display = "block";
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-
-    // Close modals
-    if (!window._stafModalsBound) {
-        window._stafModalsBound = true;
-        document.addEventListener("click", (e) => {
-            if (e.target.closest("#closeStafPengaduanDetailBtn") || e.target.matches("#stafPengaduanDetailModal")) {
-                document.getElementById("stafPengaduanDetailModal")?.classList.remove("open");
-            }
-            if (e.target.closest("#closeStafImageZoomBtn") || e.target.matches("#stafImageZoomModal")) {
-                document.getElementById("stafImageZoomModal")?.classList.remove("open");
-            }
-        });
-
-        // Image zoom click
-        const detailImg = document.getElementById("stafDetailImg");
-        if (detailImg) {
-            detailImg.onclick = () => {
-                const zoomModal = document.getElementById("stafImageZoomModal");
-                const zoomedImg = document.getElementById("stafZoomedImg");
-                if (zoomModal && zoomedImg) {
-                    zoomedImg.src = detailImg.src;
-                    zoomModal.classList.add("open");
-                }
-            };
-        }
-
-        const modalPreview = document.getElementById("stafModalFotoPreview");
-        if (modalPreview) {
-            modalPreview.onclick = () => {
-                const zoomModal = document.getElementById("stafImageZoomModal");
-                const zoomedImg = document.getElementById("stafZoomedImg");
-                if (zoomModal && zoomedImg) {
-                    zoomedImg.src = modalPreview.src;
-                    zoomModal.classList.add("open");
-                }
-            };
-        }
-    }
-}
-
-function resetStafPengumumanForm() {
-    document.getElementById("staf-pengumuman-id").value = "";
-    const form = document.getElementById("staf-pengumuman-form");
-    if (form) form.reset();
-    document.getElementById("staf-pengumuman-form-title").textContent = "Tambah Pengumuman";
-}
-
-async function initStafPengumumanLaravel() {
-    const tbody = document.getElementById("staf-pengumuman-table-body");
-    if (!tbody) return;
-
-    const response = await fetch("/api/staf/pengumuman");
-    const data = await response.json();
-
-    const searchVal = (document.getElementById("staf-pengumuman-search")?.value || "").toLowerCase();
-    const filterVal = document.getElementById("staf-pengumuman-status-filter")?.value || "all";
-
-    const searchInput = document.getElementById("staf-pengumuman-search");
-    const statusFilter = document.getElementById("staf-pengumuman-status-filter");
-
-    if (searchInput && !searchInput.dataset.listenerBound) {
-        searchInput.dataset.listenerBound = "true";
-        searchInput.addEventListener("input", initStafPengumumanLaravel);
-    }
-    if (statusFilter && !statusFilter.dataset.listenerBound) {
-        statusFilter.dataset.listenerBound = "true";
-        statusFilter.addEventListener("change", initStafPengumumanLaravel);
-    }
-
-    let filtered = data;
-    if (filterVal !== "all") {
-        filtered = filtered.filter(item => (item.status || "info") === filterVal);
-    }
-    if (searchVal) {
-        filtered = filtered.filter(item => 
-            (item.title || "").toLowerCase().includes(searchVal) ||
-            (item.content || "").toLowerCase().includes(searchVal)
-        );
-    }
-
-    tbody.innerHTML = filtered
-        .map(
-            (item) => `
+    `}).join("");const n=document.getElementById("stafPengaduanStatusForm");n&&!n.dataset.listenerBound&&(n.dataset.listenerBound="true",n.addEventListener("submit",async o=>{var h,x;o.preventDefault();const r=document.getElementById("stafModalId").value,d=document.getElementById("stafModalStatus").value,a=document.getElementById("stafModalFotoTindakLanjut"),s=((h=a==null?void 0:a.files)==null?void 0:h[0])||null,c=n.querySelector("button[type='submit']"),m=c.innerHTML;c.disabled=!0,c.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';try{const y=new FormData;y.append("status",d),y.append("_method","PUT"),s&&y.append("foto_tindak_lanjut",s);const w=await fetch(`/api/staf/pengaduan/${r}/status`,{method:"POST",headers:{"X-CSRF-TOKEN":csrfToken,Accept:"application/json"},body:y});if(!w.ok){const f=await w.json().catch(()=>({}));throw new Error(f.message||"Gagal memperbarui tindak lanjut")}alert("Tindak lanjut pengaduan berhasil disimpan"),(x=document.getElementById("stafPengaduanDetailModal"))==null||x.classList.remove("open"),initStafPengaduanLaravel()}catch(y){console.error(y),alert("Gagal memperbarui tindak lanjut: "+y.message)}finally{c.disabled=!1,c.innerHTML=m}}));const l=document.getElementById("stafModalFotoTindakLanjut");if(l&&!l.dataset.listenerBound&&(l.dataset.listenerBound="true",l.addEventListener("change",o=>{const r=o.target.files[0],d=document.getElementById("stafModalFotoPreview");if(r&&d){const a=new FileReader;a.onload=s=>{d.src=s.target.result,d.style.display="block"},a.readAsDataURL(r)}})),!window._stafModalsBound){window._stafModalsBound=!0,document.addEventListener("click",d=>{var a,s;(d.target.closest("#closeStafPengaduanDetailBtn")||d.target.matches("#stafPengaduanDetailModal"))&&((a=document.getElementById("stafPengaduanDetailModal"))==null||a.classList.remove("open")),(d.target.closest("#closeStafImageZoomBtn")||d.target.matches("#stafImageZoomModal"))&&((s=document.getElementById("stafImageZoomModal"))==null||s.classList.remove("open"))});const o=document.getElementById("stafDetailImg");o&&(o.onclick=()=>{const d=document.getElementById("stafImageZoomModal"),a=document.getElementById("stafZoomedImg");d&&a&&(a.src=o.src,d.classList.add("open"))});const r=document.getElementById("stafModalFotoPreview");r&&(r.onclick=()=>{const d=document.getElementById("stafImageZoomModal"),a=document.getElementById("stafZoomedImg");d&&a&&(a.src=r.src,d.classList.add("open"))})}}function resetStafPengumumanForm(){document.getElementById("staf-pengumuman-id").value="";const e=document.getElementById("staf-pengumuman-form");e&&e.reset(),document.getElementById("staf-pengumuman-form-title").textContent="Tambah Pengumuman"}async function initStafPengumumanLaravel(){var a,s;const e=document.getElementById("staf-pengumuman-table-body");if(!e)return;const i=await(await fetch("/api/staf/pengumuman")).json(),n=(((a=document.getElementById("staf-pengumuman-search"))==null?void 0:a.value)||"").toLowerCase(),l=((s=document.getElementById("staf-pengumuman-status-filter"))==null?void 0:s.value)||"all",o=document.getElementById("staf-pengumuman-search"),r=document.getElementById("staf-pengumuman-status-filter");o&&!o.dataset.listenerBound&&(o.dataset.listenerBound="true",o.addEventListener("input",initStafPengumumanLaravel)),r&&!r.dataset.listenerBound&&(r.dataset.listenerBound="true",r.addEventListener("change",initStafPengumumanLaravel));let d=i;l!=="all"&&(d=d.filter(c=>(c.status||"info")===l)),n&&(d=d.filter(c=>(c.title||"").toLowerCase().includes(n)||(c.content||"").toLowerCase().includes(n))),e.innerHTML=d.map(c=>{var m,h;return`
 <tr>
-    <td><b>${item.title ?? "-"}</b></td>
-    <td>${fmtDate(item.date) || "-"}</td>
+    <td><b>${(m=c.title)!=null?m:"-"}</b></td>
+    <td>${fmtDate(c.date)||"-"}</td>
     <td>
-        <span class="badge badge-cat-${item.status === 'urgent' ? 'darurat' : 'info'}">
-            ${(item.status ?? "info").toUpperCase()}
+        <span class="badge badge-cat-${c.status==="urgent"?"darurat":"info"}">
+            ${((h=c.status)!=null?h:"info").toUpperCase()}
         </span>
     </td>
     <td>
         <button
             class="btn btn-warning btn-sm edit-pengumuman"
-            data-id="${item.id}">
+            data-id="${c.id}">
             Edit
         </button>
     </td>
 </tr>
-`,
-        )
-        .join("");
-}
-
-async function savePengumumanLaravel() {
-    const id = document.getElementById("staf-pengumuman-id").value;
-    const title = document.getElementById("staf-pengumuman-judul").value;
-    const date = document.getElementById("staf-pengumuman-tanggal").value;
-    const status = document.getElementById("staf-pengumuman-status").value;
-    const content = document.getElementById("staf-pengumuman-isi").value;
-
-    const payload = {
-        title,
-        date,
-        status,
-        content
-    };
-
-    const submitBtn = document.querySelector("#staf-pengumuman-form button[type='submit']");
-    const origHtml = submitBtn ? submitBtn.innerHTML : "Simpan";
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-    }
-
-    let response;
-    try {
-        if (id) {
-            response = await fetch(`/api/staf/pengumuman/${id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": csrfToken,
-                    Accept: "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-        } else {
-            response = await fetch("/api/staf/pengumuman", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": csrfToken,
-                    Accept: "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-        }
-
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            throw new Error(err.message || "Gagal menyimpan pengumuman");
-        }
-
-        alert("Pengumuman berhasil disimpan");
-        resetStafPengumumanForm();
-        initStafPengumumanLaravel();
-    } catch (err) {
-        console.error(err);
-        alert("Gagal menyimpan pengumuman: " + err.message);
-    } finally {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = origHtml;
-        }
-    }
-}
-
-// Event delegation for Edit
-document.addEventListener("click", async (e) => {
-    const editBtn = e.target.closest(".edit-pengumuman");
-    if (editBtn) {
-        const id = editBtn.dataset.id;
-        try {
-            const response = await fetch(`/api/staf/pengumuman/${id}`, {
-                headers: { Accept: "application/json" }
-            });
-            if (!response.ok) throw new Error("Gagal mengambil data pengumuman");
-            const item = await response.json();
-            
-            document.getElementById("staf-pengumuman-id").value = item.id;
-            document.getElementById("staf-pengumuman-judul").value = item.title || "";
-            document.getElementById("staf-pengumuman-tanggal").value = item.date || "";
-            document.getElementById("staf-pengumuman-status").value = item.status || "info";
-            document.getElementById("staf-pengumuman-isi").value = item.content || "";
-            
-            document.getElementById("staf-pengumuman-form-title").textContent = "Edit Pengumuman";
-            document.getElementById("staf-pengumuman-form")?.scrollIntoView({ behavior: "smooth" });
-        } catch (err) {
-            alert(err.message);
-        }
-    }
-});
-
-document.addEventListener("submit", async (e) => {
-    if (e.target.id === "staf-pengumuman-form") {
-        e.preventDefault();
-        await savePengumumanLaravel();
-    }
-});
-
-document.addEventListener("click", (e) => {
-    if (e.target.closest("#staf-pengumuman-reset")) {
-        resetStafPengumumanForm();
-    }
-});
-const Guard = window.KelurahanGuard;
-let _stafMobileMenuBound = false;
-
-function ensureStafMobileMenu() {
-    if (_stafMobileMenuBound) return;
-    _stafMobileMenuBound = true;
-
-    // Backdrop
-    if (!document.getElementById("stafMenuBackdrop")) {
-        const bd = document.createElement("div");
-        bd.id = "stafMenuBackdrop";
-        document.body.appendChild(bd);
-    }
-
-    const close = () => document.body.classList.remove("staf-menu-open");
-    const toggle = () => document.body.classList.toggle("staf-menu-open");
-
-    document.addEventListener("click", (e) => {
-        if (e.target.id === "stafMenuBackdrop") return close();
-        if (e.target.closest?.("[data-action='toggleStafMenu']"))
-            return toggle();
-        if (e.target.closest?.(".staf-side a[data-page]")) return close();
-    });
-
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") close();
-    });
-}
-
-function mountStafMenuButton() {
-    const top = document.querySelector(".staf-top");
-    if (!top) return;
-
-    let actions = top.querySelector(".top-actions");
-    if (!actions) {
-        const children = Array.from(top.children);
-        if (children.length > 1 && children[1].tagName === "DIV") {
-            actions = children[1];
-            actions.classList.add("top-actions");
-        } else {
-            actions = document.createElement("div");
-            actions.className = "top-actions";
-            top.appendChild(actions);
-        }
-    }
-
-    if (actions.querySelector("[data-action='toggleStafMenu']")) return;
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn btn-ghost";
-    btn.setAttribute("data-action", "toggleStafMenu");
-    btn.innerHTML = `<i class="fa-solid fa-bars"></i> Menu`;
-    actions.prepend(btn);
-}
-
-function setStafSidebarActive(hash) {
-    document.querySelectorAll(".staf-side a").forEach((a) => {
-        const match = a.getAttribute("href") === hash;
-        a.classList.toggle("active", match);
-    });
-}
-
-function fillStafUserLabel() {
-    const el = document.getElementById("stafUserLabel");
-    if (!el) return;
-    const s = Guard?.getSession();
-    el.textContent = s ? `Login: ${s.name} (${s.role})` : "-";
-}
-
-window.addEventListener("page:loaded", (e) => {
-    const page = e.detail?.name || "";
-    const isStaf = page.startsWith("staf/");
-    document.body.classList.toggle("is-staf", isStaf);
-    if (!isStaf) {
-        document.body.classList.remove("staf-menu-open");
-        return;
-    }
-
-    if (!Guard?.requireStaf()) return;
-
-    fillStafUserLabel();
-    setStafSidebarActive("#" + page);
-    ensureStafMobileMenu();
-    mountStafMenuButton();
-
-    if (page === "staf/dashboard") {
-        initStafDashboardLaravel();
-    }
-    if (page === "staf/pengumuman") {
-        initStafPengumumanLaravel();
-    }
-    if (page === "staf/surat") {
-        initStafSuratLaravel();
-    }
-
-    if (page === "staf/pengaduan") {
-        initStafPengaduanLaravel();
-    }
-    if (page === 'staf/buat-surat') {
-        if (typeof window.initBuatSurat === 'function') window.initBuatSurat();
-    }
-    if (page === 'staf/arsip-surat') {
-        if (typeof window.initArsipSurat === 'function') window.initArsipSurat();
-    }
-    if (page === 'staf/chat') {
-        initStafChatLaravel();
-    }
-});
-
-let stafChatPollInterval = null;
-let stafWargaPollInterval = null;
-async function initStafChatLaravel() {
-    const threadListEl = document.getElementById("chatThreadList");
-    const msgEl = document.getElementById("chatMessages");
-    const inputEl = document.getElementById("chatInput");
-    const formEl = document.getElementById("chatSendForm");
-    const headEl = document.getElementById("chatRoomHead");
-
-    if (!threadListEl || !msgEl) return;
-
-    let activeWargaId = null;
-    let activeRoomId = null;
-    let wargaList = [];
-    let socket = null;
-
-    if (stafChatPollInterval) {
-        clearInterval(stafChatPollInterval);
-        stafChatPollInterval = null;
-    }
-    if (stafWargaPollInterval) {
-        clearInterval(stafWargaPollInterval);
-        stafWargaPollInterval = null;
-    }
-
-    msgEl.innerHTML = `
+`}).join("")}async function savePengumumanLaravel(){const e=document.getElementById("staf-pengumuman-id").value,t=document.getElementById("staf-pengumuman-judul").value,i=document.getElementById("staf-pengumuman-tanggal").value,n=document.getElementById("staf-pengumuman-status").value,l=document.getElementById("staf-pengumuman-isi").value,o={title:t,date:i,status:n,content:l},r=document.querySelector("#staf-pengumuman-form button[type='submit']"),d=r?r.innerHTML:"Simpan";r&&(r.disabled=!0,r.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...');let a;try{if(e?a=await fetch(`/api/staf/pengumuman/${e}`,{method:"PUT",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrfToken,Accept:"application/json"},body:JSON.stringify(o)}):a=await fetch("/api/staf/pengumuman",{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrfToken,Accept:"application/json"},body:JSON.stringify(o)}),!a.ok){const s=await a.json().catch(()=>({}));throw new Error(s.message||"Gagal menyimpan pengumuman")}alert("Pengumuman berhasil disimpan"),resetStafPengumumanForm(),initStafPengumumanLaravel()}catch(s){console.error(s),alert("Gagal menyimpan pengumuman: "+s.message)}finally{r&&(r.disabled=!1,r.innerHTML=d)}}document.addEventListener("click",async e=>{var i;const t=e.target.closest(".edit-pengumuman");if(t){const n=t.dataset.id;try{const l=await fetch(`/api/staf/pengumuman/${n}`,{headers:{Accept:"application/json"}});if(!l.ok)throw new Error("Gagal mengambil data pengumuman");const o=await l.json();document.getElementById("staf-pengumuman-id").value=o.id,document.getElementById("staf-pengumuman-judul").value=o.title||"",document.getElementById("staf-pengumuman-tanggal").value=o.date||"",document.getElementById("staf-pengumuman-status").value=o.status||"info",document.getElementById("staf-pengumuman-isi").value=o.content||"",document.getElementById("staf-pengumuman-form-title").textContent="Edit Pengumuman",(i=document.getElementById("staf-pengumuman-form"))==null||i.scrollIntoView({behavior:"smooth"})}catch(l){alert(l.message)}}}),document.addEventListener("submit",async e=>{e.target.id==="staf-pengumuman-form"&&(e.preventDefault(),await savePengumumanLaravel())}),document.addEventListener("click",e=>{e.target.closest("#staf-pengumuman-reset")&&resetStafPengumumanForm()});const Guard=window.KelurahanGuard;let _stafMobileMenuBound=!1;function ensureStafMobileMenu(){if(_stafMobileMenuBound)return;if(_stafMobileMenuBound=!0,!document.getElementById("stafMenuBackdrop")){const i=document.createElement("div");i.id="stafMenuBackdrop",document.body.appendChild(i)}const e=()=>document.body.classList.remove("staf-menu-open"),t=()=>document.body.classList.toggle("staf-menu-open");document.addEventListener("click",i=>{var n,l,o,r;if(i.target.id==="stafMenuBackdrop")return e();if((l=(n=i.target).closest)!=null&&l.call(n,"[data-action='toggleStafMenu']"))return t();if((r=(o=i.target).closest)!=null&&r.call(o,".staf-side a[data-page]"))return e()}),document.addEventListener("keydown",i=>{i.key==="Escape"&&e()})}function mountStafMenuButton(){const e=document.querySelector(".staf-top");if(!e)return;let t=e.querySelector(".top-actions");if(!t){const n=Array.from(e.children);n.length>1&&n[1].tagName==="DIV"?(t=n[1],t.classList.add("top-actions")):(t=document.createElement("div"),t.className="top-actions",e.appendChild(t))}if(t.querySelector("[data-action='toggleStafMenu']"))return;const i=document.createElement("button");i.type="button",i.className="btn btn-ghost",i.setAttribute("data-action","toggleStafMenu"),i.innerHTML='<i class="fa-solid fa-bars"></i> Menu';function _updateStafToggle(){i.style.setProperty("display",(Math.max(document.documentElement.clientWidth||0,window.innerWidth||0)>=1024?"none":"inline-flex"),"important")}
+_updateStafToggle();window.addEventListener("resize",_updateStafToggle);t.prepend(i)}function setStafSidebarActive(e){document.querySelectorAll(".staf-side a").forEach(t=>{const i=t.getAttribute("href")===e;t.classList.toggle("active",i)})}function fillStafUserLabel(){const e=document.getElementById("stafUserLabel");if(!e)return;const t=Guard==null?void 0:Guard.getSession();e.textContent=t?`Login: ${t.name} (${t.role})`:"-"}window.addEventListener("page:loaded",e=>{var n;const t=((n=e.detail)==null?void 0:n.name)||"",i=t.startsWith("staf/");if(document.body.classList.toggle("is-staf",i),!i){document.body.classList.remove("staf-menu-open");return}Guard!=null&&Guard.requireStaf()&&(fillStafUserLabel(),setStafSidebarActive("#"+t),ensureStafMobileMenu(),mountStafMenuButton(),t==="staf/dashboard"&&initStafDashboardLaravel(),t==="staf/pengumuman"&&initStafPengumumanLaravel(),t==="staf/surat"&&initStafSuratLaravel(),t==="staf/pengaduan"&&initStafPengaduanLaravel(),t==="staf/buat-surat"&&typeof window.initBuatSurat=="function"&&window.initBuatSurat(),t==="staf/arsip-surat"&&typeof window.initArsipSurat=="function"&&window.initArsipSurat(),t==="staf/chat"&&initStafChatLaravel())});let stafChatPollInterval=null,stafWargaPollInterval=null;async function initStafChatLaravel(){const e=document.getElementById("chatThreadList"),t=document.getElementById("chatMessages"),i=document.getElementById("chatInput"),n=document.getElementById("chatSendForm"),l=document.getElementById("chatRoomHead");if(!e||!t)return;let o=null,r=null,d=[],a=null;stafChatPollInterval&&(clearInterval(stafChatPollInterval),stafChatPollInterval=null),stafWargaPollInterval&&(clearInterval(stafWargaPollInterval),stafWargaPollInterval=null),t.innerHTML=`
         <div class="muted" style="padding:40px;text-align:center">
             <i class="fa-solid fa-comments" style="font-size:32px;margin-bottom:10px;color:var(--primary);"></i>
             <p style="font-weight:700">Ruang Obrolan Staf</p>
             <p style="font-size:13px">Pilih salah satu warga di sebelah kiri untuk melihat pesan dan memulai obrolan langsung.</p>
         </div>
-    `;
-
-    async function loadWarga(silent = false) {
-        try {
-            const res = await fetch("/api/staf/chat/warga", { credentials: "include" });
-            if (!res.ok) throw new Error("Gagal memuat warga");
-            wargaList = await res.json();
-
-            threadListEl.innerHTML = wargaList.map(w => {
-                const isOnline = w.is_online;
-                const lastMsgText = w.last_message ? w.last_message.message : 'Belum ada percakapan.';
-                
-                return `
-                    <div class="thread-item staf-chat-thread" data-id="${w.id}" style="padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: all 0.2s; position: relative;" id="warga-item-${w.id}">
+    `;async function s(f=!1){try{const g=await fetch("/api/staf/chat/warga",{credentials:"include"});if(!g.ok)throw new Error("Gagal memuat warga");if(d=await g.json(),e.innerHTML=d.map(u=>{const b=u.is_online,S=u.last_message?u.last_message.message:"Belum ada percakapan.";return`
+                    <div class="thread-item staf-chat-thread" data-id="${u.id}" style="padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: all 0.2s; position: relative;" id="warga-item-${u.id}">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div style="font-weight: 800; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 8px;">
-                                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${isOnline ? '#10b981' : '#cbd5e1'}; box-shadow: ${isOnline ? '0 0 8px #10b981' : 'none'};"></span>
-                                ${w.name}
+                                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${b?"#10b981":"#cbd5e1"}; box-shadow: ${b?"0 0 8px #10b981":"none"};"></span>
+                                ${u.name}
                             </div>
                         </div>
                         <div style="font-size: 12px; color: var(--muted); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90%;">
-                            ${lastMsgText}
+                            ${S}
                         </div>
-                        ${w.unread_count > 0 ? `<span class="badge" style="position: absolute; right: 12px; top: 12px; font-size: 10px; background: #ef4444; border: none; color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; padding: 0;">${w.unread_count}</span>` : ''}
+                        ${u.unread_count>0?`<span class="badge" style="position: absolute; right: 12px; top: 12px; font-size: 10px; background: #ef4444; border: none; color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; padding: 0;">${u.unread_count}</span>`:""}
                     </div>
-                `;
-            }).join("") || `<div class="muted" style="padding: 20px; text-align: center;">Belum ada warga terdaftar.</div>`;
-
-            // Bind click to threads
-            threadListEl.querySelectorAll(".staf-chat-thread").forEach(el => {
-                el.addEventListener("click", () => {
-                    const id = el.getAttribute("data-id");
-                    selectWarga(id);
-                });
-            });
-
-            if (activeWargaId) {
-                const activeEl = document.getElementById(`warga-item-${activeWargaId}`);
-                if (activeEl) {
-                    activeEl.style.background = "rgba(31, 95, 224, 0.08)";
-                    activeEl.style.borderColor = "var(--primary)";
-                }
-            }
-        } catch (err) {
-            console.error(err);
-            if (!silent) {
-                threadListEl.innerHTML = `<div class="muted" style="color:red">Gagal memuat daftar warga.</div>`;
-            }
-        }
-    }
-
-    async function loadMessages(silent = false) {
-        if (!activeRoomId) return;
-        // Check if user has left the page
-        if (!document.getElementById("chatMessages")) {
-            cleanup();
-            return;
-        }
-
-        try {
-            const res = await fetch(`/api/chat/room/${activeRoomId}/messages`, { credentials: "include" });
-            if (!res.ok) throw new Error("Gagal mengambil pesan");
-            const messages = await res.json();
-
-            const session = Guard?.getSession();
-            const userId = session ? session.id : null;
-
-            const originalScrollHeight = msgEl.scrollHeight;
-            const originalScrollTop = msgEl.scrollTop;
-            const isNearBottom = originalScrollTop + msgEl.clientHeight >= originalScrollHeight - 60;
-
-            const messagesHtml = messages.map(c => {
-                const isSelf = String(c.sender_id) === String(userId);
-                const senderName = isSelf ? "Anda (Staf)" : "Warga";
-                const alignment = isSelf ? "align-self: flex-end; background: var(--primary); color: white;" : "align-self: flex-start; background: #f1f5f9; color: var(--text);";
-                const alignContainer = isSelf ? "justify-content: flex-end;" : "justify-content: flex-start;";
-
-                return `
-                    <div style="display: flex; ${alignContainer} width: 100%; margin-bottom: 10px;">
-                        <div style="max-width: 75%; padding: 10px 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-sm); ${alignment}">
-                            <div style="font-size: 11px; font-weight: 800; opacity: 0.85;">${senderName}</div>
-                            <div style="font-size: 13px; line-height: 1.4; white-space: pre-wrap;">${c.message}</div>
-                            <div style="font-size: 9px; align-self: flex-end; opacity: 0.7;">${fmtDate(c.created_at)}</div>
+                `}).join("")||'<div class="muted" style="padding: 20px; text-align: center;">Belum ada warga terdaftar.</div>',e.querySelectorAll(".staf-chat-thread").forEach(u=>{u.addEventListener("click",()=>{const b=u.getAttribute("data-id");m(b)})}),o){const u=document.getElementById(`warga-item-${o}`);u&&(u.style.background="rgba(31, 95, 224, 0.08)",u.style.borderColor="var(--primary)")}}catch(g){console.error(g),f||(e.innerHTML='<div class="muted" style="color:red">Gagal memuat daftar warga.</div>')}}async function c(f=!1){if(r){if(!document.getElementById("chatMessages")){w();return}try{const g=await fetch(`/api/chat/room/${r}/messages`,{credentials:"include"});if(!g.ok)throw new Error("Gagal mengambil pesan");const u=await g.json(),b=Guard==null?void 0:Guard.getSession(),S=b?b.id:null,p=t.scrollHeight,E=t.scrollTop+t.clientHeight>=p-60,v=u.map(B=>{const I=String(B.sender_id)===String(S);return`
+                    <div style="display: flex; ${I?"justify-content: flex-end;":"justify-content: flex-start;"} width: 100%; margin-bottom: 10px;">
+                        <div style="max-width: 75%; padding: 10px 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-sm); ${I?"align-self: flex-end; background: var(--primary); color: white;":"align-self: flex-start; background: #f1f5f9; color: var(--text);"}">
+                            <div style="font-size: 11px; font-weight: 800; opacity: 0.85;">${I?"Anda (Staf)":"Warga"}</div>
+                            <div style="font-size: 13px; line-height: 1.4; white-space: pre-wrap;">${B.message}</div>
+                            <div style="font-size: 9px; align-self: flex-end; opacity: 0.7;">${fmtDate(B.created_at)}</div>
                         </div>
                     </div>
-                `;
-            }).join("") || `<div class="muted" style="padding: 40px; text-align: center;">Belum ada pesan. Kirim pesan pertama untuk memulai obrolan.</div>`;
-
-            if (msgEl.getAttribute("data-content-hash") !== messagesHtml.length.toString()) {
-                msgEl.innerHTML = messagesHtml;
-                msgEl.setAttribute("data-content-hash", messagesHtml.length.toString());
-                if (!silent || isNearBottom) {
-                    msgEl.scrollTop = msgEl.scrollHeight;
-                }
-            }
-        } catch (err) {
-            console.error("Gagal memuat pesan:", err);
-            if (!silent) {
-                msgEl.innerHTML = `<div class="muted" style="color:red; text-align:center; padding:20px;">Gagal memuat pesan.</div>`;
-            }
-        }
-    }
-
-    async function selectWarga(wargaId) {
-        activeWargaId = wargaId;
-
-        // Highlight selected
-        threadListEl.querySelectorAll(".staf-chat-thread").forEach(el => {
-            const elId = el.getAttribute("data-id");
-            el.style.background = elId === String(wargaId) ? "rgba(31, 95, 224, 0.08)" : "transparent";
-            el.style.borderColor = elId === String(wargaId) ? "var(--primary)" : "var(--border)";
-        });
-
-        msgEl.innerHTML = `<div class="muted" style="padding:40px; text-align:center;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; margin-bottom:10px;"></i><p>Memuat percakapan...</p></div>`;
-
-        try {
-            const session = Guard?.getSession();
-            const stafId = session ? session.id : null;
-
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-            const roomRes = await fetch('/api/chat/room', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrf,
-                    Accept: 'application/json'
-                },
-                body: JSON.stringify({ warga_id: wargaId, staf_id: stafId })
-            });
-
-            if (!roomRes.ok) throw new Error("Gagal membuka room");
-            const room = await roomRes.json();
-            activeRoomId = room.id;
-
-            const wargaObj = wargaList.find(x => String(x.id) === String(wargaId));
-            if (wargaObj && headEl) {
-                const statusText = wargaObj.is_online ? '<span style="color: #10b981; font-weight: 800;">● Online</span>' : '<span style="color: var(--muted);">● Offline</span>';
-                headEl.innerHTML = `
-                    <div style="font-weight: 1000; font-size: 16px;">${wargaObj.name}</div>
+                `}).join("")||'<div class="muted" style="padding: 40px; text-align: center;">Belum ada pesan. Kirim pesan pertama untuk memulai obrolan.</div>';t.getAttribute("data-content-hash")!==v.length.toString()&&(t.innerHTML=v,t.setAttribute("data-content-hash",v.length.toString()),(!f||E)&&(t.scrollTop=t.scrollHeight))}catch(g){console.error("Gagal memuat pesan:",g),f||(t.innerHTML='<div class="muted" style="color:red; text-align:center; padding:20px;">Gagal memuat pesan.</div>')}}}async function m(f){var g;o=f,e.querySelectorAll(".staf-chat-thread").forEach(u=>{const b=u.getAttribute("data-id");u.style.background=b===String(f)?"rgba(31, 95, 224, 0.08)":"transparent",u.style.borderColor=b===String(f)?"var(--primary)":"var(--border)"}),t.innerHTML='<div class="muted" style="padding:40px; text-align:center;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; margin-bottom:10px;"></i><p>Memuat percakapan...</p></div>';try{const u=Guard==null?void 0:Guard.getSession(),b=u?u.id:null,S=(g=document.querySelector('meta[name="csrf-token"]'))==null?void 0:g.content,p=await fetch("/api/chat/room",{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":S,Accept:"application/json"},body:JSON.stringify({warga_id:f,staf_id:b})});if(!p.ok)throw new Error("Gagal membuka room");r=(await p.json()).id;const E=d.find(v=>String(v.id)===String(f));if(E&&l){const v=E.is_online?'<span style="color: #10b981; font-weight: 800;">\u25CF Online</span>':'<span style="color: var(--muted);">\u25CF Offline</span>';l.innerHTML=`
+                    <div style="font-weight: 1000; font-size: 16px;">${E.name}</div>
                     <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">
-                        Status Warga: ${statusText}
+                        Status Warga: ${v}
                     </div>
-                `;
-            }
+                `}await c(),await s(!0),h()}catch(u){console.error(u),t.innerHTML='<div class="muted" style="color:red; text-align:center; padding:20px;">Gagal memuat percakapan.</div>'}}function h(){stafChatPollInterval&&clearInterval(stafChatPollInterval);try{a&&a.close(),a=new WebSocket("ws://127.0.0.1:8085"),a.onopen=()=>{console.log("[WS Staf] Connected successfully")},a.onmessage=f=>{var g;try{const u=JSON.parse(f.data);String(u.room_id)===String(r)&&c(!0),(u.type==="update_list"||String(u.receiver_id)===String((g=Guard==null?void 0:Guard.getSession())==null?void 0:g.id))&&s(!0)}catch(u){}},a.onclose=()=>{x()},a.onerror=()=>{x()}}catch(f){x()}}function x(){stafChatPollInterval&&clearInterval(stafChatPollInterval),stafChatPollInterval=setInterval(()=>{c(!0)},1e3)}async function y(f){var b,S;if(f&&f.preventDefault(),!r){alert("Pilih warga terlebih dahulu.");return}const g=i.value.trim();if(!g)return;const u=n.querySelector("button[type='submit']");u&&(u.disabled=!0);try{const p=(b=document.querySelector('meta[name="csrf-token"]'))==null?void 0:b.content;if(!(await fetch(`/api/chat/room/${r}/messages`,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":p,Accept:"application/json"},body:JSON.stringify({message:g})})).ok)throw new Error("Gagal mengirim pesan");i.value="",await c(),a&&a.readyState===WebSocket.OPEN&&a.send(JSON.stringify({room_id:r,sender_id:(S=Guard==null?void 0:Guard.getSession())==null?void 0:S.id,receiver_id:o,message:g})),await s(!0)}catch(p){console.error(p),alert("Gagal mengirim pesan.")}finally{u&&(u.disabled=!1)}}function w(){stafChatPollInterval&&(clearInterval(stafChatPollInterval),stafChatPollInterval=null),stafWargaPollInterval&&(clearInterval(stafWargaPollInterval),stafWargaPollInterval=null),a&&(a.close(),a=null)}n&&(n.onsubmit=y),s(),stafWargaPollInterval=setInterval(()=>{s(!0)},5e3)}
 
-            await loadMessages();
-            
-            // Clear unread count locally
-            await loadWarga(true);
-
-            setupRealtime();
-        } catch (err) {
-            console.error(err);
-            msgEl.innerHTML = `<div class="muted" style="color:red; text-align:center; padding:20px;">Gagal memuat percakapan.</div>`;
-        }
-    }
-
-    function setupRealtime() {
-        if (stafChatPollInterval) clearInterval(stafChatPollInterval);
-
-        // Try connecting WebSocket first
-        try {
-            if (socket) {
-                socket.close();
-            }
-            socket = new WebSocket("ws://127.0.0.1:8085");
-            socket.onopen = () => {
-                console.log("[WS Staf] Connected successfully");
-            };
-            socket.onmessage = (e) => {
-                try {
-                    const data = JSON.parse(e.data);
-                    if (String(data.room_id) === String(activeRoomId)) {
-                        loadMessages(true);
-                    }
-                    if (data.type === 'update_list' || String(data.receiver_id) === String(Guard?.getSession()?.id)) {
-                        loadWarga(true);
-                    }
-                } catch (_) {}
-            };
-            socket.onclose = () => {
-                startPollingFallback();
-            };
-            socket.onerror = () => {
-                startPollingFallback();
-            };
-        } catch (e) {
-            startPollingFallback();
-        }
-    }
-
-    function startPollingFallback() {
-        if (stafChatPollInterval) clearInterval(stafChatPollInterval);
-        stafChatPollInterval = setInterval(() => {
-            loadMessages(true);
-        }, 1000);
-    }
-
-    async function sendMessage(e) {
-        if (e) e.preventDefault();
-
-        if (!activeRoomId) {
-            alert("Pilih warga terlebih dahulu.");
-            return;
-        }
-        const message = inputEl.value.trim();
-        if (!message) return;
-
-        const btn = formEl.querySelector("button[type='submit']");
-        if (btn) btn.disabled = true;
-
-        try {
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-            const res = await fetch(`/api/chat/room/${activeRoomId}/messages`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": csrf,
-                    Accept: "application/json"
-                },
-                body: JSON.stringify({ message })
-            });
-
-            if (!res.ok) throw new Error("Gagal mengirim pesan");
-            inputEl.value = "";
-            await loadMessages();
-
-            // notify WebSocket server if connected
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({
-                    room_id: activeRoomId,
-                    sender_id: Guard?.getSession()?.id,
-                    receiver_id: activeWargaId,
-                    message: message
-                }));
-            }
-
-            await loadWarga(true);
-        } catch (err) {
-            console.error(err);
-            alert("Gagal mengirim pesan.");
-        } finally {
-            if (btn) btn.disabled = false;
-        }
-    }
-
-    function cleanup() {
-        if (stafChatPollInterval) {
-            clearInterval(stafChatPollInterval);
-            stafChatPollInterval = null;
-        }
-        if (stafWargaPollInterval) {
-            clearInterval(stafWargaPollInterval);
-            stafWargaPollInterval = null;
-        }
-        if (socket) {
-            socket.close();
-            socket = null;
-        }
-    }
-
-    // Bind events
-    if (formEl) formEl.onsubmit = sendMessage;
-
-    // Initialize
-    loadWarga();
-
-    // Poll warga list every 5 seconds
-    stafWargaPollInterval = setInterval(() => {
-        loadWarga(true);
-    }, 5000);
-}

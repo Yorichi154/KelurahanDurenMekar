@@ -1,171 +1,748 @@
 <section class="service-wizard wizard-modal-page">
-  <div class="wizard-overlay">
-    <div class="card wizard-card wizard-dialog">
-
-      <!-- HEAD -->
-      <div class="wizard-head">
-        <div>
-          <h1 style="margin:0">Pengajuan Surat Online</h1>
-          <div class="muted" style="font-weight:700;margin-top:4px">Ajukan surat secara online dengan mudah dan cepat.</div>
-        </div>
-        <button class="icon-btn" type="button" id="wizClose" aria-label="Tutup">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-
-      <!-- BODY -->
-      <div class="wizard-body">
-
-        <!-- STEP INDICATOR -->
-        <div class="wizard-steps" id="wizSteps">
-          <div class="wizard-step is-active" data-step="1">
-            <div class="step-circle">1</div>
-            <div class="step-label">Pilih Jenis</div>
-          </div>
-          <div class="wizard-step" data-step="2">
-            <div class="step-circle">2</div>
-            <div class="step-label">Isi Data</div>
-          </div>
-          <div class="wizard-step" data-step="3">
-            <div class="step-circle">3</div>
-            <div class="step-label">Upload Berkas</div>
-          </div>
-        </div>
-
-        <!-- KONTEN STEP -->
-        <div class="wizard-content">
-
-          <!-- STEP 1: PILIH JENIS -->
-          <div class="wizard-pane is-active" data-step="1">
-            <h2 class="section-title">Pilih Jenis Surat</h2>
-            <p class="muted">Pilih jenis surat yang ingin Anda ajukan (hanya yang bisa online).</p>
-
-            <!-- list pilihan layanan (render via JS) -->
-            <div id="wizServiceCards" class="wizard-choice-list"></div>
-
-            <!-- fallback lama (hidden) -->
-            <div class="field" style="display:none">
-              <label>Jenis Surat</label>
-              <select class="input" id="wizJenisSurat"></select>
-            </div>
-
-            <div class="card" style="margin-top:16px;">
-              <div class="card-body">
-                <h3 class="section-title-sm">Ringkasan Persyaratan</h3>
-                <ol class="numbered-list" id="wizSyaratRingkas"></ol>
-              </div>
-            </div>
-          </div>
-
-          <!-- STEP 2: ISI DATA -->
-          <div class="wizard-pane" data-step="2">
-            <h2 class="section-title">Isi Data Pemohon</h2>
-            <p class="muted">Lengkapi data diri dan keperluan surat.</p>
-
-            <div class="card">
-              <div class="card-body">
-                <div class="form-grid">
-                  <div class="field">
-                    <label>Nama Lengkap</label>
-                    <input class="input" id="wizNama" placeholder="Nama sesuai KTP" required>
-                  </div>
-                  <div class="field">
-                    <label>NIK</label>
-                    <input class="input" id="wizNik" placeholder="16 digit NIK" maxlength="16">
-                  </div>
-
-                  <div class="field">
-                    <label>No. Telepon</label>
-                    <input class="input" id="wizTelp" placeholder="08xxxxxxxxxx">
-                  </div>
-                  <div class="field">
-                    <label>RT / RW</label>
-                    <input class="input" id="wizRtRw" placeholder="RT 01 / RW 02">
-                  </div>
+    <div class="wizard-overlay">
+        <div class="card wizard-card wizard-dialog">
+            <!-- HEAD - gradient biru -->
+            <div
+                class="wizard-head"
+                style="
+                    background: linear-gradient(
+                        135deg,
+                        #1e3a8a 0%,
+                        #1d4ed8 100%
+                    );
+                    border-radius: 18px 18px 0 0;
+                    border-bottom: none;
+                    padding: 20px 22px;
+                "
+            >
+                <div>
+                    <h1
+                        style="
+                            margin: 0;
+                            color: #fff;
+                            font-size: 20px;
+                            font-weight: 900;
+                            font-family:
+                                &quot;Plus Jakarta Sans&quot;, sans-serif;
+                            letter-spacing: -0.3px;
+                        "
+                    >
+                        <i
+                            class="fa-solid fa-file-signature"
+                            style="margin-right: 10px; opacity: 0.9"
+                        ></i>
+                        Pengajuan Surat Online
+                    </h1>
+                    <div
+                        style="
+                            color: rgba(255, 255, 255, 0.75);
+                            font-size: 13px;
+                            font-weight: 600;
+                            margin-top: 5px;
+                            font-family:
+                                &quot;Plus Jakarta Sans&quot;, sans-serif;
+                        "
+                    >
+                        Ajukan surat secara online dengan mudah dan cepat.
+                    </div>
                 </div>
-
-                <div class="field" style="margin-top:12px">
-                  <label>Alamat</label>
-                  <input class="input" id="wizAlamat" placeholder="Alamat domisili">
-                </div>
-
-                <!-- extra fields (opsional dari admin) -->
-                <div id="wizExtraFields" style="margin-top:12px"></div>
-
-                <div class="field" style="margin-top:12px">
-                  <label>Keperluan Surat</label>
-                  <textarea class="input" id="wizKeperluan" rows="2" placeholder="Contoh: Untuk persyaratan pendaftaran NPWP"></textarea>
-                </div>
-              </div>
+                <button
+                    class="icon-btn"
+                    type="button"
+                    id="wizClose"
+                    aria-label="Tutup"
+                    style="
+                        background: rgba(255, 255, 255, 0.15);
+                        border: 1px solid rgba(255, 255, 255, 0.25);
+                        color: #fff;
+                        border-radius: 10px;
+                        width: 36px;
+                        height: 36px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        transition: background 0.2s;
+                        flex-shrink: 0;
+                    "
+                >
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
 
-            <div class="card" style="margin-top:16px;">
-              <div class="card-body">
-                <h3 class="section-title-sm">Persyaratan yang Harus Disiapkan</h3>
-                <ul class="bullets" id="wizSyaratBox"></ul>
-              </div>
-            </div>
-          </div>
-
-          <!-- STEP 3: UPLOAD BERKAS -->
-          <div class="wizard-pane" data-step="3">
-            <h2 class="section-title">Upload Berkas Persyaratan</h2>
-            <p class="muted">Pastikan semua dokumen yang diunggah jelas dan terbaca.</p>
-
-            <div class="card">
-              <div class="card-body">
-                <div class="form-grid">
-                  <div class="field">
-                    <label>Tipe Berkas</label>
-                    <select class="input" id="wizUploadType"></select>
-                  </div>
-                  <div class="field">
-                    <label>Pilih File</label>
-                    <label class="upload-dropzone" id="wizDropzone">
-                      <input type="file" id="wizFile" accept=".jpg,.jpeg,.png,.pdf" hidden>
-                      <div class="upload-placeholder">
-                        <div class="upload-icon"><i class="fa-solid fa-upload"></i></div>
-                        <div class="upload-text">
-                          Klik untuk upload atau drag &amp; drop<br>
-                          <small>Format: JPG, PNG, PDF (maks. 5MB per file)</small>
+            <!-- BODY -->
+            <div class="wizard-body" style="padding: 22px">
+                <!-- STEP INDICATOR -->
+                <div
+                    class="wizard-steps"
+                    id="wizSteps"
+                    style="
+                        display: flex;
+                        gap: 0;
+                        margin-bottom: 24px;
+                        padding-bottom: 0;
+                        border-bottom: none;
+                        background: #f0f4ff;
+                        border-radius: 14px;
+                        padding: 6px;
+                        position: relative;
+                    "
+                >
+                    <div
+                        class="wizard-step is-active"
+                        data-step="1"
+                        style="
+                            flex: 1;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            gap: 6px;
+                            padding: 10px 8px;
+                            border-radius: 10px;
+                            background: #1d56c9;
+                            transition: background 0.2s;
+                        "
+                    >
+                        <div
+                            class="step-circle"
+                            style="
+                                width: 32px;
+                                height: 32px;
+                                border-radius: 50%;
+                                background: rgba(255, 255, 255, 0.25);
+                                color: #fff;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-weight: 900;
+                                font-size: 14px;
+                            "
+                        >
+                            1
                         </div>
-                      </div>
-                    </label>
-                  </div>
+                        <div
+                            class="step-label"
+                            style="
+                                font-size: 11px;
+                                font-weight: 700;
+                                color: #fff;
+                                text-transform: uppercase;
+                                letter-spacing: 0.06em;
+                            "
+                        >
+                            Pilih Jenis
+                        </div>
+                    </div>
+                    <div
+                        class="wizard-step"
+                        data-step="2"
+                        style="
+                            flex: 1;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            gap: 6px;
+                            padding: 10px 8px;
+                            border-radius: 10px;
+                            transition: background 0.2s;
+                        "
+                    >
+                        <div
+                            class="step-circle"
+                            style="
+                                width: 32px;
+                                height: 32px;
+                                border-radius: 50%;
+                                background: rgba(29, 86, 201, 0.15);
+                                color: #1d56c9;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-weight: 900;
+                                font-size: 14px;
+                            "
+                        >
+                            2
+                        </div>
+                        <div
+                            class="step-label"
+                            style="
+                                font-size: 11px;
+                                font-weight: 700;
+                                color: #64748b;
+                                text-transform: uppercase;
+                                letter-spacing: 0.06em;
+                            "
+                        >
+                            Isi Data
+                        </div>
+                    </div>
+                    <div
+                        class="wizard-step"
+                        data-step="3"
+                        style="
+                            flex: 1;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            gap: 6px;
+                            padding: 10px 8px;
+                            border-radius: 10px;
+                            transition: background 0.2s;
+                        "
+                    >
+                        <div
+                            class="step-circle"
+                            style="
+                                width: 32px;
+                                height: 32px;
+                                border-radius: 50%;
+                                background: rgba(29, 86, 201, 0.15);
+                                color: #1d56c9;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-weight: 900;
+                                font-size: 14px;
+                            "
+                        >
+                            3
+                        </div>
+                        <div
+                            class="step-label"
+                            style="
+                                font-size: 11px;
+                                font-weight: 700;
+                                color: #64748b;
+                                text-transform: uppercase;
+                                letter-spacing: 0.06em;
+                            "
+                        >
+                            Upload Berkas
+                        </div>
+                    </div>
                 </div>
 
-                <div class="field" style="margin-top:10px">
-                  <button type="button" class="btn btn-ghost" id="wizAddFile">
-                    <i class="fa-solid fa-plus"></i> Tambah ke Daftar Berkas
-                  </button>
+                <!-- KONTEN STEP -->
+                <div class="wizard-content">
+                    <!-- STEP 1: PILIH JENIS -->
+                    <div class="wizard-pane is-active" data-step="1">
+                        <h2
+                            class="section-title"
+                            style="
+                                font-family:
+                                    &quot;Plus Jakarta Sans&quot;, sans-serif;
+                                font-weight: 800;
+                                color: #0f2f76;
+                            "
+                        >
+                            Pilih Jenis Surat
+                        </h2>
+                        <p class="muted" style="margin-bottom: 14px">
+                            Pilih jenis surat yang ingin Anda ajukan (hanya yang
+                            bisa online).
+                        </p>
+
+                        <div
+                            id="wizServiceCards"
+                            class="wizard-choice-list"
+                        ></div>
+
+                        <div class="field" style="display: none">
+                            <label>Jenis Surat</label>
+                            <select class="input" id="wizJenisSurat"></select>
+                        </div>
+
+                        <div
+                            style="
+                                margin-top: 16px;
+                                background: #f8faff;
+                                border: 1.5px solid #e0e7ff;
+                                border-radius: 16px;
+                                padding: 18px;
+                            "
+                        >
+                            <h3
+                                style="
+                                    font-size: 14px;
+                                    font-weight: 800;
+                                    color: #1e3a8a;
+                                    margin: 0 0 10px;
+                                    font-family:
+                                        &quot;Plus Jakarta Sans&quot;,
+                                        sans-serif;
+                                "
+                            >
+                                <i
+                                    class="fa-solid fa-list-check"
+                                    style="color: #1d56c9; margin-right: 7px"
+                                ></i>
+                                Ringkasan Persyaratan
+                            </h3>
+                            <ol
+                                class="numbered-list"
+                                id="wizSyaratRingkas"
+                            ></ol>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: ISI DATA -->
+                    <div class="wizard-pane" data-step="2">
+                        <h2
+                            class="section-title"
+                            style="
+                                font-family:
+                                    &quot;Plus Jakarta Sans&quot;, sans-serif;
+                                font-weight: 800;
+                                color: #0f2f76;
+                            "
+                        >
+                            Isi Data Pemohon
+                        </h2>
+                        <p class="muted" style="margin-bottom: 14px">
+                            Lengkapi data diri dan keperluan surat.
+                        </p>
+
+                        <div
+                            style="
+                                background: #fff;
+                                border: 1px solid rgba(29, 86, 201, 0.1);
+                                border-radius: 16px;
+                                padding: 20px;
+                                box-shadow: 0 2px 12px rgba(29, 86, 201, 0.07);
+                            "
+                        >
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label
+                                        style="
+                                            font-weight: 700;
+                                            font-size: 13px;
+                                            color: #1e3a8a;
+                                        "
+                                        >Nama Lengkap</label
+                                    >
+                                    <input
+                                        class="input"
+                                        id="wizNama"
+                                        placeholder="Nama sesuai KTP"
+                                        required
+                                        style="
+                                            border-radius: 10px;
+                                            border: 1.5px solid #e0e7ff;
+                                            padding: 10px 14px;
+                                            font-family:
+                                                &quot;Plus Jakarta Sans&quot;,
+                                                sans-serif;
+                                            font-weight: 600;
+                                        "
+                                    />
+                                </div>
+                                <div class="field">
+                                    <label
+                                        style="
+                                            font-weight: 700;
+                                            font-size: 13px;
+                                            color: #1e3a8a;
+                                        "
+                                        >NIK</label
+                                    >
+                                    <input
+                                        class="input"
+                                        id="wizNik"
+                                        placeholder="16 digit NIK"
+                                        maxlength="16"
+                                        style="
+                                            border-radius: 10px;
+                                            border: 1.5px solid #e0e7ff;
+                                            padding: 10px 14px;
+                                            font-family:
+                                                &quot;Plus Jakarta Sans&quot;,
+                                                sans-serif;
+                                            font-weight: 600;
+                                        "
+                                    />
+                                </div>
+                                <div class="field">
+                                    <label
+                                        style="
+                                            font-weight: 700;
+                                            font-size: 13px;
+                                            color: #1e3a8a;
+                                        "
+                                        >No. Telepon</label
+                                    >
+                                    <input
+                                        class="input"
+                                        id="wizTelp"
+                                        placeholder="08xxxxxxxxxx"
+                                        style="
+                                            border-radius: 10px;
+                                            border: 1.5px solid #e0e7ff;
+                                            padding: 10px 14px;
+                                            font-family:
+                                                &quot;Plus Jakarta Sans&quot;,
+                                                sans-serif;
+                                            font-weight: 600;
+                                        "
+                                    />
+                                </div>
+                                <div class="field">
+                                    <label
+                                        style="
+                                            font-weight: 700;
+                                            font-size: 13px;
+                                            color: #1e3a8a;
+                                        "
+                                        >RT / RW</label
+                                    >
+                                    <input
+                                        class="input"
+                                        id="wizRtRw"
+                                        placeholder="RT 01 / RW 02"
+                                        style="
+                                            border-radius: 10px;
+                                            border: 1.5px solid #e0e7ff;
+                                            padding: 10px 14px;
+                                            font-family:
+                                                &quot;Plus Jakarta Sans&quot;,
+                                                sans-serif;
+                                            font-weight: 600;
+                                        "
+                                    />
+                                </div>
+                            </div>
+                            <div class="field" style="margin-top: 12px">
+                                <label
+                                    style="
+                                        font-weight: 700;
+                                        font-size: 13px;
+                                        color: #1e3a8a;
+                                    "
+                                    >Alamat</label
+                                >
+                                <input
+                                    class="input"
+                                    id="wizAlamat"
+                                    placeholder="Alamat domisili"
+                                    style="
+                                        border-radius: 10px;
+                                        border: 1.5px solid #e0e7ff;
+                                        padding: 10px 14px;
+                                        font-family:
+                                            &quot;Plus Jakarta Sans&quot;,
+                                            sans-serif;
+                                        font-weight: 600;
+                                    "
+                                />
+                            </div>
+                            <div
+                                id="wizExtraFields"
+                                style="margin-top: 12px"
+                            ></div>
+                            <div class="field" style="margin-top: 12px">
+                                <label
+                                    style="
+                                        font-weight: 700;
+                                        font-size: 13px;
+                                        color: #1e3a8a;
+                                    "
+                                    >Keperluan Surat</label
+                                >
+                                <textarea
+                                    class="input"
+                                    id="wizKeperluan"
+                                    rows="2"
+                                    placeholder="Contoh: Untuk persyaratan pendaftaran NPWP"
+                                    style="
+                                        border-radius: 10px;
+                                        border: 1.5px solid #e0e7ff;
+                                        padding: 10px 14px;
+                                        font-family:
+                                            &quot;Plus Jakarta Sans&quot;,
+                                            sans-serif;
+                                        font-weight: 600;
+                                    "
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <div
+                            style="
+                                margin-top: 16px;
+                                background: #f0fdf4;
+                                border: 1.5px solid #bbf7d0;
+                                border-radius: 16px;
+                                padding: 18px;
+                            "
+                        >
+                            <h3
+                                style="
+                                    font-size: 14px;
+                                    font-weight: 800;
+                                    color: #065f46;
+                                    margin: 0 0 10px;
+                                    font-family:
+                                        &quot;Plus Jakarta Sans&quot;,
+                                        sans-serif;
+                                "
+                            >
+                                <i
+                                    class="fa-solid fa-circle-check"
+                                    style="color: #059669; margin-right: 7px"
+                                ></i>
+                                Persyaratan yang Harus Disiapkan
+                            </h3>
+                            <ul class="bullets" id="wizSyaratBox"></ul>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: UPLOAD BERKAS -->
+                    <div class="wizard-pane" data-step="3">
+                        <h2
+                            class="section-title"
+                            style="
+                                font-family:
+                                    &quot;Plus Jakarta Sans&quot;, sans-serif;
+                                font-weight: 800;
+                                color: #0f2f76;
+                            "
+                        >
+                            Upload Berkas Persyaratan
+                        </h2>
+                        <p class="muted" style="margin-bottom: 14px">
+                            Pastikan semua dokumen yang diunggah jelas dan
+                            terbaca.
+                        </p>
+
+                        <div
+                            style="
+                                background: #fff;
+                                border: 1px solid rgba(29, 86, 201, 0.1);
+                                border-radius: 16px;
+                                padding: 20px;
+                                box-shadow: 0 2px 12px rgba(29, 86, 201, 0.07);
+                            "
+                        >
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label
+                                        style="
+                                            font-weight: 700;
+                                            font-size: 13px;
+                                            color: #1e3a8a;
+                                        "
+                                        >Tipe Berkas</label
+                                    >
+                                    <select
+                                        class="input"
+                                        id="wizUploadType"
+                                        style="
+                                            border-radius: 10px;
+                                            border: 1.5px solid #e0e7ff;
+                                            padding: 10px 14px;
+                                            font-family:
+                                                &quot;Plus Jakarta Sans&quot;,
+                                                sans-serif;
+                                            font-weight: 600;
+                                        "
+                                    ></select>
+                                </div>
+                                <div class="field">
+                                    <label
+                                        style="
+                                            font-weight: 700;
+                                            font-size: 13px;
+                                            color: #1e3a8a;
+                                        "
+                                        >Pilih File</label
+                                    >
+                                    <label
+                                        class="upload-dropzone"
+                                        id="wizDropzone"
+                                        style="
+                                            border-radius: 12px;
+                                            border: 2px dashed #c7d2fe;
+                                            background: #f8faff;
+                                            padding: 20px 14px;
+                                            text-align: center;
+                                            cursor: pointer;
+                                            transition:
+                                                border-color 0.2s,
+                                                background 0.2s;
+                                        "
+                                    >
+                                        <input
+                                            type="file"
+                                            id="wizFile"
+                                            accept=".jpg,.jpeg,.png,.pdf"
+                                            hidden
+                                        />
+                                        <div class="upload-placeholder">
+                                            <div
+                                                style="
+                                                    font-size: 28px;
+                                                    color: #1d56c9;
+                                                    margin-bottom: 8px;
+                                                "
+                                            >
+                                                <i
+                                                    class="fa-solid fa-cloud-arrow-up"
+                                                ></i>
+                                            </div>
+                                            <div
+                                                style="
+                                                    font-size: 13px;
+                                                    font-weight: 700;
+                                                    color: #1e3a8a;
+                                                "
+                                            >
+                                                Klik untuk upload atau drag
+                                                &amp; drop<br />
+                                                <small
+                                                    style="
+                                                        color: #6b7280;
+                                                        font-weight: 500;
+                                                    "
+                                                    >Format: JPG, PNG, PDF
+                                                    (maks. 5MB)</small
+                                                >
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="field" style="margin-top: 12px">
+                                <button
+                                    type="button"
+                                    class="btn btn-ghost"
+                                    id="wizAddFile"
+                                    style="
+                                        border-radius: 10px;
+                                        border: 1.5px solid #c7d2fe;
+                                        color: #1d56c9;
+                                        font-weight: 700;
+                                        padding: 9px 16px;
+                                    "
+                                >
+                                    <i class="fa-solid fa-plus"></i> Tambah ke
+                                    Daftar Berkas
+                                </button>
+                            </div>
+                            <div
+                                class="field"
+                                id="wizFileListWrapper"
+                                style="display: none"
+                            >
+                                <label
+                                    style="
+                                        font-weight: 700;
+                                        font-size: 13px;
+                                        color: #1e3a8a;
+                                    "
+                                >
+                                    Daftar Berkas yang Akan Dikirim</label
+                                >
+                                <ul class="file-list" id="wizFileList"></ul>
+                            </div>
+                        </div>
+
+                        <div
+                            style="
+                                margin-top: 16px;
+                                background: #fffbeb;
+                                border: 1.5px solid #fde68a;
+                                border-radius: 14px;
+                                padding: 14px 16px;
+                                font-size: 13px;
+                                font-weight: 600;
+                                color: #92400e;
+                            "
+                        >
+                            <i
+                                class="fa-solid fa-triangle-exclamation"
+                                style="margin-right: 7px; color: #d97706"
+                            ></i>
+                            <strong>Catatan:</strong> Pastikan semua berkas yang
+                            diupload jelas dan terbaca. Berkas yang tidak
+                            memenuhi syarat dapat ditolak oleh operator.
+                        </div>
+                    </div>
                 </div>
 
-                <div class="field" id="wizFileListWrapper" style="display:none;">
-                  <label>Daftar Berkas yang Akan Dikirim</label>
-                  <ul class="file-list" id="wizFileList"></ul>
+                <!-- FOOTER NAVIGASI -->
+                <div
+                    class="wizard-footer"
+                    style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        gap: 12px;
+                        padding-top: 18px;
+                        margin-top: 18px;
+                        border-top: 1.5px solid #e0e7ff;
+                    "
+                >
+                    <button
+                        class="btn btn-ghost"
+                        type="button"
+                        id="wizPrev"
+                        style="
+                            border-radius: 12px;
+                            border: 1.5px solid #e0e7ff;
+                            font-weight: 700;
+                            padding: 10px 20px;
+                            color: #64748b;
+                        "
+                    >
+                        <i class="fa-solid fa-arrow-left"></i> Kembali
+                    </button>
+                    <div style="display: flex; gap: 10px">
+                        <button
+                            class="btn btn-solid"
+                            type="button"
+                            id="wizNext"
+                            style="
+                                border-radius: 12px;
+                                background: linear-gradient(
+                                    135deg,
+                                    #1d56c9,
+                                    #2563eb
+                                );
+                                color: #fff;
+                                font-weight: 700;
+                                padding: 10px 24px;
+                                border: none;
+                                box-shadow: 0 4px 12px rgba(29, 86, 201, 0.3);
+                            "
+                        >
+                            Lanjut <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <button
+                            class="btn btn-solid"
+                            type="button"
+                            id="wizSubmit"
+                            style="
+                                display: none;
+                                border-radius: 12px;
+                                background: linear-gradient(
+                                    135deg,
+                                    #059669,
+                                    #047857
+                                );
+                                color: #fff;
+                                font-weight: 700;
+                                padding: 10px 24px;
+                                border: none;
+                                box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+                            "
+                        >
+                            <i class="fa-regular fa-paper-plane"></i> Kirim
+                            Pengajuan
+                        </button>
+                    </div>
                 </div>
-              </div>
             </div>
-
-            <div class="help-box" style="margin-top:14px">
-              <strong>Catatan:</strong> Pastikan semua berkas yang diupload jelas dan terbaca.
-              Berkas yang tidak memenuhi syarat dapat ditolak oleh operator.
-            </div>
-          </div>
-
         </div>
-
-        <!-- FOOTER NAVIGASI -->
-        <div class="wizard-footer">
-          <button class="btn btn-ghost" type="button" id="wizPrev">Kembali</button>
-          <button class="btn btn-solid" type="button" id="wizNext">Lanjut</button>
-          <button class="btn btn-solid" type="button" id="wizSubmit" style="display:none;">
-            <i class="fa-regular fa-paper-plane"></i> Kirim Pengajuan
-          </button>
-        </div>
-
-      </div>
-
     </div>
-  </div>
 </section>

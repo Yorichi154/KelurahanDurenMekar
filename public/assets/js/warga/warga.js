@@ -1,263 +1,15 @@
-// assets/js/warga/warga.js
-// - Ajukan surat & pengaduan
-// - Pantau status
-// - Chat dinonaktifkan
-(function () {
-    const Guard = window.KelurahanGuard;
-
-    const fmtDate = (iso) => {
-        if (!iso) return "-";
-        try {
-            return new Date(iso).toLocaleDateString("id-ID", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-            });
-        } catch (_) {
-            return iso;
-        }
-    };
-
-    const fmtDateTime = (iso) => {
-        if (!iso) return "-";
-        try {
-            const d = new Date(iso);
-            const tgl = d.toLocaleDateString("id-ID", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-            });
-            const jam = d.toLocaleTimeString("id-ID", {
-                hour: "2-digit",
-                minute: "2-digit",
-            });
-            return `${tgl} ${jam}`;
-        } catch (_) {
-            return iso;
-        }
-    };
-
-    const fileToDataURL = (file) =>
-        new Promise((resolve, reject) => {
-            const r = new FileReader();
-            r.onload = () => resolve(String(r.result || ""));
-            r.onerror = () => reject(new Error("Gagal membaca file"));
-            r.readAsDataURL(file);
-        });
-
-    function pill(status) {
-        const s = String(status || "").toLowerCase();
-        const map = {
-            menunggu: "yellow",
-            ditinjau: "blue",
-            diproses: "blue",
-            selesai: "green",
-            siap_diambil: "green",
-            ditolak: "red",
-            baru: "yellow",
-        };
-        const textMap = {
-            siap_diambil: "Siap Diambil",
-        };
-        const cls = map[s] || "";
-        const label = textMap[s] || s;
-        return `<span class="pill ${cls}">${label || "-"}</span>`;
-    }
-
-    const esc = (v) =>
-        String(v ?? "").replace(
-            /[&<>"]/g,
-            (ch) =>
-                ({
-                    "&": "&amp;",
-                    "<": "&lt;",
-                    ">": "&gt;",
-                    '"': "&quot;",
-                })[ch],
-        );
-
-    let _wargaMobileMenuBound = false;
-
-    function ensureWargaMobileMenu() {
-        if (_wargaMobileMenuBound) return;
-        _wargaMobileMenuBound = true;
-
-        // Backdrop
-        if (!document.getElementById("wargaMenuBackdrop")) {
-            const bd = document.createElement("div");
-            bd.id = "wargaMenuBackdrop";
-            document.body.appendChild(bd);
-        }
-
-        const close = () => document.body.classList.remove("warga-menu-open");
-        const toggle = () => document.body.classList.toggle("warga-menu-open");
-
-        document.addEventListener("click", (e) => {
-            if (e.target.id === "wargaMenuBackdrop") return close();
-            if (e.target.closest?.("[data-action='toggleWargaMenu']"))
-                return toggle();
-            if (e.target.closest?.(".warga-side a[data-page]")) return close();
-        });
-
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape") close();
-        });
-    }
-
-    function mountWargaMenuButton() {
-        const top = document.querySelector(".warga-top");
-        if (!top) return;
-
-        let actions = top.querySelector(".top-actions");
-        if (!actions) {
-            const children = Array.from(top.children);
-            if (children.length > 1 && children[1].tagName === "DIV") {
-                actions = children[1];
-                actions.classList.add("top-actions");
-            } else {
-                actions = document.createElement("div");
-                actions.className = "top-actions";
-                top.appendChild(actions);
-            }
-        }
-
-        if (actions.querySelector("[data-action='toggleWargaMenu']")) return;
-
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn btn-ghost";
-        btn.setAttribute("data-action", "toggleWargaMenu");
-        btn.innerHTML = `<i class="fa-solid fa-bars"></i> Menu`;
-        actions.prepend(btn);
-    }
-
-    function setWargaSidebarActive(hash) {
-        document.querySelectorAll(".warga-side a").forEach((a) => {
-            const match = a.getAttribute("href") === hash;
-            a.classList.toggle("active", match);
-        });
-    }
-
-    function fillWargaUserLabel() {
-        const el = document.getElementById("wargaUserLabel");
-        if (!el) return;
-        const s = Guard?.getSession();
-        if (s) {
-            const rtRw =
-                s.rt || s.rw
-                    ? ` RT ${s.rt || "-"}/RW ${s.rw || "-"}`
-                    : "";
-            el.textContent = `${s.name || "Warga"}${rtRw}${s.email ? ` • ${s.email}` : ""}`;
-        } else {
-            el.textContent = "-";
-        }
-    }
-
-    // =========================
-    // DASHBOARD
-    // =========================
-    async function initDashboard() {
-        try {
-            const response = await fetch("/api/warga/dashboard", {
-                credentials: "include",
-            });
-
-            if (!response.ok) {
-                console.warn("Dashboard API tidak tersedia");
-                return;
-            }
-
-            const data = await response.json();
-
-            const setTxt = (id, value) => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.textContent = value;
-                }
-            };
-
-            setTxt("metricWSuratMenunggu", data.surat_menunggu || 0);
-            setTxt("metricWSuratDiproses", data.surat_diproses || 0);
-            setTxt("metricWSuratSelesai", data.surat_selesai || 0);
-            setTxt("metricWPengaduanAktif", data.pengaduan_aktif || 0);
-
-            const tableSurat = document.getElementById("wargaSuratLatest");
-            if (tableSurat) {
-                if (data.surat_terbaru && data.surat_terbaru.length) {
-                    tableSurat.innerHTML = data.surat_terbaru
-                        .map(
-                            (s) => `
+(function(){const v=window.KelurahanGuard,T=i=>{if(!i)return"-";try{return new Date(i).toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"})}catch(t){return i}},z=i=>{if(!i)return"-";try{const t=new Date(i),n=t.toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"}),d=t.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"});return`${n} ${d}`}catch(t){return i}},X=i=>new Promise((t,n)=>{const d=new FileReader;d.onload=()=>t(String(d.result||"")),d.onerror=()=>n(new Error("Gagal membaca file")),d.readAsDataURL(i)});function M(i){const t=String(i||"").toLowerCase(),n={menunggu:"yellow",ditinjau:"blue",diproses:"blue",selesai:"green",siap_diambil:"green",ditolak:"red",baru:"yellow"},d={siap_diambil:"Siap Diambil"},w=n[t]||"",m=d[t]||t;return`<span class="pill ${w}">${m||"-"}</span>`}const S=i=>String(i!=null?i:"").replace(/[&<>"]/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[t]);let D=!1;function W(){if(D)return;if(D=!0,!document.getElementById("wargaMenuBackdrop")){const n=document.createElement("div");n.id="wargaMenuBackdrop",document.body.appendChild(n)}const i=()=>document.body.classList.remove("warga-menu-open"),t=()=>document.body.classList.toggle("warga-menu-open");document.addEventListener("click",n=>{var d,w,m,u;if(n.target.id==="wargaMenuBackdrop")return i();if((w=(d=n.target).closest)!=null&&w.call(d,"[data-action='toggleWargaMenu']"))return t();if((u=(m=n.target).closest)!=null&&u.call(m,".warga-side a[data-page]"))return i()}),document.addEventListener("keydown",n=>{n.key==="Escape"&&i()})}function N(){const i=document.querySelector(".warga-top");if(!i)return;let t=i.querySelector(".top-actions");if(!t){const d=Array.from(i.children);d.length>1&&d[1].tagName==="DIV"?(t=d[1],t.classList.add("top-actions")):(t=document.createElement("div"),t.className="top-actions",i.appendChild(t))}if(t.querySelector("[data-action='toggleWargaMenu']"))return;const n=document.createElement("button");n.type="button",n.className="btn btn-ghost",n.setAttribute("data-action","toggleWargaMenu"),n.innerHTML='<i class="fa-solid fa-bars"></i> Menu';function _updateWargaToggle(){n.style.setProperty("display",(Math.max(document.documentElement.clientWidth||0,window.innerWidth||0)>=1024?"none":"inline-flex"),"important")}
+_updateWargaToggle();window.addEventListener("resize",_updateWargaToggle);t.prepend(n)}function R(i){document.querySelectorAll(".warga-side a").forEach(t=>{const n=t.getAttribute("href")===i;t.classList.toggle("active",n)})}function K(){const i=document.getElementById("wargaUserLabel");if(!i)return;const t=v==null?void 0:v.getSession();if(t){const n=t.rt||t.rw?` RT ${t.rt||"-"}/RW ${t.rw||"-"}`:"";i.textContent=`${t.name||"Warga"}${n}${t.email?` \u2022 ${t.email}`:""}`}else i.textContent="-"}async function F(){try{const i=await fetch("/api/warga/dashboard",{credentials:"include"});if(!i.ok){console.warn("Dashboard API tidak tersedia");return}const t=await i.json(),n=(m,u)=>{const x=document.getElementById(m);x&&(x.textContent=u)};n("metricWSuratMenunggu",t.surat_menunggu||0),n("metricWSuratDiproses",t.surat_diproses||0),n("metricWSuratSelesai",t.surat_selesai||0),n("metricWPengaduanAktif",t.pengaduan_aktif||0);const d=document.getElementById("wargaSuratLatest");d&&(t.surat_terbaru&&t.surat_terbaru.length?d.innerHTML=t.surat_terbaru.map(m=>`
                             <tr>
-                                <td><b>${esc(s.jenis_surat || "-")}</b><div class="muted" style="font-size:11px">${esc(s.keperluan || "")}</div></td>
-                                <td>${fmtDate(s.created_at)}</td>
-                                <td>${pill(s.status)}</td>
-                            </tr>`,
-                        )
-                        .join("");
-                } else {
-                    tableSurat.innerHTML = `<tr><td colspan="3" class="muted" style="text-align:center;padding:12px">Belum ada pengajuan surat.</td></tr>`;
-                }
-            }
-
-            const tablePengaduan = document.getElementById("wargaPengaduanLatest");
-            if (tablePengaduan) {
-                if (data.pengaduan_terbaru && data.pengaduan_terbaru.length) {
-                    tablePengaduan.innerHTML = data.pengaduan_terbaru
-                        .map(
-                            (p) => `
+                                <td><b>${S(m.jenis_surat||"-")}</b><div class="muted" style="font-size:11px">${S(m.keperluan||"")}</div></td>
+                                <td>${T(m.created_at)}</td>
+                                <td>${M(m.status)}</td>
+                            </tr>`).join(""):d.innerHTML='<tr><td colspan="3" class="muted" style="text-align:center;padding:12px">Belum ada pengajuan surat.</td></tr>');const w=document.getElementById("wargaPengaduanLatest");w&&(t.pengaduan_terbaru&&t.pengaduan_terbaru.length?w.innerHTML=t.pengaduan_terbaru.map(m=>`
                             <tr>
-                                <td><b>${esc(p.judul || "-")}</b><div class="muted" style="font-size:11px">${esc(p.kategori || "")}</div></td>
-                                <td>${fmtDate(p.created_at)}</td>
-                                <td>${pill(p.status)}</td>
-                            </tr>`,
-                        )
-                        .join("");
-                } else {
-                    tablePengaduan.innerHTML = `<tr><td colspan="3" class="muted" style="text-align:center;padding:12px">Belum ada pengaduan.</td></tr>`;
-                }
-            }
-        } catch (error) {
-            console.error("Gagal memuat dashboard:", error);
-        }
-    }
-
-    // =========================
-    // SURAT (Tanpa Global Flag)
-    // =========================
-    async function initSurat() {
-        const tbody = document.getElementById("wargaSuratTbody");
-        const search = document.getElementById("wargaSuratSearch");
-        const filter = document.getElementById("wargaSuratFilter");
-        const form = document.getElementById("wargaSuratForm");
-        let currentLetters = [];
-
-        // esc is defined globally in warga.js
-
-        const fmtSize = (n) => {
-            const b = Number(n || 0);
-            if (!b) return "-";
-            if (b < 1024) return `${b} B`;
-            if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
-            return `${(b / (1024 * 1024)).toFixed(1)} MB`;
-        };
-
-        const isRealUrl = (u) =>
-            /^(https?:\/\/|\/|assets\/|data:)/i.test(String(u || "").trim());
-
-        function ensureBerkasModal() {
-            let modal = document.getElementById("wargaBerkasModal");
-            if (modal) {
-                return {
-                    modal,
-                    meta: modal.querySelector("#wargaBerkasMeta"),
-                    body: modal.querySelector("#wargaBerkasBody"),
-                };
-            }
-
-            modal = document.createElement("div");
-            modal.className = "modal";
-            modal.id = "wargaBerkasModal";
-            modal.innerHTML = `
+                                <td><b>${S(m.judul||"-")}</b><div class="muted" style="font-size:11px">${S(m.kategori||"")}</div></td>
+                                <td>${T(m.created_at)}</td>
+                                <td>${M(m.status)}</td>
+                            </tr>`).join(""):w.innerHTML='<tr><td colspan="3" class="muted" style="text-align:center;padding:12px">Belum ada pengaduan.</td></tr>')}catch(i){console.error("Gagal memuat dashboard:",i)}}async function q(){const i=document.getElementById("wargaSuratTbody"),t=document.getElementById("wargaSuratSearch"),n=document.getElementById("wargaSuratFilter"),d=document.getElementById("wargaSuratForm");let w=[];const m=e=>{const o=Number(e||0);return o?o<1024?`${o} B`:o<1024*1024?`${(o/1024).toFixed(1)} KB`:`${(o/(1024*1024)).toFixed(1)} MB`:"-"},u=e=>/^(https?:\/\/|\/|assets\/|data:)/i.test(String(e||"").trim());function x(){let e=document.getElementById("wargaBerkasModal");return e?{modal:e,meta:e.querySelector("#wargaBerkasMeta"),body:e.querySelector("#wargaBerkasBody")}:(e=document.createElement("div"),e.className="modal",e.id="wargaBerkasModal",e.innerHTML=`
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-head">
@@ -276,39 +28,7 @@
                             <button class="btn btn-light" type="button" data-action="closeWargaBerkas">Tutup</button>
                         </div>
                     </div>
-                </div>`;
-
-            document.body.appendChild(modal);
-
-            return {
-                modal,
-                meta: modal.querySelector("#wargaBerkasMeta"),
-                body: modal.querySelector("#wargaBerkasBody"),
-            };
-        }
-
-        const berkasUi = ensureBerkasModal();
-
-        function openBerkasModal(item) {
-            const files = Array.isArray(item?.berkas) ? item.berkas : [];
-            const fileSurat = item?.file_surat;
-            const hasil =
-                item?.hasilSurat && typeof item.hasilSurat === "object"
-                    ? item.hasilSurat
-                    : null;
-            if (berkasUi.meta) {
-                const jenis = item?.jenis_surat || item?.jenis || "-";
-                const tanggal = item?.created_at || item?.tanggal;
-                berkasUi.meta.innerHTML = `${esc(jenis)} • ${esc(fmtDate(tanggal))} • ${pill(item?.status)}`;
-            }
-
-            if (!berkasUi.body) return;
-
-            let html = "";
-
-            if (item?.status === 'siap_diambil' && item?.pickup) {
-                const p = item.pickup;
-                html += `
+                </div>`,document.body.appendChild(e),{modal:e,meta:e.querySelector("#wargaBerkasMeta"),body:e.querySelector("#wargaBerkasBody")})}const g=x();function c(e){const o=Array.isArray(e==null?void 0:e.berkas)?e.berkas:[],p=e==null?void 0:e.file_surat,r=e!=null&&e.hasilSurat&&typeof e.hasilSurat=="object"?e.hasilSurat:null;if(g.meta){const a=(e==null?void 0:e.jenis_surat)||(e==null?void 0:e.jenis)||"-",f=(e==null?void 0:e.created_at)||(e==null?void 0:e.tanggal);g.meta.innerHTML=`${S(a)} \u2022 ${S(T(f))} \u2022 ${M(e==null?void 0:e.status)}`}if(!g.body)return;let s="";if((e==null?void 0:e.status)==="siap_diambil"&&(e!=null&&e.pickup)){const a=e.pickup;s+=`
                     <div class="card" style="margin-bottom:15px; border-left: 5px solid #10b981; background: #f0fdf4;">
                         <div class="card-body" style="padding:16px">
                             <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
@@ -319,17 +39,12 @@
                                 Silakan datang ke Kelurahan Duren Mekar untuk pengambilan surat dengan membawa dokumen asli: <b>KTP Asli</b> dan <b>KK Asli</b>.
                             </p>
                             <div style="background:#fff; border:1px solid #dcfce7; padding:12px; border-radius:6px; font-size:13px; display:flex; flex-direction:column; gap:6px;">
-                                <div><b>Nomor Surat:</b> ${esc(p.nomor_surat || '-')}</div>
-                                <div><b>Nomor Antrian:</b> <span class="pill green" style="font-weight:bold; font-size:12px;">${esc(p.nomor_antrian || '-')}</span></div>
-                                <div><b>Tanggal Pengambilan:</b> ${esc(fmtDate(p.tanggal_pengambilan))}</div>
+                                <div><b>Nomor Surat:</b> ${S(a.nomor_surat||"-")}</div>
+                                <div><b>Nomor Antrian:</b> <span class="pill green" style="font-weight:bold; font-size:12px;">${S(a.nomor_antrian||"-")}</span></div>
+                                <div><b>Tanggal Pengambilan:</b> ${S(T(a.tanggal_pengambilan))}</div>
                             </div>
                         </div>
-                    </div>`;
-            }
-
-            if (fileSurat) {
-                const fileUrl = `/storage/${fileSurat}`;
-                html += `
+                    </div>`}if(p){const a=`/storage/${p}`;s+=`
                     <div class="card" style="margin-bottom:10px">
                         <div class="card-body" style="padding:14px">
                             <div style="display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
@@ -338,1133 +53,138 @@
                                     <div class="muted" style="font-size:12px">Surat selesai diproses.</div>
                                 </div>
                                 <div>
-                                    <a class="btn btn-primary btn-sm" href="${fileUrl}" target="_blank" rel="noopener">
+                                    <a class="btn btn-primary btn-sm" href="${a}" target="_blank" rel="noopener">
                                         <i class="fa-regular fa-eye" aria-hidden="true"></i> Buka Surat
                                     </a>
                                 </div>
                             </div>
                         </div>
-                    </div>`;
-            } else if (hasil) {
-                const hName = esc(hasil.fileName || "surat.pdf");
-                const hMeta = `${esc(hasil.mime || "application/pdf")}${hasil.size ? ` • ${fmtSize(hasil.size)}` : ""}`;
-                const hNote = hasil.note
-                    ? `<div class="muted" style="font-size:12px;margin-top:6px">Catatan: ${esc(hasil.note)}</div>`
-                    : "";
-                const hSent = hasil.sentAt
-                    ? `<div class="muted" style="font-size:12px;margin-top:6px">Dikirim: ${esc(fmtDateTime(hasil.sentAt))}</div>`
-                    : "";
-                const hBtn = hasil.dataUrl
-                    ? `<a class="btn btn-primary btn-sm" href="${hasil.dataUrl}" target="_blank" rel="noopener">
+                    </div>`}else if(r){const a=S(r.fileName||"surat.pdf"),f=`${S(r.mime||"application/pdf")}${r.size?` \u2022 ${m(r.size)}`:""}`,k=r.note?`<div class="muted" style="font-size:12px;margin-top:6px">Catatan: ${S(r.note)}</div>`:"",y=r.sentAt?`<div class="muted" style="font-size:12px;margin-top:6px">Dikirim: ${S(z(r.sentAt))}</div>`:"",$=r.dataUrl?`<a class="btn btn-primary btn-sm" href="${r.dataUrl}" target="_blank" rel="noopener">
                         <i class="fa-regular fa-eye" aria-hidden="true"></i> Buka Surat
-                    </a>`
-                    : `<span class="pill yellow">Tidak ada file</span>`;
-
-                html += `
+                    </a>`:'<span class="pill yellow">Tidak ada file</span>';s+=`
                     <div class="card" style="margin-bottom:10px">
                         <div class="card-body" style="padding:14px">
                             <div style="display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
                                 <div>
                                     <div style="font-weight:1000">Hasil Surat</div>
-                                    <div class="muted" style="font-size:12px">${hName}${hMeta ? ` • ${hMeta}` : ""}</div>
-                                    ${hNote}
-                                    ${hSent}
+                                    <div class="muted" style="font-size:12px">${a}${f?` \u2022 ${f}`:""}</div>
+                                    ${k}
+                                    ${y}
                                 </div>
-                                <div>${hBtn}</div>
+                                <div>${$}</div>
                             </div>
                         </div>
-                    </div>`;
-            } else if (item?.status !== 'siap_diambil') {
-                html += `<div class="muted" style="margin-bottom:10px">Hasil surat belum tersedia. Silakan menunggu proses dari petugas.</div>`;
-            }
-
-            html += `<div style="font-weight:1000; margin:6px 0 10px">Berkas Persyaratan</div>`;
-
-            if (!files.length) {
-                html += `<div class="muted">Tidak ada berkas persyaratan yang diunggah.</div>`;
-            } else {
-                html += files
-                    .map((f) => {
-                        const req = esc(f?.requirement || "Berkas");
-                        const name = esc(f?.fileName || "-");
-                        const meta = `${esc(f?.mime || "")}${f?.size ? ` • ${fmtSize(f.size)}` : ""}`;
-                        const openBtn = f?.dataUrl
-                            ? `<a class="btn btn-primary btn-sm" href="${f.dataUrl}" target="_blank" rel="noopener">
+                    </div>`}else(e==null?void 0:e.status)!=="siap_diambil"&&(s+='<div class="muted" style="margin-bottom:10px">Hasil surat belum tersedia. Silakan menunggu proses dari petugas.</div>');s+='<div style="font-weight:1000; margin:6px 0 10px">Berkas Persyaratan</div>',o.length?s+=o.map(a=>{const f=S((a==null?void 0:a.requirement)||"Berkas"),k=S((a==null?void 0:a.fileName)||"-"),y=`${S((a==null?void 0:a.mime)||"")}${a!=null&&a.size?` \u2022 ${m(a.size)}`:""}`,$=a!=null&&a.dataUrl?`<a class="btn btn-primary btn-sm" href="${a.dataUrl}" target="_blank" rel="noopener">
                                 <i class="fa-regular fa-eye" aria-hidden="true"></i> Buka
-                            </a>`
-                            : `<span class="pill yellow">Tidak ada preview</span>`;
-
-                        const note = !f?.dataUrl
-                            ? `<div class="muted" style="font-size:12px;margin-top:6px">Catatan: file demo hanya menyimpan preview untuk berkas kecil (≤ 200KB).</div>`
-                            : "";
-
-                        return `
+                            </a>`:'<span class="pill yellow">Tidak ada preview</span>',B=a!=null&&a.dataUrl?"":'<div class="muted" style="font-size:12px;margin-top:6px">Catatan: file demo hanya menyimpan preview untuk berkas kecil (\u2264 200KB).</div>';return`
                             <div class="card" style="margin-bottom:10px">
                                 <div class="card-body" style="padding:14px">
                                     <div style="display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
                                         <div>
-                                            <div style="font-weight:1000">${req}</div>
-                                            <div class="muted" style="font-size:12px">${name}${meta ? ` • ${meta}` : ""}</div>
-                                            ${note}
+                                            <div style="font-weight:1000">${f}</div>
+                                            <div class="muted" style="font-size:12px">${k}${y?` \u2022 ${y}`:""}</div>
+                                            ${B}
                                         </div>
-                                        <div>${openBtn}</div>
+                                        <div>${$}</div>
                                     </div>
                                 </div>
-                            </div>`;
-                    })
-                    .join("");
-            }
-
-            berkasUi.body.innerHTML = html;
-            berkasUi.modal.classList.add("open");
-        }
-
-        function closeBerkasModal() {
-            berkasUi.modal.classList.remove("open");
-        }
-
-        const draw = async () => {
-            if (!tbody) return;
-
-            try {
-                const response = await fetch("/api/warga/surat", {
-                    credentials: "include",
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                let items = await response.json();
-                currentLetters = items;
-
-                const q = (search?.value || "").toLowerCase();
-                const f = (filter?.value || "").toLowerCase();
-
-                if (f) {
-                    items = items.filter(
-                        (x) => String(x.status).toLowerCase() === f,
-                    );
-                }
-
-                if (q) {
-                    items = items.filter((x) => {
-                        const hay =
-                            `${x.jenis_surat || ""} ${x.keperluan || ""}`.toLowerCase();
-                        return hay.includes(q);
-                    });
-                }
-
-                items = items.sort(
-                    (a, b) => new Date(b.created_at) - new Date(a.created_at),
-                );
-
-                tbody.innerHTML =
-                    items
-                        .map(
-                            (s) => `
+                            </div>`}).join(""):s+='<div class="muted">Tidak ada berkas persyaratan yang diunggah.</div>',g.body.innerHTML=s,g.modal.classList.add("open")}function h(){g.modal.classList.remove("open")}const l=async()=>{if(i)try{const e=await fetch("/api/warga/surat",{credentials:"include"});if(!e.ok)throw new Error(`HTTP error! status: ${e.status}`);let o=await e.json();w=o;const p=((t==null?void 0:t.value)||"").toLowerCase(),r=((n==null?void 0:n.value)||"").toLowerCase();r&&(o=o.filter(s=>String(s.status).toLowerCase()===r)),p&&(o=o.filter(s=>`${s.jenis_surat||""} ${s.keperluan||""}`.toLowerCase().includes(p))),o=o.sort((s,a)=>new Date(a.created_at)-new Date(s.created_at)),i.innerHTML=o.map(s=>`
                                 <tr>
-                                    <td><b>${esc(s.jenis_surat || "-")}</b></td>
-                                    <td>${esc(s.keperluan || "-")}</td>
-                                    <td>${fmtDate(s.created_at)}</td>
-                                    <td>${pill(s.status)}</td>
+                                    <td><b>${S(s.jenis_surat||"-")}</b></td>
+                                    <td>${S(s.keperluan||"-")}</td>
+                                    <td>${T(s.created_at)}</td>
+                                    <td>${M(s.status)}</td>
                                     <td>
                                         <button type="button" class="btn btn-primary btn-sm" data-action="viewDetail" data-id="${s.id}">
                                             <i class="fa-solid fa-eye"></i> Detail
                                         </button>
-                                        ${
-                                            s.file_surat
-                                                ? `
+                                        ${s.file_surat?`
                                              <a href="/storage/${s.file_surat}" target="_blank" class="btn btn-success btn-sm" style="margin-left:4px">
                                                  <i class="fa-solid fa-download"></i> Download
                                              </a>
-                                         `
-                                                : ""
-                                        }
+                                         `:""}
                                     </td>
                                 </tr>
-                            `,
-                        )
-                        .join("") ||
-                    `
+                            `).join("")||`
                         <tr>
                             <td colspan="5" class="muted" style="text-align:center;padding:20px">
                                 Belum ada pengajuan surat.
                             </td>
                         </tr>
-                    `;
-            } catch (error) {
-                console.error("Gagal memuat data surat:", error);
-                tbody.innerHTML = `
+                    `}catch(e){console.error("Gagal memuat data surat:",e),i.innerHTML=`
                     <tr>
                         <td colspan="4" class="muted" style="text-align:center;padding:20px;color:red">
                             Gagal memuat data surat. Silakan refresh halaman.
                         </td>
                     </tr>
-                `;
-            }
-        };
-
-        // ✅ Event Delegation untuk tombol detail (mencegah duplicate listeners)
-        tbody?.addEventListener("click", (e) => {
-            const btn = e.target.closest("[data-action='viewDetail']");
-            if (!btn) return;
-            const id = btn.dataset.id;
-            const item = currentLetters.find(x => String(x.id) === String(id));
-            if (item) {
-                openBerkasModal(item);
-            } else {
-                console.warn("Letter not found for ID:", id);
-            }
-        });
-
-        // ✅ Event Delegation untuk close modal
-        document.addEventListener("click", (e) => {
-            if (e.target.closest("[data-action='closeWargaBerkas']")) {
-                closeBerkasModal();
-                return;
-            }
-            if (e.target === berkasUi.modal) {
-                closeBerkasModal();
-            }
-        });
-
-        // ✅ Form submit - cleanup listener sebelumnya
-        if (form) {
-            // Hapus listener lama jika ada (mencegah duplicate)
-            form.replaceWith(form.cloneNode(true));
-            const newForm = document.getElementById("wargaSuratForm");
-
-            newForm.addEventListener("submit", async (ev) => {
-                ev.preventDefault();
-
-                const session = Guard?.getSession();
-                if (!session) {
-                    alert("Silakan login terlebih dahulu");
-                    return;
-                }
-
-                const jenis = (
-                    document.getElementById("wsJenis")?.value || ""
-                ).trim();
-                const keperluan = (
-                    document.getElementById("wsKeperluan")?.value || ""
-                ).trim();
-
-                if (!jenis || !keperluan) {
-                    alert("Jenis surat dan keperluan wajib diisi.");
-                    return;
-                }
-
-                try {
-                    const csrf = document.querySelector(
-                        'meta[name="csrf-token"]',
-                    )?.content;
-
-                    const response = await fetch("/api/warga/surat", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Accept: "application/json",
-                            "X-CSRF-TOKEN": csrf,
-                        },
-                        credentials: "include",
-                        body: JSON.stringify({
-                            jenis_surat: jenis,
-                            keperluan: keperluan,
-                        }),
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(
-                            `HTTP error! status: ${response.status}`,
-                        );
-                    }
-
-                    alert(
-                        "Pengajuan surat berhasil dikirim. Silakan pantau statusnya.",
-                    );
-                    newForm.reset();
-                    draw();
-                } catch (error) {
-                    console.error("Gagal mengirim surat:", error);
-                    alert("Gagal mengirim surat. Silakan coba lagi.");
-                }
-            });
-        }
-
-        const drawServicesGrid = async () => {
-            const grid = document.getElementById("wargaServicesGrid");
-            if (!grid) return;
-
-            try {
-                const res = await fetch("/api/public/pelayanan", { credentials: "include" });
-                if (!res.ok) throw new Error("Gagal mengambil pelayanan");
-                const services = await res.json();
-
-                if (!services || !services.length) {
-                    grid.innerHTML = `<div class="muted" style="grid-column: 1/-1; text-align: center; padding: 20px;">Belum ada pelayanan tersedia.</div>`;
-                    return;
-                }
-
-                grid.innerHTML = services.map(x => {
-                    const isOnline = !!x.online;
-                    const badgeClass = isOnline ? "badge-success" : "badge-warning";
-                    const badgeText = isOnline ? "Bisa Online" : "Harus Datang Langsung";
-                    const estimasi = x.estimasi || (isOnline ? "1 hari kerja" : "1-3 hari kerja");
-                    const biaya = x.biaya || "Gratis";
-                    const iconClass = isOnline ? "fa-file-signature" : "fa-building-columns";
-
-                    let actionBtn = "";
-                    if (isOnline) {
-                        actionBtn = `<button class="btn btn-primary btn-sm srv-apply-btn" data-id="${x.id}" style="width:100%; text-align:center; font-weight:bold;">
-                            <i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i> ${x.teks_tombol || "Ajukan Sekarang"}
-                        </button>`;
-                    } else {
-                        actionBtn = `<div class="muted" style="text-align:center; font-size:12px; font-weight:bold; padding: 6px; border: 1px dashed var(--border); border-radius: 6px; background: rgba(148,163,184,0.05);">
+                `}};if(i==null||i.addEventListener("click",e=>{const o=e.target.closest("[data-action='viewDetail']");if(!o)return;const p=o.dataset.id,r=w.find(s=>String(s.id)===String(p));r?c(r):console.warn("Letter not found for ID:",p)}),document.addEventListener("click",e=>{if(e.target.closest("[data-action='closeWargaBerkas']")){h();return}e.target===g.modal&&h()}),d){d.replaceWith(d.cloneNode(!0));const e=document.getElementById("wargaSuratForm");e.addEventListener("submit",async o=>{var a,f,k;if(o.preventDefault(),!(v==null?void 0:v.getSession())){alert("Silakan login terlebih dahulu");return}const r=(((a=document.getElementById("wsJenis"))==null?void 0:a.value)||"").trim(),s=(((f=document.getElementById("wsKeperluan"))==null?void 0:f.value)||"").trim();if(!r||!s){alert("Jenis surat dan keperluan wajib diisi.");return}try{const y=(k=document.querySelector('meta[name="csrf-token"]'))==null?void 0:k.content,$=await fetch("/api/warga/surat",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json","X-CSRF-TOKEN":y},credentials:"include",body:JSON.stringify({jenis_surat:r,keperluan:s})});if(!$.ok)throw new Error(`HTTP error! status: ${$.status}`);alert("Pengajuan surat berhasil dikirim. Silakan pantau statusnya."),e.reset(),l()}catch(y){console.error("Gagal mengirim surat:",y),alert("Gagal mengirim surat. Silakan coba lagi.")}})}(async()=>{const e=document.getElementById("wargaServicesGrid"),o=document.getElementById("wargaServicesPagination");if(!e)return;let p=1;const r=6;try{const s=await fetch("/api/public/pelayanan",{credentials:"include"});if(!s.ok)throw new Error("Gagal mengambil pelayanan");const a=await s.json();if(!a||!a.length){e.innerHTML='<div class="muted" style="grid-column: 1/-1; text-align: center; padding: 20px;">Belum ada pelayanan tersedia.</div>';return}const f=()=>{const k=Math.ceil(a.length/r);p>k&&(p=k||1);const y=(p-1)*r,$=a.slice(y,y+r);e.innerHTML=$.map(B=>{const E=!!B.online,L=E?"badge-success":"badge-warning",j=E?"Bisa Online":"Harus Datang Langsung",P=B.estimasi||(E?"1 hari kerja":"1-3 hari kerja"),A=B.biaya||"Gratis",H=E?"fa-file-signature":"fa-building-columns";let C="";return E?C=`<button class="btn btn-primary btn-sm srv-apply-btn" data-id="${B.id}" style="width:100%; text-align:center; font-weight:bold;">
+                            <i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i> ${B.teks_tombol||"Ajukan Sekarang"}
+                        </button>`:C=`<div class="muted" style="text-align:center; font-size:12px; font-weight:bold; padding: 6px; border: 1px dashed var(--border); border-radius: 6px; background: rgba(148,163,184,0.05);">
                             <i class="fa-solid fa-circle-info" style="margin-right:6px; color:var(--warning);"></i> Silakan datang langsung
-                        </div>`;
-                    }
-
-                    return `
+                        </div>`,`
                         <div class="warga-card" style="border: 1px solid var(--border); border-radius: 12px; padding: 16px; background:#fff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: none;">
                             <div>
                                 <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:12px;">
                                     <div style="background: var(--primary-soft); color: var(--primary); width:40px; height:40px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; font-size:16px;">
-                                        <i class="fa-solid ${iconClass}"></i>
+                                        <i class="fa-solid ${H}"></i>
                                     </div>
-                                    <span class="badge ${badgeClass}" style="font-size: 10px; padding: 2px 6px; border-radius: 6px;">${badgeText}</span>
+                                    <span class="badge ${L}" style="font-size: 10px; padding: 2px 6px; border-radius: 6px;">${j}</span>
                                 </div>
-                                <h3 style="margin: 0 0 6px 0; font-size: 15px; font-weight:800; color: var(--text);">${esc(x.nama)}</h3>
+                                <h3 style="margin: 0 0 6px 0; font-size: 15px; font-weight:800; color: var(--text);">${S(B.nama)}</h3>
                                 <div style="display:flex; gap:12px; font-size:11px; margin-bottom:12px;" class="muted">
-                                    <span><i class="fa-regular fa-clock"></i> ${esc(estimasi)}</span>
-                                    <span><i class="fa-solid fa-rupiah-sign"></i> ${esc(biaya)}</span>
+                                    <span><i class="fa-regular fa-clock"></i> ${S(P)}</span>
+                                    <span><i class="fa-solid fa-rupiah-sign"></i> ${S(A)}</span>
                                 </div>
                             </div>
                             <div style="margin-top:12px;">
-                                ${actionBtn}
+                                ${C}
                             </div>
                         </div>
-                    `;
-                }).join("");
-
-                // Add click listener
-                grid.querySelectorAll(".srv-apply-btn").forEach(btn => {
-                    btn.addEventListener("click", () => {
-                        const id = btn.getAttribute("data-id");
-                        if (window.KelurahanStore?.Storage?.set) {
-                            window.KelurahanStore.Storage.set("pelayananSelected", id);
-                        }
-                        sessionStorage.setItem("pelayananSelected", id);
-                        if (typeof window.navigateTo === "function") {
-                            window.navigateTo("pengajuan-online");
-                        } else {
-                            window.location.hash = "#pengajuan-online";
-                        }
-                    });
-                });
-            } catch (err) {
-                console.error(err);
-                grid.innerHTML = `<div class="muted" style="grid-column: 1/-1; text-align: center; padding: 20px; color: var(--danger);">Gagal memuat daftar pelayanan.</div>`;
-            }
-        };
-
-        drawServicesGrid();
-        draw();
-    }
-
-    // =========================
-    // PENGADUAN (Tanpa Global Flag)
-    // =========================
-    async function initPengaduan() {
-        const tbody = document.getElementById("wargaPengaduanTbody");
-        const search = document.getElementById("wargaPengaduanSearch");
-        const filter = document.getElementById("wargaPengaduanFilter");
-        const form = document.getElementById("wargaPengaduanForm");
-
-        const draw = async () => {
-            if (!tbody) return;
-
-            try {
-                const response = await fetch("/api/warga/pengaduan", {
-                    credentials: "include",
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                let items = await response.json();
-
-                const q = (search?.value || "").toLowerCase();
-                const f = (filter?.value || "").toLowerCase();
-
-                if (f) {
-                    items = items.filter(
-                        (x) => String(x.status).toLowerCase() === f,
-                    );
-                }
-
-                if (q) {
-                    items = items.filter((x) => {
-                        const hay =
-                            `${x.judul || ""} ${x.kategori || ""} ${x.lokasi || ""}`.toLowerCase();
-                        return hay.includes(q);
-                    });
-                }
-
-                items = items.sort(
-                    (a, b) => new Date(b.created_at) - new Date(a.created_at),
-                );
-
-                tbody.innerHTML =
-                    items
-                        .map(
-                            (p) => `
+                    `}).join(""),o&&(o.innerHTML=k>1?`
+                            <button class="page-btn" data-page="${p-1}" ${p===1?"disabled":""}>
+                                <i class="fa-solid fa-chevron-left"></i> Sebelumnya
+                            </button>
+                            <span class="page-info">Halaman ${p} dari ${k}</span>
+                            <button class="page-btn" data-page="${p+1}" ${p===k?"disabled":""}>
+                                Berikutnya <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        `:""),e.querySelectorAll(".srv-apply-btn").forEach(B=>{B.addEventListener("click",()=>{var L,j;const E=B.getAttribute("data-id");(j=(L=window.KelurahanStore)==null?void 0:L.Storage)!=null&&j.set&&window.KelurahanStore.Storage.set("pelayananSelected",E),sessionStorage.setItem("pelayananSelected",E),typeof window.navigateTo=="function"?window.navigateTo("pengajuan-online"):window.location.hash="#pengajuan-online"})})};o&&o.addEventListener("click",k=>{const y=k.target.closest(".page-btn");!y||y.disabled||(p=Number(y.dataset.page)||1,f(),e.scrollIntoView({behavior:"smooth",block:"start"}))}),f()}catch(s){console.error(s),e.innerHTML='<div class="muted" style="grid-column: 1/-1; text-align: center; padding: 20px; color: var(--danger);">Gagal memuat daftar pelayanan.</div>'}})(),l()}async function O(){const i=document.getElementById("wargaPengaduanTbody"),t=document.getElementById("wargaPengaduanSearch"),n=document.getElementById("wargaPengaduanFilter"),d=document.getElementById("wargaPengaduanForm"),w=async()=>{if(i)try{const m=await fetch("/api/warga/pengaduan",{credentials:"include"});if(!m.ok)throw new Error(`HTTP error! status: ${m.status}`);let u=await m.json();const x=((t==null?void 0:t.value)||"").toLowerCase(),g=((n==null?void 0:n.value)||"").toLowerCase();if(g&&(u=u.filter(c=>String(c.status).toLowerCase()===g)),x&&(u=u.filter(c=>`${c.judul||""} ${c.kategori||""} ${c.lokasi||""}`.toLowerCase().includes(x))),u=u.sort((c,h)=>new Date(h.created_at)-new Date(c.created_at)),i.innerHTML=u.map(c=>`
                                 <tr>
-                                    <td><b>${p.judul || "-"}</b> <div class="muted" style="font-size:12px">${p.deskripsi || p.isi || ""}</div></td>
-                                    <td>${p.kategori || "-"} <div class="muted" style="font-size:12px">${p.lokasi || ""}</div></td>
-                                    <td>${fmtDate(p.created_at || p.tanggal)}</td>
-                                    <td>${pill(p.status)}</td>
-                                    <td><button class="btn btn-ghost btn-sm btn-warga-review" data-id="${p.id}"><i class="fa-solid fa-eye"></i> Review</button></td>
-                                </tr>`,
-                        )
-                        .join("") ||
-                    `<tr><td colspan="5" class="muted">Belum ada pengaduan.</td></tr>`;
-
-                // Attach click listeners to Review buttons
-                tbody.querySelectorAll(".btn-warga-review").forEach((btn) => {
-                    btn.addEventListener("click", () => {
-                        const id = btn.getAttribute("data-id");
-                        const p = items.find((x) => String(x.id) === String(id));
-                        if (p) {
-                            document.getElementById("wargaDetailJudul").textContent = p.judul || "-";
-                            document.getElementById("wargaDetailKategori").textContent = p.kategori || "-";
-                            document.getElementById("wargaDetailTanggal").textContent = fmtDate(p.created_at || p.tanggal);
-                            document.getElementById("wargaDetailLokasi").textContent = p.lokasi || "-";
-                            document.getElementById("wargaDetailIsi").textContent = p.isi || "";
-                            document.getElementById("wargaDetailStatus").innerHTML = pill(p.status);
-
-                            // Handle staff resolution follow up photo
-                            const hasilContainer = document.getElementById("wargaDetailTindakLanjutContainer");
-                            const hasilImg = document.getElementById("wargaDetailHasilImg");
-                            if (hasilContainer && hasilImg) {
-                                if (p.foto_tindak_lanjut) {
-                                    const hasilUrl = p.foto_tindak_lanjut.startsWith("data:") || p.foto_tindak_lanjut.startsWith("http")
-                                        ? p.foto_tindak_lanjut
-                                        : "/storage/" + p.foto_tindak_lanjut;
-                                    hasilImg.src = hasilUrl;
-                                    hasilContainer.style.display = "block";
-                                } else {
-                                    hasilImg.src = "";
-                                    hasilContainer.style.display = "none";
-                                }
-                            }
-
-                            const img = document.getElementById("wargaDetailImg");
-                            const pdfLink = document.getElementById("wargaDetailPdf");
-                            const noLampiran = document.getElementById("wargaDetailNoLampiran");
-
-                            img.style.display = "none";
-                            pdfLink.style.display = "none";
-                            noLampiran.style.display = "none";
-
-                            if (p.lampiran) {
-                                const fileUrl = p.lampiran.startsWith("data:") || p.lampiran.startsWith("http")
-                                    ? p.lampiran
-                                    : "/storage/" + p.lampiran;
-                                
-                                if (p.lampiran.toLowerCase().endsWith(".pdf")) {
-                                    pdfLink.href = fileUrl;
-                                    pdfLink.style.display = "inline-block";
-                                } else {
-                                    img.src = fileUrl;
-                                    img.style.display = "block";
-                                }
-                            } else {
-                                noLampiran.style.display = "inline";
-                            }
-
-                            document.getElementById("wargaPengaduanDetailModal").classList.add("open");
-                        }
-                    });
-                });
-
-                // Global Close modal listener for review modals
-                if (!window._wargaModalsBound) {
-                    window._wargaModalsBound = true;
-                    document.addEventListener("click", (e) => {
-                        if (e.target.closest("#closeWargaPengaduanDetailBtn") || e.target.matches("#wargaPengaduanDetailModal")) {
-                            document.getElementById("wargaPengaduanDetailModal")?.classList.remove("open");
-                        }
-                        if (e.target.closest("#closeImageZoomBtn") || e.target.matches("#imageZoomModal")) {
-                            document.getElementById("imageZoomModal")?.classList.remove("open");
-                        }
-                    });
-
-                    // Image zoom click
-                    const detailImg = document.getElementById("wargaDetailImg");
-                    if (detailImg) {
-                        detailImg.onclick = () => {
-                            const zoomModal = document.getElementById("imageZoomModal");
-                            const zoomedImg = document.getElementById("zoomedImg");
-                            if (zoomModal && zoomedImg) {
-                                zoomedImg.src = detailImg.src;
-                                zoomModal.classList.add("open");
-                            }
-                        };
-                    }
-
-                    const hasilImg = document.getElementById("wargaDetailHasilImg");
-                    if (hasilImg) {
-                        hasilImg.onclick = () => {
-                            const zoomModal = document.getElementById("imageZoomModal");
-                            const zoomedImg = document.getElementById("zoomedImg");
-                            if (zoomModal && zoomedImg) {
-                                zoomedImg.src = hasilImg.src;
-                                zoomModal.classList.add("open");
-                            }
-                        };
-                    }
-                }
-            } catch (error) {
-                console.error("Gagal memuat pengaduan:", error);
-                tbody.innerHTML = `<tr><td colspan="4" class="muted" style="color:red">Gagal memuat data pengaduan.</td></tr>`;
-            }
-        };
-
-        // ✅ Form submit - cleanup listener sebelumnya
-        if (form) {
-            form.replaceWith(form.cloneNode(true));
-            const newForm = document.getElementById("wargaPengaduanForm");
-
-            newForm.addEventListener("submit", async (ev) => {
-                ev.preventDefault();
-
-                const session = Guard?.getSession();
-                if (!session) {
-                    alert("Silakan login terlebih dahulu");
-                    return;
-                }
-
-                const kategori = (
-                    document.getElementById("wpKategori")?.value || ""
-                ).trim();
-                const judul = (
-                    document.getElementById("wpJudul")?.value || ""
-                ).trim();
-                const lokasi = (
-                    document.getElementById("wpLokasi")?.value || ""
-                ).trim();
-                const buktiInput = document.getElementById("wpBukti");
-                const buktiFile = buktiInput?.files?.[0] || null;
-                const deskripsi = (
-                    document.getElementById("wpDeskripsi")?.value || ""
-                ).trim();
-
-                if (!kategori || !judul || !lokasi || !deskripsi) {
-                    alert(
-                        "Kategori, judul, lokasi, dan deskripsi wajib diisi.",
-                    );
-                    return;
-                }
-
-                try {
-                    const csrf = document.querySelector(
-                        'meta[name="csrf-token"]',
-                    )?.content;
-
-                    // ✅ Upload lampiran via FormData
-                    const formData = new FormData();
-                    formData.append("judul", judul);
-                    formData.append("isi", deskripsi);
-                    formData.append("kategori", kategori);
-                    formData.append("lokasi", lokasi);
-                    formData.append("status", "menunggu");
-
-                    if (buktiFile) {
-                        formData.append("lampiran", buktiFile);
-                    }
-
-                    const response = await fetch("/api/warga/pengaduan", {
-                        method: "POST",
-                        headers: {
-                            "X-CSRF-TOKEN": csrf,
-                            Accept: "application/json",
-                        },
-                        credentials: "include",
-                        body: formData,
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(
-                            `HTTP error! status: ${response.status}`,
-                        );
-                    }
-
-                    const pengaduan = await response.json();
-
-                    sessionStorage.setItem("postSubmitType", "pengaduan");
-                    sessionStorage.setItem("postSubmitId", pengaduan.id);
-                    sessionStorage.setItem("postSubmitTitle", judul);
-
-                    if (typeof window.navigateTo === "function")
-                        window.navigateTo("warga/konfirmasi");
-                    else window.location.hash = "#warga/konfirmasi";
-                } catch (error) {
-                    console.error("Gagal mengirim pengaduan:", error);
-                    alert("Gagal mengirim pengaduan. Coba lagi.");
-                }
-            });
-        }
-
-        draw();
-    }
-
-    let chatPollInterval = null;
-    let chatStaffPollInterval = null;
-    function initChat() {
-        const threadListEl = document.getElementById("wargaThreadList");
-        const msgEl = document.getElementById("wargaChatMessages");
-        const inputEl = document.getElementById("wargaChatInput");
-        const sendBtn = document.getElementById("wargaChatSend");
-        const subEl = document.getElementById("wargaChatSub");
-
-        if (!threadListEl || !msgEl) return;
-
-        // Reset state
-        let activeStaffId = null;
-        let activeRoomId = null;
-        let staffList = [];
-        let socket = null;
-
-        if (chatPollInterval) {
-            clearInterval(chatPollInterval);
-            chatPollInterval = null;
-        }
-        if (chatStaffPollInterval) {
-            clearInterval(chatStaffPollInterval);
-            chatStaffPollInterval = null;
-        }
-
-        msgEl.innerHTML = `
+                                    <td><b>${c.judul||"-"}</b> <div class="muted" style="font-size:12px">${c.deskripsi||c.isi||""}</div></td>
+                                    <td>${c.kategori||"-"} <div class="muted" style="font-size:12px">${c.lokasi||""}</div></td>
+                                    <td>${T(c.created_at||c.tanggal)}</td>
+                                    <td>${M(c.status)}</td>
+                                    <td><button class="btn btn-ghost btn-sm btn-warga-review" data-id="${c.id}"><i class="fa-solid fa-eye"></i> Review</button></td>
+                                </tr>`).join("")||'<tr><td colspan="5" class="muted">Belum ada pengaduan.</td></tr>',i.querySelectorAll(".btn-warga-review").forEach(c=>{c.addEventListener("click",()=>{const h=c.getAttribute("data-id"),l=u.find(b=>String(b.id)===String(h));if(l){document.getElementById("wargaDetailJudul").textContent=l.judul||"-",document.getElementById("wargaDetailKategori").textContent=l.kategori||"-",document.getElementById("wargaDetailTanggal").textContent=T(l.created_at||l.tanggal),document.getElementById("wargaDetailLokasi").textContent=l.lokasi||"-",document.getElementById("wargaDetailIsi").textContent=l.isi||"",document.getElementById("wargaDetailStatus").innerHTML=M(l.status);const b=document.getElementById("wargaDetailTindakLanjutContainer"),e=document.getElementById("wargaDetailHasilImg");if(b&&e)if(l.foto_tindak_lanjut){const s=l.foto_tindak_lanjut.startsWith("data:")||l.foto_tindak_lanjut.startsWith("http")?l.foto_tindak_lanjut:"/storage/"+l.foto_tindak_lanjut;e.src=s,b.style.display="block"}else e.src="",b.style.display="none";const o=document.getElementById("wargaDetailImg"),p=document.getElementById("wargaDetailPdf"),r=document.getElementById("wargaDetailNoLampiran");if(o.style.display="none",p.style.display="none",r.style.display="none",l.lampiran){const s=l.lampiran.startsWith("data:")||l.lampiran.startsWith("http")?l.lampiran:"/storage/"+l.lampiran;l.lampiran.toLowerCase().endsWith(".pdf")?(p.href=s,p.style.display="inline-block"):(o.src=s,o.style.display="block")}else r.style.display="inline";document.getElementById("wargaPengaduanDetailModal").classList.add("open")}})}),!window._wargaModalsBound){window._wargaModalsBound=!0,document.addEventListener("click",l=>{var b,e;(l.target.closest("#closeWargaPengaduanDetailBtn")||l.target.matches("#wargaPengaduanDetailModal"))&&((b=document.getElementById("wargaPengaduanDetailModal"))==null||b.classList.remove("open")),(l.target.closest("#closeImageZoomBtn")||l.target.matches("#imageZoomModal"))&&((e=document.getElementById("imageZoomModal"))==null||e.classList.remove("open"))});const c=document.getElementById("wargaDetailImg");c&&(c.onclick=()=>{const l=document.getElementById("imageZoomModal"),b=document.getElementById("zoomedImg");l&&b&&(b.src=c.src,l.classList.add("open"))});const h=document.getElementById("wargaDetailHasilImg");h&&(h.onclick=()=>{const l=document.getElementById("imageZoomModal"),b=document.getElementById("zoomedImg");l&&b&&(b.src=h.src,l.classList.add("open"))})}}catch(m){console.error("Gagal memuat pengaduan:",m),i.innerHTML='<tr><td colspan="4" class="muted" style="color:red">Gagal memuat data pengaduan.</td></tr>'}};d&&(d.replaceWith(d.cloneNode(!0)),document.getElementById("wargaPengaduanForm").addEventListener("submit",async u=>{var o,p,r,s,a,f;if(u.preventDefault(),!(v==null?void 0:v.getSession())){alert("Silakan login terlebih dahulu");return}const g=(((o=document.getElementById("wpKategori"))==null?void 0:o.value)||"").trim(),c=(((p=document.getElementById("wpJudul"))==null?void 0:p.value)||"").trim(),h=(((r=document.getElementById("wpLokasi"))==null?void 0:r.value)||"").trim(),l=document.getElementById("wpBukti"),b=((s=l==null?void 0:l.files)==null?void 0:s[0])||null,e=(((a=document.getElementById("wpDeskripsi"))==null?void 0:a.value)||"").trim();if(!g||!c||!h||!e){alert("Kategori, judul, lokasi, dan deskripsi wajib diisi.");return}try{const k=(f=document.querySelector('meta[name="csrf-token"]'))==null?void 0:f.content,y=new FormData;y.append("judul",c),y.append("isi",e),y.append("kategori",g),y.append("lokasi",h),y.append("status","menunggu"),b&&y.append("lampiran",b);const $=await fetch("/api/warga/pengaduan",{method:"POST",headers:{"X-CSRF-TOKEN":k,Accept:"application/json"},credentials:"include",body:y});if(!$.ok)throw new Error(`HTTP error! status: ${$.status}`);const B=await $.json();sessionStorage.setItem("postSubmitType","pengaduan"),sessionStorage.setItem("postSubmitId",B.id),sessionStorage.setItem("postSubmitTitle",c),typeof window.navigateTo=="function"?window.navigateTo("warga/konfirmasi"):window.location.hash="#warga/konfirmasi"}catch(k){console.error("Gagal mengirim pengaduan:",k),alert("Gagal mengirim pengaduan. Coba lagi.")}})),w()}let I=null,_=null;function U(){const i=document.getElementById("wargaThreadList"),t=document.getElementById("wargaChatMessages"),n=document.getElementById("wargaChatInput"),d=document.getElementById("wargaChatSend"),w=document.getElementById("wargaChatSub");if(!i||!t)return;let m=null,u=null,x=[],g=null;I&&(clearInterval(I),I=null),_&&(clearInterval(_),_=null),t.innerHTML=`
             <div class="muted" style="padding:40px;text-align:center">
                 <i class="fa-solid fa-comments" style="font-size:32px;margin-bottom:10px;color:var(--primary);"></i>
                 <p style="font-weight:700">Konsultasi dengan Staf Kelurahan</p>
                 <p style="font-size:13px">Pilih salah satu staf kelurahan di sebelah kiri untuk berkonsultasi secara langsung.</p>
             </div>
-        `;
-
-        async function loadStaff(silent = false) {
-            try {
-                const res = await fetch("/api/warga/chat/staff", { credentials: "include" });
-                if (!res.ok) throw new Error("Gagal memuat staf");
-                staffList = await res.json();
-                
-                threadListEl.innerHTML = staffList.map(st => {
-                    const isOnline = st.is_online;
-                    const lastMsgText = st.last_message ? st.last_message.message : 'Belum ada percakapan.';
-                    const dateText = st.last_message ? fmtDate(st.last_message.created_at) : '';
-                    
-                    return `
-                        <div class="thread-item warga-chat-thread" data-id="${st.id}" style="padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: all 0.2s; position: relative;" id="staf-item-${st.id}">
+        `;async function c(r=!1){try{const s=await fetch("/api/warga/chat/staff",{credentials:"include"});if(!s.ok)throw new Error("Gagal memuat staf");if(x=await s.json(),i.innerHTML=x.map(a=>{const f=a.is_online,k=a.last_message?a.last_message.message:"Belum ada percakapan.",y=a.last_message?T(a.last_message.created_at):"";return`
+                        <div class="thread-item warga-chat-thread" data-id="${a.id}" style="padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: all 0.2s; position: relative;" id="staf-item-${a.id}">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div style="font-weight: 800; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 8px;">
-                                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${isOnline ? '#10b981' : '#cbd5e1'}; box-shadow: ${isOnline ? '0 0 8px #10b981' : 'none'};"></span>
-                                    ${st.name}
+                                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${f?"#10b981":"#cbd5e1"}; box-shadow: ${f?"0 0 8px #10b981":"none"};"></span>
+                                    ${a.name}
                                 </div>
-                                <span class="badge ${st.role === 'admin' ? 'badge-done' : 'badge-wait'}" style="font-size: 10px; padding: 2px 6px;">${st.role === 'admin' ? 'Admin' : 'Staf'}</span>
+                                <span class="badge ${a.role==="admin"?"badge-done":"badge-wait"}" style="font-size: 10px; padding: 2px 6px;">${a.role==="admin"?"Admin":"Staf"}</span>
                             </div>
                             <div style="font-size: 12px; color: var(--muted); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90%;">
-                                ${lastMsgText}
+                                ${k}
                             </div>
                             <div style="font-size: 10px; color: var(--muted); margin-top: 4px; text-align: right;">
-                                ${dateText}
+                                ${y}
                             </div>
-                            ${st.unread_count > 0 ? `<span class="badge" style="position: absolute; right: 12px; top: 12px; font-size: 10px; background: #ef4444; border: none; color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; padding: 0;">${st.unread_count}</span>` : ''}
+                            ${a.unread_count>0?`<span class="badge" style="position: absolute; right: 12px; top: 12px; font-size: 10px; background: #ef4444; border: none; color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; padding: 0;">${a.unread_count}</span>`:""}
                         </div>
-                    `;
-                }).join("") || `<div class="muted" style="padding: 20px; text-align: center;">Belum ada staf kelurahan yang terdaftar.</div>`;
-
-                // Bind click to threads
-                threadListEl.querySelectorAll(".warga-chat-thread").forEach(el => {
-                    el.addEventListener("click", () => {
-                        const id = el.getAttribute("data-id");
-                        selectStaff(id);
-                    });
-                });
-
-                if (activeStaffId) {
-                    const activeEl = document.getElementById(`staf-item-${activeStaffId}`);
-                    if (activeEl) {
-                        activeEl.style.background = "rgba(31, 95, 224, 0.08)";
-                        activeEl.style.borderColor = "var(--primary)";
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-                if (!silent) {
-                    threadListEl.innerHTML = `<div class="muted" style="color:red">Gagal memuat daftar staf.</div>`;
-                }
-            }
-        }
-
-        async function loadMessages(silent = false) {
-            if (!activeRoomId) return;
-            // Check if user has left the page
-            if (!document.getElementById("wargaChatMessages")) {
-                cleanup();
-                return;
-            }
-
-            try {
-                const res = await fetch(`/api/chat/room/${activeRoomId}/messages`, { credentials: "include" });
-                if (!res.ok) throw new Error("Gagal mengambil pesan");
-                const messages = await res.json();
-                
-                const session = Guard?.getSession();
-                const userId = session ? session.id : null;
-
-                const originalScrollHeight = msgEl.scrollHeight;
-                const originalScrollTop = msgEl.scrollTop;
-                const isNearBottom = originalScrollTop + msgEl.clientHeight >= originalScrollHeight - 60;
-
-                const messagesHtml = messages.map(c => {
-                    const isSelf = String(c.sender_id) === String(userId);
-                    const senderName = isSelf ? "Anda" : "Petugas";
-                    const alignment = isSelf ? "align-self: flex-end; background: var(--primary); color: white;" : "align-self: flex-start; background: #f1f5f9; color: var(--text);";
-                    const alignContainer = isSelf ? "justify-content: flex-end;" : "justify-content: flex-start;";
-                    
-                    return `
-                        <div style="display: flex; ${alignContainer} width: 100%; margin-bottom: 10px;">
-                            <div style="max-width: 75%; padding: 10px 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-sm); ${alignment}">
-                                <div style="font-size: 11px; font-weight: 800; opacity: 0.85;">${senderName}</div>
-                                <div style="font-size: 13px; line-height: 1.4; white-space: pre-wrap;">${c.message}</div>
-                                <div style="font-size: 9px; align-self: flex-end; opacity: 0.7;">${fmtDate(c.created_at)}</div>
+                    `}).join("")||'<div class="muted" style="padding: 20px; text-align: center;">Belum ada staf kelurahan yang terdaftar.</div>',i.querySelectorAll(".warga-chat-thread").forEach(a=>{a.addEventListener("click",()=>{const f=a.getAttribute("data-id");l(f)})}),m){const a=document.getElementById(`staf-item-${m}`);a&&(a.style.background="rgba(31, 95, 224, 0.08)",a.style.borderColor="var(--primary)")}}catch(s){console.error(s),r||(i.innerHTML='<div class="muted" style="color:red">Gagal memuat daftar staf.</div>')}}async function h(r=!1){if(u){if(!document.getElementById("wargaChatMessages")){p();return}try{const s=await fetch(`/api/chat/room/${u}/messages`,{credentials:"include"});if(!s.ok)throw new Error("Gagal mengambil pesan");const a=await s.json(),f=v==null?void 0:v.getSession(),k=f?f.id:null,y=t.scrollHeight,B=t.scrollTop+t.clientHeight>=y-60,E=a.map(L=>{const j=String(L.sender_id)===String(k);return`
+                        <div style="display: flex; ${j?"justify-content: flex-end;":"justify-content: flex-start;"} width: 100%; margin-bottom: 10px;">
+                            <div style="max-width: 75%; padding: 10px 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-sm); ${j?"align-self: flex-end; background: var(--primary); color: white;":"align-self: flex-start; background: #f1f5f9; color: var(--text);"}">
+                                <div style="font-size: 11px; font-weight: 800; opacity: 0.85;">${j?"Anda":"Petugas"}</div>
+                                <div style="font-size: 13px; line-height: 1.4; white-space: pre-wrap;">${L.message}</div>
+                                <div style="font-size: 9px; align-self: flex-end; opacity: 0.7;">${T(L.created_at)}</div>
                             </div>
                         </div>
-                    `;
-                }).join("") || `<div class="muted" style="padding: 40px; text-align: center;">Belum ada pesan. Kirim pesan pertama untuk memulai konsultasi.</div>`;
+                    `}).join("")||'<div class="muted" style="padding: 40px; text-align: center;">Belum ada pesan. Kirim pesan pertama untuk memulai konsultasi.</div>';t.getAttribute("data-content-hash")!==E.length.toString()&&(t.innerHTML=E,t.setAttribute("data-content-hash",E.length.toString()),(!r||B)&&(t.scrollTop=t.scrollHeight))}catch(s){console.error("Gagal memuat pesan:",s),r||(t.innerHTML='<div class="muted" style="color:red; text-align:center; padding:20px;">Gagal memuat pesan.</div>')}}}async function l(r){var s;m=r,i.querySelectorAll(".warga-chat-thread").forEach(a=>{const f=a.getAttribute("data-id");a.style.background=f===String(r)?"rgba(31, 95, 224, 0.08)":"transparent",a.style.borderColor=f===String(r)?"var(--primary)":"var(--border)"}),t.innerHTML='<div class="muted" style="padding:40px; text-align:center;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; margin-bottom:10px;"></i><p>Memuat percakapan...</p></div>';try{const a=v==null?void 0:v.getSession(),f=a?a.id:null,k=(s=document.querySelector('meta[name="csrf-token"]'))==null?void 0:s.content,y=await fetch("/api/chat/room",{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":k,Accept:"application/json"},body:JSON.stringify({warga_id:f,staf_id:r})});if(!y.ok)throw new Error("Gagal membuka room");u=(await y.json()).id;const B=x.find(E=>String(E.id)===String(r));if(B&&w){const E=B.is_online?'<span style="color: #10b981; font-weight: 800;">\u25CF Online</span>':'<span style="color: var(--muted);">\u25CF Offline</span>';w.innerHTML=`Konsultasi dengan: <b>${B.name}</b> (${E})`}await h(),await c(!0),b()}catch(a){console.error(a),t.innerHTML='<div class="muted" style="color:red; text-align:center; padding:20px;">Gagal memuat percakapan.</div>'}}function b(){I&&clearInterval(I);try{g&&g.close(),g=new WebSocket("ws://127.0.0.1:8085"),g.onopen=()=>{console.log("[WS Warga] Connected successfully")},g.onmessage=r=>{var s;try{const a=JSON.parse(r.data);String(a.room_id)===String(u)&&h(!0),(a.type==="update_list"||String(a.receiver_id)===String((s=v==null?void 0:v.getSession())==null?void 0:s.id))&&c(!0)}catch(a){}},g.onclose=()=>{e()},g.onerror=()=>{e()}}catch(r){e()}}function e(){I&&clearInterval(I),I=setInterval(()=>{h(!0)},1e3)}async function o(){var s,a;if(!u){alert("Pilih staf terlebih dahulu.");return}const r=n.value.trim();if(r){d.disabled=!0;try{const f=(s=document.querySelector('meta[name="csrf-token"]'))==null?void 0:s.content;if(!(await fetch(`/api/chat/room/${u}/messages`,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":f,Accept:"application/json"},body:JSON.stringify({message:r})})).ok)throw new Error("Gagal mengirim pesan");n.value="",await h(),g&&g.readyState===WebSocket.OPEN&&g.send(JSON.stringify({room_id:u,sender_id:(a=v==null?void 0:v.getSession())==null?void 0:a.id,receiver_id:m,message:r})),await c(!0)}catch(f){console.error(f),alert("Gagal mengirim pesan.")}finally{d.disabled=!1}}}function p(){I&&(clearInterval(I),I=null),_&&(clearInterval(_),_=null),g&&(g.close(),g=null)}d.onclick=o,n.onkeydown=r=>{r.key==="Enter"&&!r.shiftKey&&(r.preventDefault(),o())},c(),_=setInterval(()=>{c(!0)},5e3)}async function G(){const i=document.getElementById("wargaProfilForm");if(i)try{const t=await fetch("/api/warga/profil",{credentials:"include"});if(!t.ok)throw new Error(`HTTP error! status: ${t.status}`);const n=await t.json(),d=(u,x)=>{const g=document.getElementById(u);g&&(g.value=x||"")};d("wpNama",n.name||""),d("wpEmail",n.email||""),d("wpTelp",n.telp||""),d("wpRT",n.rt||""),d("wpRW",n.rw||""),d("wpAlamat",n.alamat||"");const w=document.getElementById("wargaUserLabel");if(w){const u=n.rt||n.rw?` RT ${n.rt||"-"}/RW ${n.rw||"-"}`:"";w.textContent=`${n.name||"Warga"}${u}${n.email?` \u2022 ${n.email}`:""}`}i.replaceWith(i.cloneNode(!0)),document.getElementById("wargaProfilForm").addEventListener("submit",async u=>{var g,c,h,l,b,e;u.preventDefault();const x={name:((g=document.getElementById("wpNama"))==null?void 0:g.value)||"",telp:((c=document.getElementById("wpTelp"))==null?void 0:c.value)||"",rt:((h=document.getElementById("wpRT"))==null?void 0:h.value)||"",rw:((l=document.getElementById("wpRW"))==null?void 0:l.value)||"",alamat:((b=document.getElementById("wpAlamat"))==null?void 0:b.value)||""};try{const o=(e=document.querySelector('meta[name="csrf-token"]'))==null?void 0:e.content,p=await fetch("/api/warga/profil",{method:"PUT",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":o,Accept:"application/json"},credentials:"include",body:JSON.stringify(x)});if(!p.ok)throw new Error(`HTTP error! status: ${p.status}`);alert("Profil berhasil diperbarui");const r={...v.getSession(),...x};v.setSession(r)}catch(o){console.error("Gagal menyimpan profil:",o),alert("Gagal menyimpan profil. Silakan coba lagi.")}})}catch(t){console.error("Gagal memuat profil:",t)}}function J(){const i=(sessionStorage.getItem("postSubmitType")||"").toLowerCase(),t=sessionStorage.getItem("postSubmitId")||"",n=document.getElementById("thanksMainTitle"),d=document.getElementById("thanksMainDesc"),w=document.getElementById("thanksRefBox"),m=document.getElementById("thanksRefCode"),u=document.getElementById("thanksTrackLink"),x=document.getElementById("refLabel"),g=document.getElementById("refSub"),c=document.getElementById("card1Title"),h=document.getElementById("card1Desc"),l=document.getElementById("step1Text"),b=document.getElementById("step2Text"),e=document.getElementById("step3Text"),o=document.getElementById("thanksBtnSurat");t&&w&&m?(w.style.display="block",m.textContent=t):w&&(w.style.display="none"),i==="pengaduan"?(n&&(n.textContent="Laporan Pengaduan Berhasil Dikirim!"),d&&(d.textContent="Terima kasih atas laporan Anda. Kami akan menindaklanjutinya segera."),x&&(x.textContent="Nomor Referensi Laporan:"),g&&(g.textContent="Simpan nomor referensi ini untuk melacak status laporan Anda"),c&&(c.textContent="Waktu Peninjauan"),h&&(h.textContent="Laporan pengaduan Anda akan ditinjau oleh petugas kelurahan dalam waktu 1-2 hari kerja."),l&&(l.textContent="Pantau perkembangan tindak lanjut laporan melalui menu Pengaduan Saya"),b&&(b.textContent="Petugas mungkin akan menghubungi Anda untuk meminta informasi tambahan"),e&&(e.textContent="Apabila laporan selesai ditindaklanjuti, status laporan akan diperbarui menjadi Selesai"),u&&(u.innerHTML='<i class="fa-regular fa-comments"></i> Lihat Status Laporan',u.dataset.page="warga/pengaduan",u.setAttribute("href","#warga/pengaduan")),o&&(o.innerHTML='<i class="fa-solid fa-bullhorn"></i> Buat Laporan Lagi',o.dataset.page="layanan",o.setAttribute("href","#layanan"))):(n&&(n.textContent="Permohonan Surat Berhasil Dikirim!"),d&&(d.textContent="Terima kasih atas kepercayaan Anda menggunakan layanan kami"),x&&(x.textContent="Nomor Registrasi:"),g&&(g.textContent="Simpan nomor ini untuk melacak status permohonan surat Anda"),c&&(c.textContent="Waktu Pemprosesan"),h&&(h.textContent="Permohonan surat Anda akan diproses dalam waktu 2-5 hari kerja. Status akan diperbarui secara berkala."),l&&(l.textContent="Pantau status permohonan Anda secara berkala melalui dashboard"),b&&(b.textContent="Pastikan notifikasi email Anda aktif agar tidak melewatkan update penting"),e&&(e.textContent="Jika surat sudah selesai, Anda akan diberitahu untuk mengambil dokumen di kantor kelurahan"),u&&(u.innerHTML='<i class="fa-regular fa-file-lines"></i> Lihat Status Surat',u.dataset.page="warga/surat",u.setAttribute("href","#warga/surat")),o&&(o.innerHTML='<i class="fa-solid fa-paper-plane"></i> Ajukan Surat Lagi',o.dataset.page="pengajuan-online",o.setAttribute("href","#pengajuan-online")));const p=document.getElementById("btnCopyReg");p&&(p.onclick=()=>{t&&navigator.clipboard.writeText(t).then(()=>{alert("Nomor registrasi berhasil disalin!")}).catch(()=>{alert("Gagal menyalin nomor registrasi.")})})}window.addEventListener("page:loaded",i=>{var w;const t=((w=i.detail)==null?void 0:w.name)||"",n=t.startsWith("warga/");if(document.body.classList.toggle("is-warga",n),!n){document.body.classList.remove("warga-menu-open");return}if(!(v==null?void 0:v.getSession())){console.warn("User tidak terautentikasi");return}K(),R("#"+t),W(),N(),t==="warga/pengaduan"&&O(),t==="warga/profil"&&G(),t==="warga/dashboard"&&F(),t==="warga/surat"&&q(),t==="warga/chat"&&U(),t==="warga/konfirmasi"&&J()})})();
 
-                if (msgEl.getAttribute("data-content-hash") !== messagesHtml.length.toString()) {
-                    msgEl.innerHTML = messagesHtml;
-                    msgEl.setAttribute("data-content-hash", messagesHtml.length.toString());
-                    if (!silent || isNearBottom) {
-                        msgEl.scrollTop = msgEl.scrollHeight;
-                    }
-                }
-            } catch (err) {
-                console.error("Gagal memuat pesan:", err);
-                if (!silent) {
-                    msgEl.innerHTML = `<div class="muted" style="color:red; text-align:center; padding:20px;">Gagal memuat pesan.</div>`;
-                }
-            }
-        }
-
-        async function selectStaff(stafId) {
-            activeStaffId = stafId;
-            
-            // Highlight selected
-            threadListEl.querySelectorAll(".warga-chat-thread").forEach(el => {
-                const elId = el.getAttribute("data-id");
-                el.style.background = elId === String(stafId) ? "rgba(31, 95, 224, 0.08)" : "transparent";
-                el.style.borderColor = elId === String(stafId) ? "var(--primary)" : "var(--border)";
-            });
-
-            msgEl.innerHTML = `<div class="muted" style="padding:40px; text-align:center;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; margin-bottom:10px;"></i><p>Memuat percakapan...</p></div>`;
-
-            try {
-                const session = Guard?.getSession();
-                const wargaId = session ? session.id : null;
-                
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-                const roomRes = await fetch('/api/chat/room', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrf,
-                        Accept: 'application/json'
-                    },
-                    body: JSON.stringify({ warga_id: wargaId, staf_id: stafId })
-                });
-                
-                if (!roomRes.ok) throw new Error("Gagal membuka room");
-                const room = await roomRes.json();
-                activeRoomId = room.id;
-
-                const staffObj = staffList.find(x => String(x.id) === String(stafId));
-                if (staffObj && subEl) {
-                    const statusText = staffObj.is_online ? '<span style="color: #10b981; font-weight: 800;">● Online</span>' : '<span style="color: var(--muted);">● Offline</span>';
-                    subEl.innerHTML = `Konsultasi dengan: <b>${staffObj.name}</b> (${statusText})`;
-                }
-
-                await loadMessages();
-                
-                // Reset unread count locally and load list again
-                await loadStaff(true);
-
-                // Setup realtime poll fallback (1-second polling)
-                setupRealtime();
-            } catch (err) {
-                console.error(err);
-                msgEl.innerHTML = `<div class="muted" style="color:red; text-align:center; padding:20px;">Gagal memuat percakapan.</div>`;
-            }
-        }
-
-        function setupRealtime() {
-            if (chatPollInterval) clearInterval(chatPollInterval);
-            
-            // Try connecting WebSocket first
-            try {
-                if (socket) {
-                    socket.close();
-                }
-                socket = new WebSocket("ws://127.0.0.1:8085");
-                socket.onopen = () => {
-                    console.log("[WS Warga] Connected successfully");
-                };
-                socket.onmessage = (e) => {
-                    try {
-                        const data = JSON.parse(e.data);
-                        if (String(data.room_id) === String(activeRoomId)) {
-                            loadMessages(true);
-                        }
-                        if (data.type === 'update_list' || String(data.receiver_id) === String(Guard?.getSession()?.id)) {
-                            loadStaff(true);
-                        }
-                    } catch (_) {}
-                };
-                socket.onclose = () => {
-                    startPollingFallback();
-                };
-                socket.onerror = () => {
-                    startPollingFallback();
-                };
-            } catch (e) {
-                startPollingFallback();
-            }
-        }
-
-        function startPollingFallback() {
-            if (chatPollInterval) clearInterval(chatPollInterval);
-            chatPollInterval = setInterval(() => {
-                loadMessages(true);
-            }, 1000);
-        }
-
-        async function sendMessage() {
-            if (!activeRoomId) {
-                alert("Pilih staf terlebih dahulu.");
-                return;
-            }
-            const message = inputEl.value.trim();
-            if (!message) return;
-
-            sendBtn.disabled = true;
-            try {
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-                const res = await fetch(`/api/chat/room/${activeRoomId}/messages`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRF-TOKEN": csrf,
-                        Accept: "application/json"
-                    },
-                    body: JSON.stringify({ message })
-                });
-
-                if (!res.ok) throw new Error("Gagal mengirim pesan");
-                inputEl.value = "";
-                await loadMessages();
-                
-                // notify WebSocket server if connected
-                if (socket && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({
-                        room_id: activeRoomId,
-                        sender_id: Guard?.getSession()?.id,
-                        receiver_id: activeStaffId,
-                        message: message
-                    }));
-                }
-                
-                await loadStaff(true);
-            } catch (err) {
-                console.error(err);
-                alert("Gagal mengirim pesan.");
-            } finally {
-                sendBtn.disabled = false;
-            }
-        }
-
-        function cleanup() {
-            if (chatPollInterval) {
-                clearInterval(chatPollInterval);
-                chatPollInterval = null;
-            }
-            if (chatStaffPollInterval) {
-                clearInterval(chatStaffPollInterval);
-                chatStaffPollInterval = null;
-            }
-            if (socket) {
-                socket.close();
-                socket = null;
-            }
-        }
-
-        // Bind events
-        sendBtn.onclick = sendMessage;
-        inputEl.onkeydown = (e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        };
-
-        // Initialize
-        loadStaff();
-        
-        // Poll staff list status every 5 seconds
-        chatStaffPollInterval = setInterval(() => {
-            loadStaff(true);
-        }, 5000);
-    }
-
-    // =========================
-    // PROFIL (Tanpa Global Flag)
-    // =========================
-    async function initProfil() {
-        const form = document.getElementById("wargaProfilForm");
-        if (!form) return;
-
-        try {
-            // Load profil dari API
-            const response = await fetch("/api/warga/profil", {
-                credentials: "include",
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const user = await response.json();
-
-            const setVal = (id, v) => {
-                const el = document.getElementById(id);
-                if (el) el.value = v || "";
-            };
-
-            setVal("wpNama", user.name || "");
-            setVal("wpEmail", user.email || "");
-            setVal("wpTelp", user.telp || "");
-            setVal("wpRT", user.rt || "");
-            setVal("wpRW", user.rw || "");
-            setVal("wpAlamat", user.alamat || "");
-
-            // Update label user
-            const label = document.getElementById("wargaUserLabel");
-            if (label) {
-                const rtRw =
-                    user.rt || user.rw
-                        ? ` RT ${user.rt || "-"}/RW ${user.rw || "-"}`
-                        : "";
-                label.textContent = `${user.name || "Warga"}${rtRw}${user.email ? ` • ${user.email}` : ""}`;
-            }
-
-            // ✅ Form submit - cleanup listener sebelumnya
-            form.replaceWith(form.cloneNode(true));
-            const newForm = document.getElementById("wargaProfilForm");
-
-            newForm.addEventListener("submit", async (e) => {
-                e.preventDefault();
-
-                const payload = {
-                    name: document.getElementById("wpNama")?.value || "",
-                    telp: document.getElementById("wpTelp")?.value || "",
-                    rt: document.getElementById("wpRT")?.value || "",
-                    rw: document.getElementById("wpRW")?.value || "",
-                    alamat: document.getElementById("wpAlamat")?.value || "",
-                };
-
-                try {
-                    const csrf = document.querySelector(
-                        'meta[name="csrf-token"]',
-                    )?.content;
-
-                    const response = await fetch("/api/warga/profil", {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": csrf,
-                            Accept: "application/json",
-                        },
-                        credentials: "include",
-                        body: JSON.stringify(payload),
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(
-                            `HTTP error! status: ${response.status}`,
-                        );
-                    }
-
-                    alert("Profil berhasil diperbarui");
-
-                    // Update session di Guard
-                    const updatedSession = {
-                        ...Guard.getSession(),
-                        ...payload,
-                    };
-                    Guard.setSession(updatedSession);
-                } catch (error) {
-                    console.error("Gagal menyimpan profil:", error);
-                    alert("Gagal menyimpan profil. Silakan coba lagi.");
-                }
-            });
-        } catch (error) {
-            console.error("Gagal memuat profil:", error);
-        }
-    }
-
-    // =========================
-    // KONFIRMASI (Thank You)
-    // =========================
-    function initKonfirmasi() {
-        const type = (
-            sessionStorage.getItem("postSubmitType") || ""
-        ).toLowerCase();
-        const id = sessionStorage.getItem("postSubmitId") || "";
-
-        const titleEl = document.getElementById("thanksMainTitle");
-        const descEl = document.getElementById("thanksMainDesc");
-        const refBox = document.getElementById("thanksRefBox");
-        const refCode = document.getElementById("thanksRefCode");
-        const trackLink = document.getElementById("thanksTrackLink");
-
-        const refLabel = document.getElementById("refLabel");
-        const refSub = document.getElementById("refSub");
-        
-        const card1Title = document.getElementById("card1Title");
-        const card1Desc = document.getElementById("card1Desc");
-        
-        const step1Text = document.getElementById("step1Text");
-        const step2Text = document.getElementById("step2Text");
-        const step3Text = document.getElementById("step3Text");
-        
-        const thanksBtnSurat = document.getElementById("thanksBtnSurat");
-
-        if (id && refBox && refCode) {
-            refBox.style.display = "block";
-            refCode.textContent = id;
-        } else if (refBox) {
-            refBox.style.display = "none";
-        }
-
-        if (type === "pengaduan") {
-            if (titleEl) titleEl.textContent = "Laporan Pengaduan Berhasil Dikirim!";
-            if (descEl) descEl.textContent = "Terima kasih atas laporan Anda. Kami akan menindaklanjutinya segera.";
-            
-            if (refLabel) refLabel.textContent = "Nomor Referensi Laporan:";
-            if (refSub) refSub.textContent = "Simpan nomor referensi ini untuk melacak status laporan Anda";
-            
-            if (card1Title) card1Title.textContent = "Waktu Peninjauan";
-            if (card1Desc) card1Desc.textContent = "Laporan pengaduan Anda akan ditinjau oleh petugas kelurahan dalam waktu 1-2 hari kerja.";
-            
-            if (step1Text) step1Text.textContent = "Pantau perkembangan tindak lanjut laporan melalui menu Pengaduan Saya";
-            if (step2Text) step2Text.textContent = "Petugas mungkin akan menghubungi Anda untuk meminta informasi tambahan";
-            if (step3Text) step3Text.textContent = "Apabila laporan selesai ditindaklanjuti, status laporan akan diperbarui menjadi Selesai";
-            
-            if (trackLink) {
-                trackLink.innerHTML = `<i class="fa-regular fa-comments"></i> Lihat Status Laporan`;
-                trackLink.dataset.page = "warga/pengaduan";
-                trackLink.setAttribute("href", "#warga/pengaduan");
-            }
-            
-            if (thanksBtnSurat) {
-                thanksBtnSurat.innerHTML = `<i class="fa-solid fa-bullhorn"></i> Buat Laporan Lagi`;
-                thanksBtnSurat.dataset.page = "layanan";
-                thanksBtnSurat.setAttribute("href", "#layanan");
-            }
-        } else {
-            if (titleEl) titleEl.textContent = "Permohonan Surat Berhasil Dikirim!";
-            if (descEl) descEl.textContent = "Terima kasih atas kepercayaan Anda menggunakan layanan kami";
-            
-            if (refLabel) refLabel.textContent = "Nomor Registrasi:";
-            if (refSub) refSub.textContent = "Simpan nomor ini untuk melacak status permohonan surat Anda";
-            
-            if (card1Title) card1Title.textContent = "Waktu Pemprosesan";
-            if (card1Desc) card1Desc.textContent = "Permohonan surat Anda akan diproses dalam waktu 2-5 hari kerja. Status akan diperbarui secara berkala.";
-            
-            if (step1Text) step1Text.textContent = "Pantau status permohonan Anda secara berkala melalui dashboard";
-            if (step2Text) step2Text.textContent = "Pastikan notifikasi email Anda aktif agar tidak melewatkan update penting";
-            if (step3Text) step3Text.textContent = "Jika surat sudah selesai, Anda akan diberitahu untuk mengambil dokumen di kantor kelurahan";
-            
-            if (trackLink) {
-                trackLink.innerHTML = `<i class="fa-regular fa-file-lines"></i> Lihat Status Surat`;
-                trackLink.dataset.page = "warga/surat";
-                trackLink.setAttribute("href", "#warga/surat");
-            }
-            
-            if (thanksBtnSurat) {
-                thanksBtnSurat.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Ajukan Surat Lagi`;
-                thanksBtnSurat.dataset.page = "pengajuan-online";
-                thanksBtnSurat.setAttribute("href", "#pengajuan-online");
-            }
-        }
-
-        const btnCopy = document.getElementById("btnCopyReg");
-        if (btnCopy) {
-            btnCopy.onclick = () => {
-                if (id) {
-                    navigator.clipboard.writeText(id).then(() => {
-                        alert("Nomor registrasi berhasil disalin!");
-                    }).catch(() => {
-                        alert("Gagal menyalin nomor registrasi.");
-                    });
-                }
-            };
-        }
-    }
-
-    // =========================
-    // HOOK ROUTER (Tanpa Global Flags)
-    // =========================
-    window.addEventListener("page:loaded", (e) => {
-        const name = e.detail?.name || "";
-        const isWarga = name.startsWith("warga/");
-        document.body.classList.toggle("is-warga", isWarga);
-        if (!isWarga) {
-            document.body.classList.remove("warga-menu-open");
-            return;
-        }
-
-        const session = Guard?.getSession();
-        if (!session) {
-            console.warn("User tidak terautentikasi");
-            return;
-        }
-
-        fillWargaUserLabel();
-        setWargaSidebarActive("#" + name);
-        ensureWargaMobileMenu();
-        mountWargaMenuButton();
-
-        if (name === "warga/pengaduan") {
-            initPengaduan();
-        }
-        if (name === "warga/profil") {
-            initProfil();
-        }
-        if (name === "warga/dashboard") {
-            initDashboard();
-        }
-        if (name === "warga/surat") {
-            initSurat();
-        }
-        if (name === "warga/chat") {
-            initChat();
-        }
-        if (name === "warga/konfirmasi") {
-            initKonfirmasi();
-        }
-    });
-})();

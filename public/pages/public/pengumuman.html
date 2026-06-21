@@ -1,28 +1,73 @@
-<section class="page pengumuman-page">
-    <div class="container page-wrap">
-
-        <header class="page-header">
-            <h1>Pengumuman Kelurahan</h1>
-            <p>Informasi resmi dari Kelurahan Duren Mekar...</p>
-        </header>
-
-        <div class="pengumuman-filters">
-            <div class="filter-field">
-                <label for="filterKategori">Kategori</label>
-                <select id="filterKategori">
-                    <option value="">Semua</option>
-                    <!-- dst -->
-                </select>
-            </div>
-
-            <div class="filter-field">
-                <label for="filterCari">Cari</label>
-                <input id="filterCari" type="search" placeholder="Cari judul / isi pengumuman" />
+<section class="pengumuman-page pengumuman-integrated-page">
+    <div class="rds-simple-hero">
+        <div class="container rds-simple-hero-inner">
+            <nav class="rds-breadcrumb-dark" aria-label="Breadcrumb">
+                <a href="#home" data-page="home">Beranda</a>
+                <span>›</span>
+                <span>Pengumuman</span>
+            </nav>
+            <div class="rds-hero-row">
+                <div>
+                    <span class="rds-kicker-dark">Pusat Informasi</span>
+                    <h1>Pengumuman &amp; Pemberitahuan Resmi</h1>
+                    <p>
+                        Informasi resmi dari Kelurahan Duren Mekar untuk masyarakat, mulai dari administrasi, kesehatan,
+                        kegiatan warga, hingga pemberitahuan layanan publik.
+                    </p>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div id="pengumumanList" class="pengumuman-empty">
-            Belum ada pengumuman...
+    <div class="container pengumuman-integrated-content">
+        <div class="pengumuman-integrated-layout">
+            <main class="pengumuman-integrated-main">
+                <!-- Filter lama tetap dipertahankan supaya public.js tetap bekerja -->
+                <div class="peng-filters pengumuman-modern-filters">
+                    <div class="peng-filter-field">
+                        <label for="filterKategori"><i class="fa-solid fa-filter"></i> Kategori</label>
+                        <select id="filterKategori">
+                            <option value="">Semua</option>
+                        </select>
+                    </div>
+                    <div class="peng-filter-field peng-filter-search">
+                        <label for="filterCari"><i class="fa-solid fa-magnifying-glass"></i> Cari</label>
+                        <input id="filterCari" type="search" placeholder="Cari judul / isi pengumuman..." />
+                    </div>
+                </div>
+
+                <!-- List pengumuman tetap memakai id lama agar data backend tetap masuk -->
+                <div id="pengumumanList" class="peng-list pengumuman-integrated-list"></div>
+                <div id="pengumumanPagination" class="data-pagination"></div>
+            </main>
+
+            <aside class="pengumuman-integrated-sidebar">
+                <section class="rds-side-card rds-stat-card">
+                    <span>Informasi Terkini</span>
+                    <strong id="pengumumanSidebarCount">--</strong>
+                    <small>Pengumuman aktif</small>
+                    <hr>
+                    <div><b>100%</b><small>Respon layanan</small></div>
+                </section>
+
+                <section class="rds-side-card">
+                    <h3>Agenda Mendatang</h3>
+                    <div id="pengumumanSidebarAgendaList" class="rds-mini-agenda">
+                        <div class="rds-sidebar-loading">Memuat agenda...</div>
+                    </div>
+                    <a href="#agenda" data-page="agenda" class="rds-outline-btn">Lihat Semua Agenda</a>
+                </section>
+
+                <section class="rds-side-card">
+                    <h3>Kategori</h3>
+                    <div id="pengumumanSidebarCategories" class="rds-category-list">
+                        <span>Kesehatan</span>
+                        <span>Administrasi</span>
+                        <span>Kegiatan</span>
+                        <span>Pelayanan</span>
+                    </div>
+                </section>
+            </aside>
         </div>
     </div>
 </section>

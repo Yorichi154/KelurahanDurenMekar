@@ -1,0 +1,210 @@
+/* ===========================================================================
+   AUTH DUA-KOLOM — panel biru di samping untuk SEMUA halaman auth
+   (login, register, lupa password, verify OTP, reset password)
+   Markup di-tanam langsung di tiap HTML (class .auth-card.has-blue-side),
+   jadi tidak bergantung pada injeksi JS.
+   Catatan: warna teks putih & gaya kicker panel sudah diatur oleh app.min.css
+   (selektor .auth-page .auth-blue-side ...). File ini menambahkan LAYOUT.
+=========================================================================== */
+
+.auth-page .auth-card.has-blue-side {
+    width: min(960px, calc(100% - 32px));
+    max-width: 960px;
+    padding: 0;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1.02fr 0.98fr;
+    align-items: stretch;
+}
+
+.auth-page .auth-card.has-blue-side.wide {
+    width: min(1040px, calc(100% - 32px));
+    max-width: 1040px;
+}
+
+/* ---------- Panel biru kiri ---------- */
+.auth-blue-side {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 28px;
+    padding: 42px 38px;
+    min-height: 560px;
+    isolation: isolate;
+    background-color: #1e40af;
+}
+
+.auth-blue-side::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: 
+        linear-gradient(135deg, rgba(37, 99, 235, 0.68) 0%, rgba(14, 58, 138, 0.88) 100%),
+        url('../images/Background.png') center center / cover no-repeat;
+}
+
+/* watermark logo (gambar gedung tidak tersedia) */
+.auth-blue-side::after {
+    content: "";
+    position: absolute;
+    right: -36px;
+    bottom: -26px;
+    width: 250px;
+    height: 200px;
+    z-index: -1;
+    opacity: 0.16;
+    display: none !important; /* hide the large watermark logo */
+}
+
+.auth-blue-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.auth-page .auth-blue-side .auth-blue-brand .auth-blue-logo,
+.auth-blue-side .auth-blue-logo {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    background: #ffffff !important;
+    border-radius: 50% !important;
+    padding: 6px !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+    flex-shrink: 0;
+}
+
+.auth-page .auth-blue-side .auth-blue-brand .auth-blue-logo img,
+.auth-blue-side .auth-blue-logo img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+}
+
+.auth-blue-name {
+    display: block;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.auth-blue-address {
+    display: block;
+    font-size: 12px;
+    opacity: 0.92;
+}
+
+.auth-blue-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: auto;
+}
+
+.auth-blue-kicker {
+    align-self: flex-start;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    padding: 5px 13px;
+    border-radius: 999px;
+}
+
+.auth-blue-title {
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1.16;
+    margin: 0;
+}
+
+.auth-blue-desc {
+    font-size: 14px;
+    line-height: 1.65;
+    opacity: 0.95;
+    margin: 0;
+    max-width: 44ch;
+}
+
+.auth-blue-security {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.auth-blue-sec-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.auth-blue-sec-item i {
+    font-size: 19px;
+}
+
+.auth-blue-sec-item strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.auth-blue-sec-item small {
+    display: block;
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+/* ---------- Kolom form kanan ---------- */
+.auth-blue-form-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 34px;
+    background: var(--surface, #fff);
+}
+
+.auth-blue-form-inner {
+    width: 100%;
+    max-width: 400px;
+}
+
+.auth-card.has-blue-side .auth-blue-form-inner > .auth-icon {
+    margin-bottom: 6px;
+}
+
+/* ---------- Responsif: tumpuk & sembunyikan panel di layar kecil ---------- */
+@media (max-width: 860px) {
+    .auth-page .auth-card.has-blue-side,
+    .auth-page .auth-card.has-blue-side.wide {
+        grid-template-columns: 1fr;
+        width: min(540px, calc(100% - 28px));
+    }
+    .auth-blue-side {
+        display: none;
+    }
+    .auth-blue-form-wrap {
+        padding: 28px 22px;
+    }
+}
+
+/* =====================================================================
+   DASHBOARD TWEAKS: Hide hamburger Menu toggles on desktop (> 800px)
+   ===================================================================== */
+@media (min-width: 801px) {
+    .staf-top .side-toggle,
+    .warga-top .side-toggle,
+    .admin-top .side-toggle,
+    .dash-topbar .side-toggle {
+        display: none !important;
+    }
+}
+

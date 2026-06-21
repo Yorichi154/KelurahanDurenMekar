@@ -1,14 +1,68 @@
-<section class="agenda-page">
-    <div class="container">
-        <div class="page-head">
-            <div class="stack">
-                <h1>Agenda Kegiatan</h1>
-                <p class="muted">
-                    Kegiatan kelurahan dan agenda pelayanan masyarakat.
-                </p>
+<section class="agenda-page agenda-integrated-page">
+    <div class="rds-simple-hero agenda-simple-hero">
+        <div class="container rds-simple-hero-inner">
+            <nav class="rds-breadcrumb-dark" aria-label="Breadcrumb">
+                <a href="#home" data-page="home">Beranda</a>
+                <span>›</span>
+                <span>Agenda</span>
+            </nav>
+            <div class="rds-hero-row">
+                <div>
+                    <span class="rds-kicker-dark">Agenda Kelurahan</span>
+                    <h1>Jadwal Kegiatan &amp; Agenda</h1>
+                    <p>
+                        Pantau terus jadwal kegiatan kemasyarakatan, pelayanan keliling, dan acara penting lainnya di lingkungan Kelurahan Duren Mekar.
+                    </p>
+                </div>
             </div>
         </div>
+    </div>
 
-        <ul id="agendaPublic" class="agenda-public"></ul>
+    <div class="container agenda-integrated-content">
+        <div class="agenda-integrated-layout">
+            <main class="agenda-integrated-main">
+                <!-- JS lama tetap mengisi agenda dari backend ke container ini -->
+                <div id="agendaPublic" class="agenda-public agenda-integrated-list"></div>
+                <div id="agendaPagination" class="data-pagination"></div>
+            </main>
+
+            <aside class="agenda-integrated-sidebar">
+                <section class="rds-side-card rds-calendar-card">
+                    <div class="rds-calendar-head">
+                        <h3 id="agendaCalendarMonth">Agenda Bulan Ini</h3>
+                        <div>
+                            <button type="button" aria-label="Sebelumnya"><i class="fa-solid fa-chevron-left"></i></button>
+                            <button type="button" aria-label="Berikutnya"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div id="agendaSidebarCalendar" class="rds-calendar-grid" aria-label="Kalender agenda">
+                        <span>M</span><span>S</span><span>S</span><span>R</span><span>K</span><span>J</span><span>S</span>
+                    </div>
+                </section>
+
+                <section class="rds-side-card rds-stat-card">
+                    <span>Bulan Ini</span>
+                    <strong id="agendaSidebarCount">--</strong>
+                    <small>Total kegiatan terjadwal</small>
+                    <hr>
+                    <div id="agendaSidebarCategories">
+                        <b>Agenda</b><small>Memuat data...</small>
+                    </div>
+                </section>
+
+                <section class="rds-side-card rds-cta-card">
+                    <h3>Ada Agenda?</h3>
+                    <p>Laporkan atau daftarkan kegiatan lingkungan Anda untuk dipublikasikan di kalender resmi kelurahan.</p>
+                    <a href="#kontak" data-page="kontak" class="rds-solid-btn"><i class="fa-solid fa-circle-plus"></i> Daftarkan Agenda</a>
+                </section>
+
+                <section class="rds-side-card">
+                    <h3>Pengumuman Penting</h3>
+                    <div id="agendaSidebarPengumumanList" class="rds-alert-list">
+                        <div class="rds-sidebar-loading">Memuat pengumuman...</div>
+                    </div>
+                </section>
+            </aside>
+        </div>
     </div>
 </section>

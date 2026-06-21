@@ -1,87 +1,103 @@
 <section class="auth-page">
-  <div class="auth-card wide">
+  <div class="auth-card wide has-blue-side" data-final-auth-enhanced="true">
+    <aside class="auth-blue-side">
+      <div class="auth-blue-brand">
+        <div class="auth-blue-logo">
+          <img src="/assets/images/Lambang_Kota_Depok.png" alt="Logo Kota Depok">
+        </div>
+        <div>
+          <strong class="auth-blue-name">Kelurahan Duren Mekar</strong>
+          <small class="auth-blue-address">Kecamatan Bojongsari, Kota Depok</small>
+        </div>
+      </div>
+      <div class="auth-blue-copy">
+        <span class="auth-blue-kicker">Portal Pelayanan</span>
+        <h2 class="auth-blue-title">Selamat Datang di Portal Kelurahan</h2>
+        <p class="auth-blue-desc">Akses layanan administrasi, pengajuan surat, pengaduan warga, dan informasi resmi secara aman dan terpadu.</p>
+      </div>
+      <div class="auth-blue-security">
+        <div class="auth-blue-sec-item"><i class="fa-solid fa-shield-halved"></i><div><strong>Aman</strong><small>Data terlindungi</small></div></div>
+        <div class="auth-blue-sec-item"><i class="fa-solid fa-clock"></i><div><strong>Cepat</strong><small>Layanan online</small></div></div>
+      </div>
+    </aside>
 
-    <div class="auth-icon">
-      <i class="fa fa-user-plus"></i>
+    <div class="auth-blue-form-wrap">
+      <div class="auth-blue-form-inner">
+        <div class="auth-icon">
+          <i class="fa fa-user-plus"></i>
+        </div>
+
+        <h2>Daftar Akun Warga</h2>
+        <p class="auth-subtitle">
+          Lengkapi data diri Anda untuk mendaftar
+        </p>
+
+        <!-- pesan error -->
+        <div
+          id="registerError"
+          class="auth-error"
+          style="display:none; margin:12px 0; padding:10px 12px; border-radius:10px; background:#fee2e2; color:#991b1b; font-weight:600; line-height:1.5;"
+        ></div>
+
+        <form class="register-form" id="registerForm" novalidate>
+          <div class="form-grid">
+            <div>
+              <label>Nama Lengkap *</label>
+              <input type="text" id="regName" required>
+            </div>
+            <div>
+              <label>NIK (16 digit) *</label>
+              <input type="text" id="regNik" maxlength="16" inputmode="numeric" placeholder="16 digit NIK" required aria-describedby="regNikHelp regNikError">
+              <small id="regNikHelp" style="display:block; margin-top:6px; color:#64748b; font-weight:600; font-size:12px; line-height:1.45;">Format NIK: 16 digit sesuai data kependudukan Indonesia.</small>
+              <small id="regNikError" style="display:none; margin-top:6px; color:#991b1b; font-weight:800; font-size:12px; line-height:1.45;"></small>
+            </div>
+
+            <div>
+              <label>Email *</label>
+              <input type="email" id="regEmail" required>
+            </div>
+            <div>
+              <label>No. Telepon *</label>
+              <input type="tel" id="regTelp" required>
+            </div>
+          </div>
+
+          <label>Alamat Lengkap *</label>
+          <input type="text" id="regAlamat" required>
+
+          <div class="form-grid small">
+            <div>
+              <label>RT *</label>
+              <input type="text" id="regRt" placeholder="01" required>
+            </div>
+            <div>
+              <label>RW *</label>
+              <input type="text" id="regRw" placeholder="02" required>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div>
+              <label>Password *</label>
+              <input type="password" id="regPass" required>
+            </div>
+            <div>
+              <label>Konfirmasi Password *</label>
+              <input type="password" id="regPass2" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-auth">Daftar Sekarang</button>
+        </form>
+
+        <div class="auth-links">
+          Sudah punya akun? <a href="#" class="nav-link" data-page="login">Login di sini</a>
+        </div>
+
+        <a href="#" class="back-home nav-link" data-page="home">
+          ← Kembali ke Beranda
+        </a>
+      </div>
     </div>
-
-    <h2>Daftar Akun Warga</h2>
-    <p class="auth-subtitle">
-      Lengkapi data diri Anda untuk mendaftar
-    </p>
-
-    <!-- pesan error -->
-    <div
-      id="registerError"
-      class="auth-error"
-      style="
-        display: none;
-        margin: 12px 0;
-        padding: 10px 12px;
-        border-radius: 10px;
-        background: #fee2e2;
-        color: #991b1b;
-        font-weight: 600;
-        line-height: 1.5;
-      "
-    ></div>
-
-    <form class="register-form" id="registerForm">
-      <div class="form-grid">
-        <div>
-          <label>Nama Lengkap *</label>
-          <input type="text" id="regName" required>
-        </div>
-        <div>
-          <label>NIK (16 digit) *</label>
-          <input type="text" id="regNik" maxlength="16" required>
-        </div>
-
-        <div>
-          <label>Email *</label>
-          <input type="email" id="regEmail" required>
-        </div>
-        <div>
-          <label>No. Telepon *</label>
-          <input type="tel" id="regTelp" required>
-        </div>
-      </div>
-
-      <label>Alamat Lengkap *</label>
-      <input type="text" id="regAlamat" required>
-
-      <div class="form-grid small">
-        <div>
-          <label>RT *</label>
-          <input type="text" id="regRt" placeholder="01" required>
-        </div>
-        <div>
-          <label>RW *</label>
-          <input type="text" id="regRw" placeholder="02" required>
-        </div>
-      </div>
-
-      <div class="form-grid">
-        <div>
-          <label>Password *</label>
-          <input type="password" id="regPass" required>
-        </div>
-        <div>
-          <label>Konfirmasi Password *</label>
-          <input type="password" id="regPass2" required>
-        </div>
-      </div>
-
-      <button type="submit" class="btn-auth">Daftar Sekarang</button>
-    </form>
-
-    <div class="auth-links">
-      Sudah punya akun? <a href="#" class="nav-link" data-page="login">Login di sini</a>
-    </div>
-
-    <a href="#" class="back-home nav-link" data-page="home">
-      ← Kembali ke Beranda
-    </a>
-
   </div>
 </section>

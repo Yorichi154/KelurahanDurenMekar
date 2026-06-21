@@ -1,48 +1,94 @@
-<section class="berita-page">
-  <div class="container">
-    <div class="page-head">
-      <h1>Berita & Informasi</h1>
-      <p>Informasi terbaru dari kelurahan untuk masyarakat.</p>
+<section class="berita-page berita-integrated-page">
+    <div class="rds-simple-hero">
+        <div class="container rds-simple-hero-inner">
+            <nav class="rds-breadcrumb-dark" aria-label="Breadcrumb">
+                <a href="#home" data-page="home">Beranda</a>
+                <span>›</span>
+                <span>Berita</span>
+            </nav>
+            <div class="rds-hero-row">
+                <div>
+                    <span class="rds-kicker-dark">Pusat Informasi</span>
+                    <h1>Berita &amp; Pengumuman Resmi</h1>
+                    <p>
+                        Tetap terinformasi dengan berita terbaru, jadwal kegiatan, dan pengumuman penting dari Kantor
+                        Kelurahan Duren Mekar.
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="berita-toolbar">
-      <div class="search-box">
-        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-        <input id="beritaSearch" type="search" placeholder="Cari berita..." />
-      </div>
+    <div class="container berita-integrated-content">
+        <div class="berita-integrated-layout">
+            <main class="berita-integrated-main">
+                <!-- JS lama tetap mengisi berita ke container ini -->
+                <div id="beritaContainer" class="berita-grid berita-integrated-grid"></div>
+                <div id="beritaPagination" class="data-pagination"></div>
+            </main>
 
-      <div class="filter-tabs" id="beritaTabs">
-        <button class="tab active" data-filter="all">Semua</button>
-        <button class="tab" data-filter="Pengumuman">Pengumuman</button>
-        <button class="tab" data-filter="Kegiatan">Kegiatan</button>
-        <button class="tab" data-filter="Kesehatan">Kesehatan</button>
-      </div>
+            <aside class="berita-integrated-sidebar">
+                <section class="rds-side-card">
+                    <h3>Cari Berita</h3>
+                    <div class="search-box berita-modern-search">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <input id="beritaSearch" type="search" placeholder="Masukkan kata kunci..." />
+                    </div>
+                </section>
+
+                <section class="rds-side-card">
+                    <h3>Pengumuman Penting</h3>
+                    <!-- Diisi dari database via /api/public/pengumuman -->
+                    <div id="beritaSidebarPengumumanList" class="rds-alert-list">
+                        <div class="rds-sidebar-loading">Memuat pengumuman...</div>
+                    </div>
+                </section>
+
+                <section class="rds-side-card">
+                    <h3>Agenda Mendatang</h3>
+                    <!-- Diisi dari database via /api/public/agenda -->
+                    <div id="beritaSidebarAgendaList" class="rds-mini-agenda">
+                        <div class="rds-sidebar-loading">Memuat agenda...</div>
+                    </div>
+                    <a href="#agenda" data-page="agenda" class="rds-outline-btn">Lihat Semua Kalender</a>
+                </section>
+
+                <section class="rds-side-card">
+                    <h3>Kategori Populer</h3>
+                    <!-- ID beritaTabs dipertahankan agar filter JS lama tetap jalan -->
+                    <div class="filter-tabs berita-category-pills" id="beritaTabs">
+                        <button class="tab active" data-filter="all">Semua</button>
+                        <button class="tab" data-filter="Pengumuman">Pengumuman</button>
+                        <button class="tab" data-filter="Kegiatan">Kegiatan</button>
+                        <button class="tab" data-filter="Kesehatan">Kesehatan</button>
+                    </div>
+                </section>
+            </aside>
+        </div>
     </div>
-
-    <div id="beritaContainer" class="berita-grid"></div>
-
-    <!-- Detail Berita Modal -->
+    <!-- Modal detail lama dipertahankan untuk JS public.js -->
     <div class="modal" id="publicBeritaModal" aria-hidden="true">
-      <div class="modal-panel" style="max-width: 760px; width: 90%; max-height: 90vh; overflow-y: auto; border-radius: var(--radius);">
-        <div class="modal-head" style="position: sticky; top: 0; background: var(--surface); z-index: 10; border-bottom: 1px solid var(--border); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="margin: 0;" id="publicBeritaTitle">Detail Berita</h3>
-          <button class="btn btn-ghost" id="closePublicBeritaModalBtn" style="padding: 6px 10px;">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+        <div class="modal-panel"
+            style="max-width: 760px;width: 90%;max-height: 90vh;overflow-y: auto;border-radius: var(--radius);">
+            <div class="modal-head"
+                style="position: sticky;top: 0;background: var(--surface);z-index: 10;border-bottom: 1px solid var(--border);padding: 14px 18px;display: flex;justify-content: space-between;align-items: center;">
+                <h3 style="margin: 0" id="publicBeritaTitle">Detail Berita</h3>
+                <button class="btn btn-ghost" id="closePublicBeritaModalBtn" style="padding: 6px 10px"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px">
+                <img id="publicBeritaImage" src="" alt=""
+                    style="width: 100%;max-height: 380px;object-fit: cover;border-radius: 12px;margin-bottom: 16px;display: none;" />
+                <div style="display: flex;gap: 10px;align-items: center;margin-bottom: 12px;">
+                    <span class="badge" id="publicBeritaCategory"
+                        style="background: rgba(31, 95, 224, 0.1);color: var(--primary);padding: 4px 8px;border-radius: 6px;font-size: 12px;font-weight: 700;"></span>
+                    <small class="muted" id="publicBeritaDate"></small>
+                </div>
+                <h2 id="publicBeritaHeadline"
+                    style="font-size: 22px;font-weight: 950;line-height: 1.3;margin-bottom: 16px;"></h2>
+                <div id="publicBeritaContent"
+                    style="font-size: 14px;line-height: 1.6;color: #334155;white-space: pre-wrap;"></div>
+            </div>
         </div>
-        <div class="modal-body" style="padding: 20px;">
-          <img id="publicBeritaImage" src="" alt="" style="width: 100%; max-height: 380px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; display: none;">
-          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px;">
-            <span class="badge" id="publicBeritaCategory" style="background: rgba(31, 95, 224, 0.1); color: var(--primary); padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;"></span>
-            <small class="muted" id="publicBeritaDate"></small>
-          </div>
-          <h2 id="publicBeritaHeadline" style="font-size: 22px; font-weight: 950; line-height: 1.3; margin-bottom: 16px;"></h2>
-          <div id="publicBeritaContent" style="font-size: 14px; line-height: 1.6; color: #334155; white-space: pre-wrap;"></div>
-        </div>
-      </div>
     </div>
-
-  </div>
 </section>
-
-<script src="assets/js/public/berita.js"></script>

@@ -1,333 +1,278 @@
-// assets/js/core/main.js
 const APP_BASE = (() => {
-    const parts = location.pathname.split("/").filter(Boolean);
-    if (!parts.length) return "/";
-    if (parts[0].includes(".html")) return "/";
-    return `/${parts[0]}/`;
+    const e = location.pathname.split("/").filter(Boolean);
+    return !e.length || e[0].includes(".html") ? "/" : `/${e[0]}/`;
 })();
-
-// ==============================
-// SESSION HELPERS (via Guard)
-// ==============================
 function getSessionUser() {
     if (
         window.KelurahanGuard &&
-        typeof window.KelurahanGuard.getSession === "function"
-    ) {
+        typeof window.KelurahanGuard.getSession == "function"
+    )
         return window.KelurahanGuard.getSession();
-    }
     try {
-        const raw = sessionStorage.getItem("user");
-        return raw ? JSON.parse(raw) : null;
-    } catch {
+        const e = sessionStorage.getItem("user");
+        return e ? JSON.parse(e) : null;
+    } catch (e) {
         return null;
     }
 }
-
 function getRole() {
-    if (
-        window.KelurahanGuard &&
-        typeof window.KelurahanGuard.getRole === "function"
-    ) {
-        return window.KelurahanGuard.getRole();
-    }
-    return getSessionUser()?.role || "";
+    var e;
+    return window.KelurahanGuard &&
+        typeof window.KelurahanGuard.getRole == "function"
+        ? window.KelurahanGuard.getRole()
+        : ((e = getSessionUser()) == null ? void 0 : e.role) || "";
 }
-
 function getUserName() {
-    return getSessionUser()?.name || "";
+    var e;
+    return ((e = getSessionUser()) == null ? void 0 : e.name) || "";
 }
-
 function isAuthenticated() {
-    if (
-        window.KelurahanGuard &&
-        typeof window.KelurahanGuard.isAuthenticated === "function"
-    ) {
-        return window.KelurahanGuard.isAuthenticated();
-    }
-    return !!getSessionUser();
+    return window.KelurahanGuard &&
+        typeof window.KelurahanGuard.isAuthenticated == "function"
+        ? window.KelurahanGuard.isAuthenticated()
+        : !!getSessionUser();
 }
-
-// ==============================
-// HEADER AUTH BUTTON
-// ==============================
-function formatUserLabel(name, role) {
-    const n = String(name || "").trim();
-    const r = String(role || "")
-        .trim()
-        .toLowerCase();
-    if (!n || !r) return "";
-    if (r === "warga") return n;
-    if (r === "admin" || r === "staf") return `${n} (${r})`;
-    return `${n} (${r})`;
+function formatUserLabel(e, a) {
+    const t = String(e || "").trim(),
+        n = String(a || "")
+            .trim()
+            .toLowerCase();
+    return !t || !n
+        ? ""
+        : n === "warga"
+          ? t
+          : n === "admin" || n === "staf"
+            ? `${t} (${n})`
+            : `${t} (${n})`;
 }
-
 function updateHeaderAuthButton() {
-    const btn = document.querySelector("a.btn-login");
-    if (!btn) return;
-    const role = getRole();
-    const name = getUserName();
-    const span = btn.querySelector("span");
-    const icon = btn.querySelector("i");
-
-    if (role && name) {
-        const label = formatUserLabel(name, role);
-        if (span) span.textContent = label || name;
-        if (icon) {
-            icon.classList.remove("fa-right-to-bracket");
-            icon.classList.add("fa-user");
-        }
-        const target = `${role}/dashboard`;
-        btn.setAttribute("href", `#${target}`);
-        btn.dataset.page = target;
-        btn.setAttribute("aria-label", `Akun: ${label || name}`);
-        btn.classList.add("is-auth");
-    } else {
-        if (span) span.textContent = "Login";
-        if (icon) {
-            icon.classList.remove("fa-user");
-            icon.classList.add("fa-right-to-bracket");
-        }
-        btn.setAttribute("href", "#login");
-        btn.dataset.page = "login";
-        btn.setAttribute("aria-label", "Login");
-        btn.classList.remove("is-auth");
-    }
+    const e = document.querySelector("a.btn-login");
+    if (!e) return;
+    const a = getRole(),
+        t = getUserName(),
+        n = e.querySelector("span"),
+        s = e.querySelector("i");
+    if (a && t) {
+        const l = formatUserLabel(t, a);
+        (n && (n.textContent = l || t),
+            s &&
+                (s.classList.remove("fa-right-to-bracket"),
+                s.classList.add("fa-user")));
+        const i = `${a}/dashboard`;
+        (e.setAttribute("href", `#${i}`),
+            (e.dataset.page = i),
+            e.setAttribute("aria-label", `Akun: ${l || t}`),
+            e.classList.add("is-auth"));
+    } else
+        (n && (n.textContent = "Login"),
+            s &&
+                (s.classList.remove("fa-user"),
+                s.classList.add("fa-right-to-bracket")),
+            e.setAttribute("href", "#login"),
+            (e.dataset.page = "login"),
+            e.setAttribute("aria-label", "Login"),
+            e.classList.remove("is-auth"));
 }
-
-function updateGuestOnlySections(root = document) {
-    const loggedIn = isAuthenticated();
-    const selectors = [
-        ".hero-actions",
-        "#heroGuestActions",
-        ".home-cta",
-        ".home-cta .cta-actions",
-    ];
-    const seen = new Set();
-    selectors.forEach((sel) => {
-        root.querySelectorAll(sel).forEach((el) => seen.add(el));
-    });
-
-    seen.forEach((el) => {
-        if (el.classList.contains("home-cta")) {
-            el.style.display = loggedIn ? "none" : "";
-            el.toggleAttribute("hidden", loggedIn);
-            el.setAttribute("aria-hidden", loggedIn ? "true" : "false");
-            return;
-        }
-        el.style.display = loggedIn ? "none" : "";
-        el.toggleAttribute("hidden", loggedIn);
-        el.setAttribute("aria-hidden", loggedIn ? "true" : "false");
-    });
+function updateGuestOnlySections(e = document) {
+    const a = isAuthenticated(),
+        t = [
+            ".hero-actions",
+            "#heroGuestActions",
+            ".home-cta",
+            ".home-cta .cta-actions",
+        ],
+        n = new Set();
+    (t.forEach((s) => {
+        e.querySelectorAll(s).forEach((l) => n.add(l));
+    }),
+        n.forEach((s) => {
+            if (s.classList.contains("home-cta")) {
+                ((s.style.display = a ? "none" : ""),
+                    s.toggleAttribute("hidden", a),
+                    s.setAttribute("aria-hidden", a ? "true" : "false"));
+                return;
+            }
+            ((s.style.display = a ? "none" : ""),
+                s.toggleAttribute("hidden", a),
+                s.setAttribute("aria-hidden", a ? "true" : "false"));
+        }));
 }
-
-// ==============================
-// FETCH HELPERS
-// ==============================
-async function fetchFirstOk(urls) {
-    for (let url of urls) {
-        if (!url.startsWith("http") && !url.startsWith("/")) {
-            url = APP_BASE + url;
-        }
-        const res = await fetch(url, { cache: "no-store" });
-        if (res.ok) return await res.text();
+async function fetchFirstOk(e) {
+    for (let a of e) {
+        !a.startsWith("http") && !a.startsWith("/") && (a = APP_BASE + a);
+        const t = await fetch(a, { cache: "no-store" });
+        if (t.ok) return await t.text();
     }
-    throw new Error("Semua path gagal: " + urls.join(" | "));
+    throw new Error("Semua path gagal: " + e.join(" | "));
 }
-
-function normalizePage(raw) {
-    let clean = (raw || "").split("?")[0];
-    if (clean.startsWith("#")) {
-        clean = clean.substring(1);
-    }
-    clean = clean.split("#")[0];
+function normalizePage(e) {
+    let a = (e || "").split("?")[0];
     return (
-        clean
-            .replace(/^[?/]+/, "")
-            .trim() || "home"
+        a.startsWith("#") && (a = a.substring(1)),
+        (a = a.split("#")[0]),
+        a.replace(/^[?/]+/, "").trim() || "home"
     );
 }
-
 function getPageFromHash() {
-    const path = window.location.pathname;
-    if (path.includes('/reset-password/')) {
-        return 'reset-password';
-    }
-    return normalizePage(window.location.hash);
+    return window.location.pathname.includes("/reset-password/")
+        ? "reset-password"
+        : normalizePage(window.location.hash);
 }
-
-// ==============================
-// UX HELPERS
-// ==============================
-function upgradeLoginHints(root = document) {
-    const cells = root.querySelectorAll("td");
-    cells.forEach((td) => {
-        const t = (td.textContent || "").trim().toLowerCase();
-        if (!t) return;
-        const match =
-            t === "login untuk lihat" ||
-            t === "login untuk melihat" ||
-            t === "login untuk melihat data kontak." ||
-            t === "login untuk melihat data kontak";
-        if (!match) return;
-        if (td.querySelector("a[data-page='login']")) return;
-        td.innerHTML = `<div class="muted" style="display:flex;align-items:center;gap:10px;justify-content:center;padding:10px 0"><span>Login untuk lihat</span><a class="btn btn-primary btn-sm nav-link" href="#login" data-page="login"><i class="fa-solid fa-right-to-bracket"></i> Login</a></div>`;
+function upgradeLoginHints(e = document) {
+    e.querySelectorAll("td").forEach((t) => {
+        const n = (t.textContent || "").trim().toLowerCase();
+        !n ||
+            !(
+                n === "login untuk lihat" ||
+                n === "login untuk melihat" ||
+                n === "login untuk melihat data kontak." ||
+                n === "login untuk melihat data kontak"
+            ) ||
+            t.querySelector("a[data-page='login']") ||
+            (t.innerHTML =
+                '<div class="muted" style="display:flex;align-items:center;gap:10px;justify-content:center;padding:10px 0"><span>Login untuk lihat</span><a class="btn btn-primary btn-sm nav-link" href="#login" data-page="login"><i class="fa-solid fa-right-to-bracket"></i> Login</a></div>');
     });
 }
-
-function syncResponsiveTables(root = document) {
-    const tables = root.querySelectorAll("table.table, table.warga-table");
-    tables.forEach((table) => {
-        const heads = Array.from(table.querySelectorAll("thead th")).map((th) =>
-            (th.textContent || "").trim(),
+function syncResponsiveTables(e = document) {
+    e.querySelectorAll("table.table, table.warga-table").forEach((t) => {
+        const n = Array.from(t.querySelectorAll("thead th")).map((s) =>
+            (s.textContent || "").trim(),
         );
-        if (!heads.length) return;
-        table.querySelectorAll("tbody tr").forEach((tr) => {
-            const cells = Array.from(tr.children).filter(
-                (el) => el.tagName === "TD",
-            );
-            cells.forEach((td, i) => {
-                const label = heads[i] || "";
-                if (label) td.dataset.label = label;
+        n.length &&
+            t.querySelectorAll("tbody tr").forEach((s) => {
+                Array.from(s.children)
+                    .filter((i) => i.tagName === "TD")
+                    .forEach((i, c) => {
+                        const o = n[c] || "";
+                        o && (i.dataset.label = o);
+                    });
             });
-        });
     });
 }
-
-function installTableObserver(containerEl) {
+function installTableObserver(e) {
     try {
-        if (window.TABLE_OBSERVER) {
-            window.TABLE_OBSERVER.disconnect();
-            window.TABLE_OBSERVER = null;
-        }
-        syncResponsiveTables(containerEl);
-        let raf = 0;
-        const obs = new MutationObserver(() => {
-            if (raf) return;
-            raf = requestAnimationFrame(() => {
-                raf = 0;
-                syncResponsiveTables(containerEl);
-            });
+        (window.TABLE_OBSERVER &&
+            (window.TABLE_OBSERVER.disconnect(),
+            (window.TABLE_OBSERVER = null)),
+            syncResponsiveTables(e));
+        let a = 0;
+        const t = new MutationObserver(() => {
+            a ||
+                (a = requestAnimationFrame(() => {
+                    ((a = 0), syncResponsiveTables(e));
+                }));
         });
-        obs.observe(containerEl, { childList: true, subtree: true });
-        window.__TABLE_OBSERVER__ = obs;
-    } catch (e) {
-        console.warn("Table observer failed:", e);
+        (t.observe(e, { childList: !0, subtree: !0 }),
+            (window.__TABLE_OBSERVER__ = t));
+    } catch (a) {
+        console.warn("Table observer failed:", a);
     }
 }
 window.syncResponsiveTables = syncResponsiveTables;
-
-// ==============================
-// LOAD COMPONENTS
-// ==============================
 async function loadComponents() {
     try {
-        const headerHTML = await fetchFirstOk([
-            "pages/partials/header.html",
-            "pages/header.html",
-        ]);
-        const footerHTML = await fetchFirstOk([
-            "pages/partials/footer.html",
-            "pages/footer.html",
-        ]);
-        const headerEl = document.getElementById("header");
-        const footerEl = document.getElementById("footer");
-        if (headerEl) headerEl.innerHTML = headerHTML;
-        if (footerEl) footerEl.innerHTML = footerHTML;
-
-        setupNavigation();
-        setupDropdowns();
-        setupStickyHeader();
-        setupMobileMenu();
-        updateHeaderAuthButton();
-        updateGuestOnlySections(document);
-        navigateTo(getPageFromHash(), { replace: true });
-    } catch (err) {
-        console.error("Gagal memuat komponen:", err);
-        const content = document.getElementById("content");
-        if (content) {
-            content.innerHTML = `<div class="error" style="padding:24px;max-width:900px;margin:0 auto;">Gagal memuat komponen. Cek Console.</div>`;
-        }
+        const e = await fetchFirstOk([
+                "pages/partials/header.html",
+                "pages/header.html",
+            ]),
+            a = await fetchFirstOk([
+                "pages/partials/footer.html",
+                "pages/footer.html",
+            ]),
+            t = document.getElementById("header"),
+            n = document.getElementById("footer");
+        (t && ((t.innerHTML = e), t.classList.add("header")),
+            n && (n.innerHTML = a),
+            setupNavigation(),
+            setupDropdowns(),
+            setupStickyHeader(),
+            setupMobileMenu(),
+            updateHeaderAuthButton(),
+            updateGuestOnlySections(document),
+            navigateTo(getPageFromHash(), { replace: !0 }));
+    } catch (e) {
+        console.error("Gagal memuat komponen:", e);
+        const a = document.getElementById("content");
+        a &&
+            (a.innerHTML =
+                '<div class="error" style="padding:24px;max-width:900px;margin:0 auto;">Gagal memuat komponen. Cek Console.</div>');
     }
 }
-
-// ==============================
-// PAGE RESOLVER
-// ==============================
-async function loadPageHtml(page) {
-    const lembagaPages = ["rt", "rw", "pkk", "karang-taruna", "lpmk"];
-    let candidates = [];
-
-    if (page === "home") {
-        candidates = [`pages/public/home.html`, `pages/home.html`];
-    } else if (page === "login" || page === "register" || page === "forgot-password" || page === "verify-otp" || page === "reset-password") {
-        candidates = [
-            `pages/auth/${page}.html`,
-            `pages/public/${page}.html`,
-            `pages/${page}.html`,
-        ];
-    } else if (page.startsWith("admin/")) {
-        candidates = [`pages/${page}.html`];
-    } else if (page.startsWith("staf/")) {
-        candidates = [`pages/${page}.html`];
-    } else if (page.startsWith("warga/")) {
-        candidates = [`pages/${page}.html`];
-    } else if (!page.includes("/") && lembagaPages.includes(page)) {
-        candidates = [
-            `pages/public/lembaga-kemasyarakatan/${page}.html`,
-            `pages/public/${page}.html`,
-        ];
-    } else if (page === "unit-kerja") {
-        candidates = [`pages/public/unit-kerja.html`, `pages/unit-kerja.html`];
-    } else if (!page.includes("/") && page.startsWith("unit-")) {
-        candidates = [
-            `pages/public/unit-kerja/${page}.html`,
-            `pages/public/${page}.html`,
-        ];
-    } else if (!page.includes("/") && page.startsWith("pelayanan-")) {
-        candidates = [
-            `pages/public/pelayanan/detail.html`,
-            `pages/public/${page}.html`,
-        ];
-    } else if (page === "pengajuan-online") {
-        candidates = [
-            `pages/public/pelayanan/pengajuan-online.html`,
-            `pages/auth/pengajuan-online.html`,
-        ];
-    } else if (
-        [
-            "kontak",
-            "berita",
-            "pengumuman",
-            "agenda",
-            "galeri",
-            "pelayanan",
-            "profil-kelurahan",
-            "lembaga",
-            "struktur-organisasi",
-            "peta-wilayah",
-            "profil",
-            "about",
-            "layanan",
-        ].includes(page)
-    ) {
-        candidates = [`pages/public/${page}.html`, `pages/${page}.html`];
-    } else {
-        candidates = [
-            `pages/${page}.html`,
-            `pages/public/${page}.html`,
-            `pages/auth/${page}.html`,
-        ];
-    }
-
-    return await fetchFirstOk(candidates);
+async function loadPageHtml(e) {
+    const a = ["rt", "rw", "pkk", "karang-taruna", "lpmk"];
+    let t = [];
+    return (
+        e === "home"
+            ? (t = ["pages/public/home.html", "pages/home.html"])
+            : e === "login" ||
+                e === "register" ||
+                e === "forgot-password" ||
+                e === "verify-otp" ||
+                e === "reset-password"
+              ? (t = [
+                    `pages/auth/${e}.html`,
+                    `pages/public/${e}.html`,
+                    `pages/${e}.html`,
+                ])
+              : e.startsWith("admin/")
+                ? (t = [`pages/${e}.html`])
+                : e.startsWith("staf/")
+                  ? (t = [`pages/${e}.html`])
+                  : e.startsWith("warga/")
+                    ? (t = [`pages/${e}.html`])
+                    : !e.includes("/") && a.includes(e)
+                      ? (t = [
+                            `pages/public/lembaga-kemasyarakatan/${e}.html`,
+                            `pages/public/${e}.html`,
+                        ])
+                      : e === "unit-kerja"
+                        ? (t = [
+                              "pages/public/unit-kerja.html",
+                              "pages/unit-kerja.html",
+                          ])
+                        : !e.includes("/") && e.startsWith("unit-")
+                          ? (t = [
+                                `pages/public/unit-kerja/${e}.html`,
+                                `pages/public/${e}.html`,
+                            ])
+                          : !e.includes("/") && e.startsWith("pelayanan-")
+                            ? (t = [
+                                  "pages/public/pelayanan/detail.html",
+                                  `pages/public/${e}.html`,
+                              ])
+                            : e === "pengajuan-online"
+                              ? (t = [
+                                    "pages/public/pelayanan/pengajuan-online.html",
+                                    "pages/auth/pengajuan-online.html",
+                                ])
+                              : [
+                                      "kontak",
+                                      "berita",
+                                      "pengumuman",
+                                      "agenda",
+                                      "galeri",
+                                      "pelayanan",
+                                      "profil-kelurahan",
+                                      "lembaga",
+                                      "struktur-organisasi",
+                                      "peta-wilayah",
+                                      "profil",
+                                      "about",
+                                      "layanan",
+                                  ].includes(e)
+                                ? (t = [
+                                      `pages/public/${e}.html`,
+                                      `pages/${e}.html`,
+                                  ])
+                                : (t = [
+                                      `pages/${e}.html`,
+                                      `pages/public/${e}.html`,
+                                      `pages/auth/${e}.html`,
+                                  ]),
+        await fetchFirstOk(t)
+    );
 }
-
-// ==============================
-// STRICT ROUTE PROTECTION
-// ==============================
 const routeRoles = {
-    // Admin routes (STRICT: Hanya admin)
     "admin/dashboard": ["admin"],
     "admin/pengaduan": ["admin"],
     "admin/surat": ["admin"],
@@ -342,23 +287,17 @@ const routeRoles = {
     "admin/unit-kerja": ["admin"],
     "admin/laporan": ["admin"],
     "admin/profil": ["admin"],
-
-    // Staf routes (STRICT: Hanya staf)
     "staf/dashboard": ["staf"],
     "staf/pengaduan": ["staf"],
     "staf/surat": ["staf"],
     "staf/laporan": ["staf"],
     "staf/profil": ["staf"],
-
-    // Warga routes (STRICT: Hanya warga)
     "warga/dashboard": ["warga"],
     "warga/surat": ["warga"],
     "warga/pengaduan": ["warga"],
     "warga/profil": ["warga"],
     "warga/konfirmasi": ["warga"],
     "pengajuan-online": ["warga"],
-
-    // Public routes
     home: null,
     login: null,
     kontak: null,
@@ -368,479 +307,543 @@ const routeRoles = {
     pelayanan: null,
     unauthorized: null,
 };
-
-function checkPageAccess(page) {
-    const allowedRoles = routeRoles[page];
-    if (allowedRoles === null) return true;
-    if (!allowedRoles) return true;
-    if (!isAuthenticated()) return false;
-    const userRole = getRole();
-    return allowedRoles.includes(userRole);
+function checkPageAccess(e) {
+    const a = routeRoles[e];
+    if (a === null || !a) return !0;
+    if (!isAuthenticated()) return !1;
+    const t = getRole();
+    return a.includes(t);
 }
-
-// ==============================
-// ROUTER + GUARD
-// ==============================
-async function navigateTo(page, opts = {}) {
+async function navigateTo(e, a = {}) {
     try {
-        page = normalizePage(page) || "home";
-
-        // CHECK ACCESS
-        if (!checkPageAccess(page)) {
-            const role = getRole();
-            if (!role) {
-                page = "login";
-            } else if (role === "admin") {
-                page = "admin/dashboard";
-            } else if (role === "staf") {
-                page = "staf/dashboard";
-            } else if (role === "warga") {
-                page = "warga/dashboard";
-            } else {
-                page = "login";
-            }
+        if (((e = normalizePage(e) || "home"), !checkPageAccess(e))) {
+            const o = getRole();
+            o
+                ? o === "admin"
+                    ? (e = "admin/dashboard")
+                    : o === "staf"
+                      ? (e = "staf/dashboard")
+                      : o === "warga"
+                        ? (e = "warga/dashboard")
+                        : (e = "login")
+                : (e = "login");
         }
-
-        if (page === "pengajuan-online" && getRole() !== "warga") {
-            page = "login";
-        }
-
-        const html = await loadPageHtml(page);
-        const content = document.getElementById("content");
-        if (!content) throw new Error("#content tidak ditemukan");
-
-        content.innerHTML = html;
-        installTableObserver(content);
-
-        window.dispatchEvent(
-            new CustomEvent("page:loaded", { detail: { name: page } }),
-        );
-
-        upgradeLoginHints(content);
-
-        // Close mobile menu if open
-        const header =
+        e === "pengajuan-online" && getRole() !== "warga" && (e = "login");
+        const t = await loadPageHtml(e),
+            n = document.getElementById("content");
+        if (!n) throw new Error("#content tidak ditemukan");
+        ((n.innerHTML = t),
+            installTableObserver(n),
+            window.dispatchEvent(
+                new CustomEvent("page:loaded", { detail: { name: e } }),
+            ),
+            upgradeLoginHints(n));
+        const s =
             document.getElementById("site-header") ||
             document.querySelector(".header");
-        if (header) {
-            const nav = header.querySelector(".navbar");
-            const toggle = header.querySelector(".menu-toggle");
-            const icon = toggle ? toggle.querySelector("i") : null;
-            if (nav) nav.classList.remove("show");
-            if (toggle) toggle.setAttribute("aria-expanded", "false");
-            document.body.classList.remove("nav-open");
-            if (icon) {
-                icon.classList.add("fa-bars");
-                icon.classList.remove("fa-xmark");
-            }
+        if (s) {
+            const o = s.querySelector(".navbar"),
+                r = s.querySelector(".menu-toggle"),
+                d = r ? r.querySelector("i") : null;
+            (o && o.classList.remove("show"),
+                r && r.setAttribute("aria-expanded", "false"),
+                document.body.classList.remove("nav-open"),
+                d &&
+                    (d.classList.add("fa-bars"),
+                    d.classList.remove("fa-xmark")));
         }
-
-        // Update URL hash
-        let newHash = `#${page}`;
-        const currentHash = window.location.hash;
-        if (currentHash.includes("?")) {
-            const query = currentHash.split("?")[1];
-            newHash = `#${page}?${query}`;
+        let l = `#${e}`;
+        const i = window.location.hash;
+        if (i.includes("?")) {
+            const o = i.split("?")[1];
+            l = `#${e}?${o}`;
         }
-        if (opts.replace) {
-            history.replaceState({}, "", newHash);
-        } else {
-            history.pushState({}, "", newHash);
-        }
-
-        // Update active nav
-        document.querySelectorAll(".nav-link").forEach((link) => {
-            if (link.dataset.page) {
-                // If it's a direct page link, toggle based on page match
-                link.classList.toggle("active", link.dataset.page === page);
-            } else {
-                // If it's a dropdown trigger, check if any of its dropdown menu items matches the current page
-                const dropdown = link.closest(".dropdown");
-                if (dropdown) {
-                    const hasActiveChild = !!dropdown.querySelector(`[data-page="${page}"]`);
-                    link.classList.toggle("active", hasActiveChild);
-                }
-            }
-        });
-
-        // Update active dropdown items
-        document.querySelectorAll(".dropdown-item[data-page]").forEach((item) => {
-            if (item.dataset.page === "layanan") {
-                let activeLayanan = "surat";
-                const selectEl = document.getElementById("layananSelect");
-                if (selectEl && page === "layanan") {
-                    activeLayanan = selectEl.value;
-                } else {
-                    const preset = sessionStorage.getItem("layananPreset");
-                    if (preset) {
-                        activeLayanan = preset;
+        (a.replace
+            ? history.replaceState({}, "", l)
+            : history.pushState({}, "", l),
+            document.querySelectorAll(".nav-link").forEach((o) => {
+                if (o.dataset.page)
+                    o.classList.toggle("active", o.dataset.page === e);
+                else {
+                    const r = o.closest(".dropdown");
+                    if (r) {
+                        const d = !!r.querySelector(`[data-page="${e}"]`);
+                        o.classList.toggle("active", d);
                     }
                 }
-                const isActive = item.dataset.layanan === activeLayanan.toLowerCase();
-                item.classList.toggle("active", page === "layanan" && isActive);
-            } else {
-                item.classList.toggle("active", item.dataset.page === page);
-            }
-        });
-
-        // Update user name binding
-        const nameEl = document.querySelector("[data-bind='userName']");
-        if (nameEl) nameEl.textContent = getUserName();
-
-        updateHeaderAuthButton();
-        updateGuestOnlySections(content);
-
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (err) {
-        console.error("navigateTo error:", err);
-        const content = document.getElementById("content");
-        if (content) {
-            content.innerHTML = `<div class="error" style="padding:24px;max-width:900px;margin:0 auto;">${err.message}<br><br><small>Cek Network/Console untuk path yang 404.</small></div>`;
-        }
+            }),
+            document
+                .querySelectorAll(".dropdown-item[data-page]")
+                .forEach((o) => {
+                    if (o.dataset.page === "layanan") {
+                        let r = "surat";
+                        const d = document.getElementById("layananSelect");
+                        if (d && e === "layanan") r = d.value;
+                        else {
+                            const u = sessionStorage.getItem("layananPreset");
+                            u && (r = u);
+                        }
+                        const f = o.dataset.layanan === r.toLowerCase();
+                        o.classList.toggle("active", e === "layanan" && f);
+                    } else o.classList.toggle("active", o.dataset.page === e);
+                }));
+        const c = document.querySelector("[data-bind='userName']");
+        (c && (c.textContent = getUserName()),
+            updateHeaderAuthButton(),
+            updateGuestOnlySections(n),
+            window.scrollTo({ top: 0, behavior: "smooth" }));
+    } catch (t) {
+        console.error("navigateTo error:", t);
+        const n = document.getElementById("content");
+        n &&
+            (n.innerHTML = `<div class="error" style="padding:24px;max-width:900px;margin:0 auto;">${t.message}<br><br><small>Cek Network/Console untuk path yang 404.</small></div>`);
     }
 }
 window.navigateTo = navigateTo;
-
-// ==============================
-// NAVIGATION SETUP
-// ==============================
 function setupNavigation() {
-    if (window.NAVIGATION_BOUND) return;
-    window.NAVIGATION_BOUND = true;
-
-    document.addEventListener("click", (e) => {
-        const link = e.target.closest("a[data-page]");
-        if (!link) return;
-
-        e.preventDefault();
-
-        const dd = link.closest(".dropdown");
-        if (dd) dd.classList.remove("open");
-
-        if (link.dataset.layanan) {
-            sessionStorage.setItem("layananPreset", link.dataset.layanan);
-        }
-
-        navigateTo(link.dataset.page);
-    });
-
-    document.addEventListener("click", (e) => {
-        const brand = e.target.closest("[data-go-home='true']");
-        if (!brand) return;
-        e.preventDefault();
-        navigateTo("home");
-    });
-}
-
-// ==============================
-// DROPDOWN SETUP
-// ==============================
-function setupDropdowns() {
-    if (window.DROPDOWNS_BOUND) return;
-    window.DROPDOWNS_BOUND = true;
-
-    document.addEventListener("click", (e) => {
-        const trigger = e.target.closest(".dropdown > .nav-link");
-        const insideDropdown = e.target.closest(".dropdown");
-
-        if (trigger) {
+    window.NAVIGATION_BOUND ||
+        ((window.NAVIGATION_BOUND = !0),
+        document.addEventListener("click", (e) => {
+            const a = e.target.closest("a[data-page]");
+            if (!a) return;
             e.preventDefault();
-            const dd = trigger.closest(".dropdown");
-
-            document.querySelectorAll(".dropdown.open").forEach((x) => {
-                if (x !== dd) {
-                    x.classList.remove("open");
-                    const t = x.querySelector(":scope > .nav-link");
-                    if (t) t.setAttribute("aria-expanded", "false");
-                }
-            });
-
-            dd.classList.toggle("open");
-            trigger.setAttribute(
-                "aria-expanded",
-                dd.classList.contains("open") ? "true" : "false",
-            );
-            return;
-        }
-
-        if (!insideDropdown) {
-            document.querySelectorAll(".dropdown.open").forEach((x) => {
-                x.classList.remove("open");
-                const t = x.querySelector(":scope > .nav-link");
-                if (t) t.setAttribute("aria-expanded", "false");
-            });
-        }
-    });
-
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") {
-            document.querySelectorAll(".dropdown.open").forEach((x) => {
-                x.classList.remove("open");
-                const t = x.querySelector(":scope > .nav-link");
-                if (t) t.setAttribute("aria-expanded", "false");
-            });
-        }
-    });
+            const t = a.closest(".dropdown");
+            (t && t.classList.remove("open"),
+                a.dataset.layanan &&
+                    sessionStorage.setItem("layananPreset", a.dataset.layanan),
+                navigateTo(a.dataset.page));
+        }),
+        document.addEventListener("click", (e) => {
+            e.target.closest("[data-go-home='true']") &&
+                (e.preventDefault(), navigateTo("home"));
+        }));
 }
-
-// ==============================
-// STICKY HEADER
-// ==============================
+function setupDropdowns() {
+    window.DROPDOWNS_BOUND ||
+        ((window.DROPDOWNS_BOUND = !0),
+        document.addEventListener("click", (e) => {
+            const a = e.target.closest(".dropdown > .nav-link"),
+                t = e.target.closest(".dropdown");
+            if (a) {
+                e.preventDefault();
+                const n = a.closest(".dropdown");
+                (document.querySelectorAll(".dropdown.open").forEach((s) => {
+                    if (s !== n) {
+                        s.classList.remove("open");
+                        const l = s.querySelector(":scope > .nav-link");
+                        l && l.setAttribute("aria-expanded", "false");
+                    }
+                }),
+                    n.classList.toggle("open"),
+                    a.setAttribute(
+                        "aria-expanded",
+                        n.classList.contains("open") ? "true" : "false",
+                    ));
+                return;
+            }
+            t ||
+                document.querySelectorAll(".dropdown.open").forEach((n) => {
+                    n.classList.remove("open");
+                    const s = n.querySelector(":scope > .nav-link");
+                    s && s.setAttribute("aria-expanded", "false");
+                });
+        }),
+        document.addEventListener("keydown", (e) => {
+            e.key === "Escape" &&
+                document.querySelectorAll(".dropdown.open").forEach((a) => {
+                    a.classList.remove("open");
+                    const t = a.querySelector(":scope > .nav-link");
+                    t && t.setAttribute("aria-expanded", "false");
+                });
+        }));
+}
 function setupStickyHeader() {
-    if (window.STICKY_BOUND) return;
-    window.STICKY_BOUND = true;
-
-    window.addEventListener("scroll", () => {
-        const header = document.querySelector("header");
-        if (!header) return;
-        header.classList.toggle("scrolled", window.scrollY > 20);
-    });
+    window.STICKY_BOUND ||
+        ((window.STICKY_BOUND = !0),
+        window.addEventListener("scroll", () => {
+            const e = document.querySelector("header");
+            e && e.classList.toggle("scrolled", window.scrollY > 20);
+        }));
 }
-
-// ==============================
-// MOBILE MENU
-// ==============================
 function setupMobileMenu() {
     if (window.MOBILEMENU_BOUND) return;
-    window.MOBILEMENU_BOUND = true;
+    window.MOBILEMENU_BOUND = !0;
+    const e =
+            document.getElementById("site-header") ||
+            document.querySelector(".header"),
+        a = e ? e.querySelector(".menu-toggle") : null,
+        t = e ? e.querySelector(".navbar") : null;
+    if (!e || !a || !t) return;
+    const n = a.querySelector("i"),
+        s = () => {
+            document.documentElement.style.setProperty(
+                "--header-h",
+                `${e.offsetHeight}px`,
+            );
+        };
+    s();
+    function l(i) {
+        (t.classList.toggle("show", i),
+            e.classList.toggle("menu-open", i),
+            document.body.classList.toggle("nav-open", i),
+            a.setAttribute("aria-expanded", i ? "true" : "false"),
+            n &&
+                (n.classList.toggle("fa-bars", !i),
+                n.classList.toggle("fa-xmark", i)));
+    }
+    (a.addEventListener("click", (i) => {
+        (i.stopPropagation(), l(!t.classList.contains("show")));
+    }),
+        t.addEventListener("click", (i) => {
+            const c = i.target.closest("a");
+            !c ||
+                (c.classList.contains("nav-link") &&
+                    c.closest(".dropdown") &&
+                    (!c.dataset.page || c.getAttribute("href") === "#")) ||
+                (window.innerWidth <= 900 && l(!1));
+        }),
+        document.addEventListener("click", (i) => {
+            const c = i.target.closest("#site-nav"),
+                o = i.target.closest(".menu-toggle");
+            !c && !o && t.classList.contains("show") && l(!1);
+        }),
+        window.addEventListener("resize", () => {
+            (s(),
+                window.innerWidth > 900 &&
+                    t.classList.contains("show") &&
+                    l(!1));
+        }),
+        l(!1));
+}
+(window.addEventListener("session:changed", () => {
+    (updateHeaderAuthButton(), updateGuestOnlySections(document));
+    const e = getPageFromHash();
+    if (!checkPageAccess(e)) {
+        const a = getRole();
+        a === "admin"
+            ? navigateTo("admin/dashboard", { replace: !0 })
+            : a === "staf"
+              ? navigateTo("staf/dashboard", { replace: !0 })
+              : a === "warga"
+                ? navigateTo("warga/dashboard", { replace: !0 })
+                : navigateTo("home", { replace: !0 });
+    }
+}),
+    window.addEventListener("session:cleared", () => {
+        (updateHeaderAuthButton(),
+            updateGuestOnlySections(document),
+            (window.location.hash = ""),
+            navigateTo("home", { replace: !0 }));
+    }),
+    window.ROUTER_EVENTS_BOUND ||
+        ((window.ROUTER_EVENTS_BOUND = !0),
+        window.addEventListener("popstate", () =>
+            navigateTo(getPageFromHash(), { replace: !0 }),
+        ),
+        window.addEventListener("hashchange", () =>
+            navigateTo(getPageFromHash(), { replace: !0 }),
+        )),
+    document.addEventListener("DOMContentLoaded", () => {
+        if (!window.LOGIN_HINT_OBS) {
+            window.LOGIN_HINT_OBS = !0;
+            const e = document.getElementById("content");
+            e &&
+                window.MutationObserver &&
+                new MutationObserver(() => upgradeLoginHints(e)).observe(e, {
+                    childList: !0,
+                    subtree: !0,
+                });
+        }
+    }),
+    document.addEventListener("DOMContentLoaded", () => {
+        window.COMPONENTS_LOADED ||
+            ((window.COMPONENTS_LOADED = !0), loadComponents());
+    }),
+    document.addEventListener("DOMContentLoaded", () => {
+        if (window.BUTTONS_3D_OBS_BOUND) return;
+        window.BUTTONS_3D_OBS_BOUND = !0;
+        const e = (t) => {
+            var c, o;
+            if (
+                t.dataset.enhanced3d ||
+                t.classList.contains("hero-slider-dot") ||
+                t.classList.contains("group-toggle") ||
+                t.closest(".navbar") ||
+                t.closest(".admin-side")
+            )
+                return;
+            ((t.dataset.enhanced3d = "true"), t.classList.add("btn-3d"));
+            let n = "";
+            if (
+                (Array.from(t.childNodes).forEach((r) => {
+                    r.nodeType === Node.TEXT_NODE &&
+                        ((n += r.textContent), r.remove());
+                }),
+                (n = n.trim()),
+                n ||
+                    (t.classList.contains("btn-warning") ||
+                    ((c = t.getAttribute("data-action")) != null &&
+                        c.toLowerCase().includes("edit"))
+                        ? (n = "Edit")
+                        : (t.classList.contains("btn-danger") ||
+                              ((o = t.getAttribute("data-action")) != null &&
+                                  o.toLowerCase().includes("delete"))) &&
+                          (n = "Hapus")),
+                !t.querySelector(".btn-text") && n)
+            ) {
+                const r = document.createElement("span");
+                ((r.className = "btn-text"), (r.textContent = n), t.prepend(r));
+            }
+            if (t.classList.contains("btn-warning")) {
+                if (
+                    (t.classList.add("btn-edit"),
+                    !t.querySelector("i") && !t.querySelector("svg"))
+                ) {
+                    const r = document.createElement("i");
+                    ((r.className = "fa-solid fa-pen"), t.appendChild(r));
+                }
+            } else if (t.classList.contains("btn-danger")) {
+                if (
+                    (t.classList.add("btn-hapus"),
+                    !t.querySelector("i") && !t.querySelector("svg"))
+                ) {
+                    const r = document.createElement("i");
+                    ((r.className = "fa-solid fa-trash"), t.appendChild(r));
+                }
+            } else if (
+                t.classList.contains("btn-primary") ||
+                t.classList.contains("btn-solid")
+            ) {
+                if (
+                    (t.classList.add("btn-tambah-data"),
+                    !t.querySelector("i") && !t.querySelector("svg"))
+                ) {
+                    const r = document.createElement("i");
+                    ((r.className = "fa-solid fa-plus"), t.appendChild(r));
+                }
+            } else if (
+                t.classList.contains("btn-light") &&
+                n.toLowerCase().includes("foto") &&
+                (t.classList.add("btn-pilih-foto"),
+                !t.querySelector("i") && !t.querySelector("svg"))
+            ) {
+                const r = document.createElement("i");
+                ((r.className = "fa-solid fa-camera"), t.appendChild(r));
+            }
+            const i = t.querySelector("i, svg");
+            i && t.lastChild !== i && t.appendChild(i);
+        };
+        (document
+            .querySelectorAll(
+                ".btn-warning, .btn-danger, .btn-primary, .btn-solid, .btn-light",
+            )
+            .forEach(e),
+            new MutationObserver((t) => {
+                t.forEach((n) => {
+                    n.addedNodes &&
+                        n.addedNodes.forEach((s) => {
+                            if (s.nodeType !== Node.ELEMENT_NODE) return;
+                            let l = [];
+                            (s.matches &&
+                                s.matches(
+                                    ".btn-warning, .btn-danger, .btn-primary, .btn-solid, .btn-light",
+                                ) &&
+                                l.push(s),
+                                s.querySelectorAll &&
+                                    l.push(
+                                        ...s.querySelectorAll(
+                                            ".btn-warning, .btn-danger, .btn-primary, .btn-solid, .btn-light",
+                                        ),
+                                    ),
+                                l.forEach(e));
+                        });
+                });
+            }).observe(document.body, { childList: !0, subtree: !0 }));
+    }));
 
-    const header =
-        document.getElementById("site-header") ||
-        document.querySelector(".header");
-    const toggle = header ? header.querySelector(".menu-toggle") : null;
-    const nav = header ? header.querySelector(".navbar") : null;
+/* === MERGED FINAL UI RESPONSIVE FIX JS === */
+/* =====================================================================
+   FINAL UI RESPONSIVE FIX JS
+   - Menambahkan panel kiri auth jika belum ada.
+   - Memastikan side menu role bisa ditutup/dibuka pada <=1024px.
+===================================================================== */
+(function () {
+    "use strict";
 
-    if (!header || !toggle || !nav) return;
+    const ROLE_SIDE_SELECTOR = ".admin-side, .staf-side, .warga-side";
+    const TOGGLE_SELECTOR =
+        ".admin-toggle, .staf-toggle, .warga-toggle, .side-toggle, .mobile-side-toggle, .sidebar-toggle";
 
-    const icon = toggle.querySelector("i");
-
-    const syncHeaderHeight = () => {
-        document.documentElement.style.setProperty(
-            "--header-h",
-            `${header.offsetHeight}px`,
+    function isAuthPage() {
+        const key = `${location.pathname} ${location.hash}`.toLowerCase();
+        return (
+            key.includes("login") ||
+            key.includes("register") ||
+            key.includes("forgot") ||
+            key.includes("reset") ||
+            key.includes("otp")
         );
-    };
-    syncHeaderHeight();
-
-    function setOpen(open) {
-        nav.classList.toggle("show", open);
-        header.classList.toggle("menu-open", open);
-        document.body.classList.toggle("nav-open", open);
-        toggle.setAttribute("aria-expanded", open ? "true" : "false");
-
-        if (icon) {
-            icon.classList.toggle("fa-bars", !open);
-            icon.classList.toggle("fa-xmark", open);
-        }
     }
 
-    toggle.addEventListener("click", (e) => {
-        e.stopPropagation();
-        setOpen(!nav.classList.contains("show"));
-    });
+    function enhanceAuthCard() {
+        if (!isAuthPage()) return;
+        const page = document.querySelector(".auth-page");
+        const card = document.querySelector(".auth-page .auth-card");
+        if (!page || !card || card.dataset.finalAuthEnhanced === "true") return;
 
-    nav.addEventListener("click", (e) => {
-        const link = e.target.closest("a");
-        if (!link) return;
-
-        const isDropdownTrigger =
-            link.classList.contains("nav-link") &&
-            !!link.closest(".dropdown") &&
-            (!link.dataset.page || link.getAttribute("href") === "#");
-
-        if (isDropdownTrigger) return;
-
-        if (window.innerWidth <= 900) setOpen(false);
-    });
-
-    document.addEventListener("click", (e) => {
-        const insideNav = e.target.closest("#site-nav");
-        const onToggle = e.target.closest(".menu-toggle");
-        if (!insideNav && !onToggle && nav.classList.contains("show")) {
-            setOpen(false);
-        }
-    });
-
-    window.addEventListener("resize", () => {
-        syncHeaderHeight();
-        if (window.innerWidth > 900 && nav.classList.contains("show")) {
-            setOpen(false);
-        }
-    });
-
-    setOpen(false);
-}
-
-
-// ==============================
-// SESSION CHANGE LISTENERS
-// ==============================
-window.addEventListener("session:changed", () => {
-    updateHeaderAuthButton();
-    updateGuestOnlySections(document);
-    const currentPage = getPageFromHash();
-    if (!checkPageAccess(currentPage)) {
-        const role = getRole();
-        if (role === "admin") navigateTo("admin/dashboard", { replace: true });
-        else if (role === "staf")
-            navigateTo("staf/dashboard", { replace: true });
-        else if (role === "warga")
-            navigateTo("warga/dashboard", { replace: true });
-        else navigateTo("home", { replace: true });
-    }
-});
-
-window.addEventListener("session:cleared", () => {
-    updateHeaderAuthButton();
-    updateGuestOnlySections(document);
-    navigateTo("home", { replace: true });
-});
-
-// ==============================
-// ROUTER EVENTS
-// ==============================
-if (!window.ROUTER_EVENTS_BOUND) {
-    window.ROUTER_EVENTS_BOUND = true;
-    window.addEventListener("popstate", () =>
-        navigateTo(getPageFromHash(), { replace: true }),
-    );
-    window.addEventListener("hashchange", () =>
-        navigateTo(getPageFromHash(), { replace: true }),
-    );
-}
-
-// ==============================
-// INIT
-// ==============================
-document.addEventListener("DOMContentLoaded", () => {
-    if (!window.LOGIN_HINT_OBS) {
-        window.LOGIN_HINT_OBS = true;
-        const root = document.getElementById("content");
-        if (root && window.MutationObserver) {
-            const mo = new MutationObserver(() => upgradeLoginHints(root));
-            mo.observe(root, { childList: true, subtree: true });
-        }
-    }
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-    if (window.COMPONENTS_LOADED) return;
-    window.COMPONENTS_LOADED = true;
-    loadComponents();
-});
-
-// ==============================================
-// AUTOMATIC 3D BUTTONS ENHANCEMENTS
-// ==============================================
-document.addEventListener("DOMContentLoaded", () => {
-    if (window.BUTTONS_3D_OBS_BOUND) return;
-    window.BUTTONS_3D_OBS_BOUND = true;
-
-    const enhanceButton = (btn) => {
-        if (btn.dataset.enhanced3d) return;
-
-        // Skip non-interactive buttons or toggles
-        if (btn.classList.contains('hero-slider-dot') || 
-            btn.classList.contains('group-toggle') || 
-            btn.closest('.navbar') || 
-            btn.closest('.admin-side')) {
+        const hasSide = card.querySelector(
+            ".auth-blue-side, .auth-side, .auth-brand-panel",
+        );
+        if (hasSide) {
+            card.dataset.finalAuthEnhanced = "true";
             return;
         }
 
-        btn.dataset.enhanced3d = 'true';
-        btn.classList.add('btn-3d');
+        const currentChildren = Array.from(card.childNodes);
+        const side = document.createElement("aside");
+        side.className = "auth-blue-side";
+        side.innerHTML = `
+            <div class="auth-blue-brand">
+                <div class="auth-blue-logo">
+                    <img src="/assets/images/Lambang_Kota_Depok.png" alt="Logo Kota Depok">
+                </div>
+                <div>
+                    <strong class="auth-blue-name">Kelurahan Duren Mekar</strong>
+                    <small class="auth-blue-address">Kecamatan Bojongsari, Kota Depok</small>
+                </div>
+            </div>
+            <div class="auth-blue-copy">
+                <span class="auth-blue-kicker">Portal Pelayanan</span>
+                <h2 class="auth-blue-title">Selamat Datang di Portal Kelurahan</h2>
+                <p class="auth-blue-desc">Akses layanan administrasi, pengajuan surat, pengaduan warga, dan informasi resmi secara aman dan terpadu.</p>
+            </div>
+            <div class="auth-blue-security">
+                <div class="auth-blue-sec-item"><i class="fa-solid fa-shield-halved"></i><div><strong>Aman</strong><small>Data terlindungi</small></div></div>
+                <div class="auth-blue-sec-item"><i class="fa-solid fa-clock"></i><div><strong>Cepat</strong><small>Layanan online</small></div></div>
+            </div>
+        `;
 
-        // Extract text nodes
-        let text = '';
-        const childNodes = Array.from(btn.childNodes);
-        childNodes.forEach((child) => {
-            if (child.nodeType === Node.TEXT_NODE) {
-                text += child.textContent;
-                child.remove();
-            }
+        const wrap = document.createElement("div");
+        wrap.className = "auth-blue-form-wrap";
+        const inner = document.createElement("div");
+        inner.className = "auth-blue-form-inner";
+        currentChildren.forEach((node) => inner.appendChild(node));
+        wrap.appendChild(inner);
+
+        card.appendChild(side);
+        card.appendChild(wrap);
+        card.dataset.finalAuthEnhanced = "true";
+    }
+
+    function closeSideMenu() {
+        document.body.classList.remove("side-open");
+        document.querySelectorAll(TOGGLE_SELECTOR).forEach((btn) => {
+            if (btn.setAttribute) btn.setAttribute("aria-expanded", "false");
         });
-        text = text.trim();
+    }
 
-        // Autocomplete text for small table action buttons if empty
-        if (!text) {
-            if (btn.classList.contains('btn-warning') || btn.getAttribute('data-action')?.toLowerCase().includes('edit')) {
-                text = 'Edit';
-            } else if (btn.classList.contains('btn-danger') || btn.getAttribute('data-action')?.toLowerCase().includes('delete')) {
-                text = 'Hapus';
-            }
-        }
-
-        // Add the wrapper span
-        let hasTextSpan = btn.querySelector('.btn-text');
-        if (!hasTextSpan && text) {
-            const span = document.createElement('span');
-            span.className = 'btn-text';
-            span.textContent = text;
-            btn.prepend(span);
-        }
-
-        // Handle icons and sub-helper classes
-        if (btn.classList.contains('btn-warning')) {
-            btn.classList.add('btn-edit');
-            if (!btn.querySelector('i') && !btn.querySelector('svg')) {
-                const i = document.createElement('i');
-                i.className = 'fa-solid fa-pen';
-                btn.appendChild(i);
-            }
-        } else if (btn.classList.contains('btn-danger')) {
-            btn.classList.add('btn-hapus');
-            if (!btn.querySelector('i') && !btn.querySelector('svg')) {
-                const i = document.createElement('i');
-                i.className = 'fa-solid fa-trash';
-                btn.appendChild(i);
-            }
-        } else if (btn.classList.contains('btn-primary') || btn.classList.contains('btn-solid')) {
-            btn.classList.add('btn-tambah-data');
-            if (!btn.querySelector('i') && !btn.querySelector('svg')) {
-                const i = document.createElement('i');
-                i.className = 'fa-solid fa-plus';
-                btn.appendChild(i);
-            }
-        } else if (btn.classList.contains('btn-light')) {
-            if (text.toLowerCase().includes('foto')) {
-                btn.classList.add('btn-pilih-foto');
-                if (!btn.querySelector('i') && !btn.querySelector('svg')) {
-                    const i = document.createElement('i');
-                    i.className = 'fa-solid fa-camera';
-                    btn.appendChild(i);
-                }
-            }
-        }
-
-        // Move existing icons to the end of the button for consistent sliding transition
-        const existingIcon = btn.querySelector('i, svg');
-        if (existingIcon && btn.lastChild !== existingIcon) {
-            btn.appendChild(existingIcon);
-        }
-    };
-
-    // Process initially loaded elements
-    document.querySelectorAll('.btn-warning, .btn-danger, .btn-primary, .btn-solid, .btn-light').forEach(enhanceButton);
-
-    // Watch for dynamically added buttons
-    const mo = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (!mutation.addedNodes) return;
-            mutation.addedNodes.forEach((node) => {
-                if (node.nodeType !== Node.ELEMENT_NODE) return;
-                
-                let targets = [];
-                if (node.matches && node.matches('.btn-warning, .btn-danger, .btn-primary, .btn-solid, .btn-light')) {
-                    targets.push(node);
-                }
-                if (node.querySelectorAll) {
-                    targets.push(...node.querySelectorAll('.btn-warning, .btn-danger, .btn-primary, .btn-solid, .btn-light'));
-                }
-                
-                targets.forEach(enhanceButton);
-            });
+    function openSideMenu() {
+        document.body.classList.add("side-open");
+        document.querySelectorAll(TOGGLE_SELECTOR).forEach((btn) => {
+            if (btn.setAttribute) btn.setAttribute("aria-expanded", "true");
         });
+    }
+
+    function toggleSideMenu() {
+        if (document.body.classList.contains("side-open")) closeSideMenu();
+        else openSideMenu();
+    }
+
+    function bindSideMenu() {
+        if (window.__finalSideMenuBound) return;
+        window.__finalSideMenuBound = true;
+
+        document.addEventListener(
+            "click",
+            function (event) {
+                const toggle = event.target.closest(TOGGLE_SELECTOR);
+                const side = event.target.closest(ROLE_SIDE_SELECTOR);
+                const linkInsideSide = event.target.closest(
+                    `${ROLE_SIDE_SELECTOR} a`,
+                );
+
+                if (
+                    toggle &&
+                    document.querySelector(ROLE_SIDE_SELECTOR) &&
+                    window.innerWidth <= 800
+                ) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleSideMenu();
+                    return;
+                }
+
+                if (linkInsideSide && window.innerWidth <= 800) {
+                    setTimeout(closeSideMenu, 80);
+                    return;
+                }
+
+                if (
+                    document.body.classList.contains("side-open") &&
+                    !side &&
+                    window.innerWidth <= 800
+                ) {
+                    closeSideMenu();
+                }
+            },
+            true,
+        );
+
+        window.addEventListener("resize", function () {
+            if (window.innerWidth > 800) closeSideMenu();
+        });
+
+        window.addEventListener("hashchange", closeSideMenu);
+        window.addEventListener("popstate", closeSideMenu);
+        document.addEventListener("page:loaded", closeSideMenu);
+    }
+
+    function ensureSideToggle() {
+        if (!document.querySelector(ROLE_SIDE_SELECTOR)) return;
+        const top = document.querySelector(".admin-top, .staf-top, .warga-top");
+        if (!top) return;
+        if (top.querySelector(".side-toggle")) return;
+        let actions = top.querySelector(".top-actions");
+        if (!actions) {
+            actions = document.createElement("div");
+            actions.className = "top-actions";
+            top.appendChild(actions);
+        }
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "side-toggle";
+        btn.setAttribute("aria-label", "Buka menu samping");
+        btn.setAttribute("aria-expanded", "false");
+        btn.innerHTML =
+            '<i class="fa-solid fa-bars" aria-hidden="true"></i><span>Menu</span>';
+        actions.insertBefore(btn, actions.firstChild);
+
+        /* Hide/show based on screen width - only visible at <=800px */
+        function updateToggleVisibility() {
+            btn.style.display = window.innerWidth > 800 ? "none" : "inline-flex";
+        }
+        updateToggleVisibility();
+        window.addEventListener("resize", updateToggleVisibility);
+    }
+
+    function run() {
+        enhanceAuthCard();
+        ensureSideToggle();
+        bindSideMenu();
+    }
+
+    document.addEventListener("DOMContentLoaded", run);
+    document.addEventListener("page:loaded", function () {
+        setTimeout(run, 60);
+        setTimeout(enhanceAuthCard, 300);
     });
-
-    mo.observe(document.body, { childList: true, subtree: true });
-});
+    window.addEventListener("hashchange", function () {
+        setTimeout(run, 120);
+    });
+    window.addEventListener("load", run);
+})();

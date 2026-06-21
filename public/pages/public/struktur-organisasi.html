@@ -1,104 +1,270 @@
-<section class="container" style="padding: 36px 0">
-  <!-- Header -->
-  <div class="section-head" style="margin-bottom: 28px; flex-direction: column; align-items: flex-start; gap: 6px">
-    <h1 style="font-size: 26px; font-weight: 900">Struktur Organisasi</h1>
-    <div class="muted">Susunan pengurus Kelurahan Duren Mekar</div>
-  </div>
+<section class="so-page">
+    <div class="container">
+        <div class="page-head">
+            <div class="stack">
+                <h1>Struktur Organisasi</h1>
+                <p class="muted">Susunan pengurus Kelurahan Duren Mekar.</p>
+            </div>
+        </div>
 
-  <!-- Anggota "kepala" (tanpa parent) -->
-  <div id="soTopLevel" style="display:flex; justify-content:center; margin-bottom: 32px"></div>
+        <!-- Org Chart Container -->
+        <div id="soOrgChart" class="org-chart-wrap">
+            <div class="so-loading">
+                <i class="fa-solid fa-spinner fa-spin"></i> Memuat data...
+            </div>
+        </div>
 
-  <!-- Anggota lainnya -->
-  <div id="soOthers" style="
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 18px;
-  "></div>
+        <div id="soEmpty" class="so-empty" style="display: none">
+            <i class="fa-solid fa-sitemap"></i>
+            <p>Struktur organisasi belum tersedia.</p>
+        </div>
 
-  <div id="soEmpty" class="muted" style="display:none; text-align:center; padding:60px">
-    <i class="fa-solid fa-sitemap" style="font-size:48px; opacity:.15"></i>
-    <p style="margin-top:16px">Struktur organisasi belum tersedia.</p>
-  </div>
-
-  <!-- Tombol navigasi -->
-  <div style="margin-top: 32px; display:flex; gap:10px; flex-wrap:wrap">
-    <a class="btn btn-solid nav-link" href="#unit-kerja" data-page="unit-kerja">
-      <i class="fa-solid fa-briefcase"></i> Detail Unit Kerja
-    </a>
-    <a class="btn btn-ghost nav-link" href="#profil" data-page="profil">
-      <i class="fa-solid fa-building-columns"></i> Profil Kelurahan
-    </a>
-  </div>
+        <!-- Navigasi -->
+        <div class="so-nav-btns">
+            <a
+                class="btn btn-solid nav-link"
+                href="#unit-kerja"
+                data-page="unit-kerja"
+            >
+                <i class="fa-solid fa-briefcase"></i> Detail Unit Kerja
+            </a>
+            <a class="btn btn-ghost nav-link" href="#profil" data-page="profil">
+                <i class="fa-solid fa-building-columns"></i> Profil Kelurahan
+            </a>
+        </div>
+    </div>
 </section>
 
 <style>
-/* ── PUBLIC: SO Card ──────────────────────────────── */
-.so-pub-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px 16px 18px;
-  gap: 8px;
-  transition: box-shadow .2s, transform .15s;
-}
-.so-pub-card:hover {
-  box-shadow: 0 16px 38px rgba(15,23,42,.13);
-  transform: translateY(-3px);
-}
-.so-pub-photo {
-  width: 100px; height: 100px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 4px solid var(--primary);
-  background: var(--field-bg);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.so-pub-photo img {
-  width:100%; height:100%; object-fit:cover;
-}
-.so-pub-photo .so-icon {
-  font-size: 42px;
-  color: var(--muted);
-  opacity: .3;
-}
-.so-pub-nama {
-  font-size: 15px; font-weight: 900;
-  text-align: center; color: var(--text);
-  margin-top: 4px;
-}
-.so-pub-jabatan {
-  font-size: 12px; font-weight: 800;
-  color: var(--primary);
-  background: rgba(31,95,224,.1);
-  padding: 3px 12px;
-  border-radius: 999px;
-  text-align: center;
-}
-.so-pub-parent {
-  font-size: 11px; color: var(--muted); text-align: center;
-}
+    /* ================================================================
+   STRUKTUR ORGANISASI - ORG CHART
+================================================================ */
+    .so-page {
+        padding: 36px 0 48px;
+    }
 
-/* Top-level card (Lurah) is bigger */
-.so-pub-card.so-top {
-  min-width: 200px; max-width: 240px;
-  padding: 32px 24px 24px;
-  border-color: rgba(31,95,224,.35);
-  box-shadow: 0 8px 30px rgba(31,95,224,.12);
-}
-.so-pub-card.so-top .so-pub-photo {
-  width: 120px; height: 120px;
-  border-width: 5px;
-}
-.so-pub-card.so-top .so-pub-nama { font-size: 17px; }
-.so-pub-card.so-top .so-pub-jabatan {
-  font-size: 13px;
-  padding: 4px 14px;
-}
+    .org-chart-wrap {
+        overflow-x: auto;
+        padding: 16px 0 32px;
+    }
+
+    /* Wrapper untuk seluruh chart */
+    .org-chart {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 100%;
+        padding-bottom: 16px;
+    }
+
+    /* Setiap node adalah kolom (card di atas, children di bawah) */
+    .org-node {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+    }
+
+    /* Garis vertikal dari card ke bawah (jika punya anak) */
+    .org-node.has-children > .org-card::after {
+        content: "";
+        position: absolute;
+        bottom: -28px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 28px;
+        background: var(--primary, #1d56c9);
+        opacity: 0.5;
+    }
+
+    /* Baris anak-anak */
+    .org-children {
+        display: flex;
+        justify-content: center;
+        gap: 0;
+        align-items: flex-start;
+        position: relative;
+        margin-top: 0;
+    }
+
+    /* Garis vertikal TURUN dari connector ke setiap anak */
+    .org-node-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        padding: 0 12px;
+    }
+
+    /* Garis horizontal connector di atas semua anak */
+    .org-children-connector {
+        position: relative;
+        height: 28px;
+        width: 100%;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+    }
+
+    /* Garis horizontal dari kiri ke kanan anak */
+    .org-children-connector::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: var(--line-width, 0px);
+        height: 2px;
+        background: var(--primary, #1d56c9);
+        opacity: 0.5;
+    }
+
+    /* Garis vertikal turun ke masing-masing anak */
+    .org-node-wrap .org-vert-line {
+        width: 2px;
+        height: 28px;
+        background: var(--primary, #1d56c9);
+        opacity: 0.5;
+        flex-shrink: 0;
+    }
+
+    /* Kartu staf */
+    .org-card {
+        position: relative;
+        background: #fff;
+        border: 2px solid var(--border, #e5e7eb);
+        border-radius: 16px;
+        padding: 20px 18px 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        width: 160px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        transition:
+            transform 0.2s,
+            box-shadow 0.2s;
+        cursor: default;
+    }
+    .org-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 28px rgba(29, 86, 201, 0.15);
+        border-color: var(--primary, #1d56c9);
+    }
+
+    /* Root/top-level card lebih besar */
+    .org-root > .org-card {
+        width: 180px;
+        border-color: var(--primary, #1d56c9);
+        border-width: 2px;
+        box-shadow: 0 8px 24px rgba(29, 86, 201, 0.18);
+    }
+
+    /* Foto bulat */
+    .org-photo {
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3px solid var(--primary, #1d56c9);
+        background: #f0f4ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .org-root > .org-card .org-photo {
+        width: 92px;
+        height: 92px;
+        border-width: 4px;
+    }
+    .org-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .so-ph-icon {
+        font-size: 30px;
+        color: var(--muted, #9ca3af);
+        opacity: 0.4;
+    }
+    .org-root > .org-card .so-ph-icon {
+        font-size: 36px;
+    }
+
+    /* Nama & jabatan */
+    .org-name {
+        font-size: 13px;
+        font-weight: 900;
+        color: var(--text, #111);
+        text-align: center;
+        line-height: 1.3;
+        margin-top: 2px;
+    }
+    .org-root > .org-card .org-name {
+        font-size: 15px;
+    }
+
+    .org-jabatan {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--primary, #1d56c9);
+        background: rgba(29, 86, 201, 0.08);
+        padding: 3px 10px;
+        border-radius: 999px;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+    .so-loading {
+        text-align: center;
+        padding: 48px;
+        color: var(--muted, #9ca3af);
+        font-size: 15px;
+    }
+    .so-empty {
+        text-align: center;
+        padding: 60px;
+        color: var(--muted, #9ca3af);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+    .so-empty i {
+        font-size: 48px;
+        opacity: 0.2;
+    }
+
+    .so-nav-btns {
+        margin-top: 32px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    @media (max-width: 640px) {
+        .org-card {
+            width: 130px;
+            padding: 14px 10px 12px;
+        }
+        .org-root > .org-card {
+            width: 150px;
+        }
+        .org-photo {
+            width: 60px;
+            height: 60px;
+        }
+        .org-root > .org-card .org-photo {
+            width: 72px;
+            height: 72px;
+        }
+        .org-node-wrap {
+            padding: 0 6px;
+        }
+    }
 </style>
-
-

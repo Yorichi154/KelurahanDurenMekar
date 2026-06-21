@@ -84,14 +84,38 @@
                 <div style="margin-bottom: 16px">
                     <h2 style="margin: 0">Pilih Layanan Surat</h2>
                     <p class="muted" style="margin-top: 4px; font-size: 13px">
-                        Silakan pilih jenis pelayanan surat yang Anda butuhkan di bawah ini untuk memulai pengajuan.
+                        Silakan pilih jenis pelayanan surat yang Anda butuhkan
+                        di bawah ini untuk memulai pengajuan.
                     </p>
                 </div>
-                <div class="services-grid" id="wargaServicesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
-                    <div style="grid-column: 1/-1; text-align: center; padding: 20px;" class="muted">
-                        <i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Memuat daftar layanan...
+                <div
+                    class="services-grid"
+                    id="wargaServicesGrid"
+                    style="
+                        display: grid;
+                        grid-template-columns: repeat(
+                            auto-fill,
+                            minmax(280px, 1fr)
+                        );
+                        gap: 16px;
+                    "
+                >
+                    <div
+                        style="
+                            grid-column: 1/-1;
+                            text-align: center;
+                            padding: 20px;
+                        "
+                        class="muted"
+                    >
+                        <i
+                            class="fa-solid fa-spinner fa-spin"
+                            style="margin-right: 8px"
+                        ></i>
+                        Memuat daftar layanan...
                     </div>
                 </div>
+                <div id="wargaServicesPagination" class="data-pagination"></div>
             </div>
         </div>
 

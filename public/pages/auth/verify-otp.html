@@ -1,32 +1,60 @@
 <section class="auth-page">
-  <div class="auth-card">
+  <div class="auth-card has-blue-side" data-final-auth-enhanced="true">
+    <aside class="auth-blue-side">
+      <div class="auth-blue-brand">
+        <div class="auth-blue-logo">
+          <img src="/assets/images/Lambang_Kota_Depok.png" alt="Logo Kota Depok">
+        </div>
+        <div>
+          <strong class="auth-blue-name">Kelurahan Duren Mekar</strong>
+          <small class="auth-blue-address">Kecamatan Bojongsari, Kota Depok</small>
+        </div>
+      </div>
+      <div class="auth-blue-copy">
+        <span class="auth-blue-kicker">Portal Pelayanan</span>
+        <h2 class="auth-blue-title">Verifikasi Keamanan Akun</h2>
+        <p class="auth-blue-desc">Masukkan kode OTP dari email untuk melanjutkan proses akun Anda secara aman.</p>
+      </div>
+      <div class="auth-blue-security">
+        <div class="auth-blue-sec-item"><i class="fa-solid fa-shield-halved"></i><div><strong>Aman</strong><small>Data terlindungi</small></div></div>
+        <div class="auth-blue-sec-item"><i class="fa-solid fa-envelope-circle-check"></i><div><strong>OTP Email</strong><small>Verifikasi akun</small></div></div>
+      </div>
+    </aside>
 
-    <div class="auth-icon">
-      <i class="fa-solid fa-key"></i>
+    <div class="auth-blue-form-wrap">
+      <div class="auth-blue-form-inner">
+        <div class="auth-icon">
+          <i class="fa-solid fa-key"></i>
+        </div>
+
+        <h2>Verifikasi OTP</h2>
+        <p class="auth-subtitle" id="verifyOtpSubtitle">
+          Masukkan 6 digit kode OTP yang telah dikirim ke alamat email Anda.
+        </p>
+
+        <div id="otpError" class="auth-error" style="display:none; margin:12px 0; padding:10px 12px; border-radius:10px; background:#fee2e2; color:#991b1b; font-weight:700; line-height:1.5;">
+          Kode OTP tidak valid atau sudah kedaluwarsa.
+        </div>
+
+        <form id="verifyOtpForm">
+          <input type="hidden" id="otpEmail">
+
+          <label>Kode OTP 6-Digit</label>
+          <input type="text" id="otpCode" placeholder="******" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required style="font-size:24px; text-align:center; letter-spacing:8px; font-weight:bold; border-color:#1e3a8a;">
+
+          <button type="submit" class="btn-auth" style="display:flex; align-items:center; justify-content:center; gap:10px; margin-top:20px;">
+            <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verifikasi Kode OTP
+          </button>
+
+          <button type="button" id="resendRegisterOtpBtn" class="btn-auth" style="display:none; align-items:center; justify-content:center; gap:10px; margin-top:10px; background:#0f766e;">
+            <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Kirim Ulang OTP
+          </button>
+
+          <a href="#" id="otpBackLink" class="back-home nav-link" data-page="forgot-password" style="margin-top:16px;">
+            ← Kembali ke Lupa Password
+          </a>
+        </form>
+      </div>
     </div>
-
-    <h2>Verifikasi OTP</h2>
-    <p class="auth-subtitle">
-      Masukkan 6 digit kode OTP yang telah dikirim ke alamat email Anda.
-    </p>
-
-    <div id="otpError" class="auth-error" style="display:none; margin:12px 0; padding:10px 12px; border-radius:10px; background:#fee2e2; color:#991b1b; font-weight:700; line-height: 1.5;">
-      Kode OTP tidak valid atau sudah kedaluwarsa.
-    </div>
-
-    <form id="verifyOtpForm">
-      <input type="hidden" id="otpEmail">
-
-      <label>Kode OTP 6-Digit</label>
-      <input type="text" id="otpCode" placeholder="******" maxlength="6" pattern="[0-9]{6}" autocomplete="off" required style="font-size: 24px; text-align: center; letter-spacing: 8px; font-weight: bold; border-color: #1e3a8a;">
-
-      <button type="submit" class="btn-auth" style="display:flex; align-items:center; justify-content:center; gap:10px; margin-top:20px;">
-        <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verifikasi Kode OTP
-      </button>
-
-      <a href="#" class="back-home nav-link" data-page="forgot-password" style="margin-top:16px;">
-        ← Kembali ke Lupa Password
-      </a>
-    </form>
   </div>
 </section>

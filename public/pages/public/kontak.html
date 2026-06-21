@@ -1,72 +1,113 @@
-<section class="kontak-page">
-  <div class="container">
-
-    <!-- HEADER -->
-    <div class="kontak-header">
-      <h1>Kontak & Informasi</h1>
-      <p>Hubungi kami untuk informasi lebih lanjut</p>
+<section class="kontak-page kontak-modern-page">
+    <div class="page-banner">
+        <div class="container page-banner-inner">
+            <div class="page-banner-icon">
+                <i class="fa-solid fa-headset" aria-hidden="true"></i>
+            </div>
+            <div>
+                <h1>Kontak &amp; Bantuan</h1>
+                <p>
+                    Butuh bantuan administrasi atau ingin menyampaikan aspirasi? Tim layanan publik
+                    Kelurahan Duren Mekar siap membantu Anda melalui kanal komunikasi resmi kami.
+                </p>
+            </div>
+        </div>
     </div>
 
-    <!-- INFO UTAMA -->
-    <div class="kontak-grid">
+    <div class="container kb-page-content">
+        <div class="kb-contact-layout">
+            <div class="kb-contact-info-stack">
+                <article class="kb-info-card">
+                    <div class="kb-info-icon kb-info-icon-blue"><i class="fa-solid fa-location-dot"></i></div>
+                    <div>
+                        <h3>Alamat Kantor</h3>
+                        <p id="kAddress">Jl. Duren Mekar No.59</p>
+                        <small id="kAddress2">Bojongsari, Kota Depok, Jawa Barat</small>
+                    </div>
+                </article>
 
-      <div class="kontak-card">
-        <div class="icon blue"><i class="fa fa-phone"></i></div>
-        <h4>Telepon</h4>
-        <p id="kPhone">-</p>
-        <small>Jam Pelayanan Kelurahan</small>
-      </div>
+                <article class="kb-info-card">
+                    <div class="kb-info-icon kb-info-icon-yellow"><i class="fa-solid fa-phone"></i></div>
+                    <div>
+                        <h3>Telepon &amp; Email</h3>
+                        <p>P: <span id="kPhone">(021) 7490000</span></p>
+                        <p>E: <span id="kEmail">kelurahan.durenmekar@depok.go.id</span></p>
+                    </div>
+                </article>
 
-      <div class="kontak-card">
-        <div class="icon green"><i class="fa fa-envelope"></i></div>
-        <h4>Email</h4>
-        <p id="kEmail">-</p>
-        <small>Respon dalam 1×24 jam</small>
-      </div>
+                <article class="kb-info-card">
+                    <div class="kb-info-icon kb-info-icon-cyan"><i class="fa-regular fa-clock"></i></div>
+                    <div>
+                        <h3>Jam Operasional</h3>
+                        <p id="kProfil">Senin - Kamis: 08.00 - 16.00 WIB<br>Jumat: 08.00 - 16.30 WIB<br><strong>Sabtu,
+                                Minggu &amp; Libur Nasional:</strong> Tutup</p>
+                    </div>
+                </article>
 
-      <div class="kontak-card">
-        <div class="icon purple"><i class="fa fa-location-dot"></i></div>
-        <h4>Alamat</h4>
-        <p id="kAddress">-</p>
-        <small id="kAddress2">-</small>
-      </div>
+                <article class="kb-info-card">
+                    <div class="kb-info-icon kb-info-icon-blue"><i class="fa-solid fa-share-nodes"></i></div>
+                    <div>
+                        <h3>Media Sosial</h3>
+                        <ul class="sosial-list kb-sosial-list">
+                            <li id="kIgRow" style="display:none"><i class="fab fa-instagram"></i><span id="kInstagram"></span></li>
+                            <li id="kFbRow" style="display:none"><i class="fab fa-facebook"></i><span id="kFacebook"></span></li>
+                            <li id="kYtRow" style="display:none"><i class="fab fa-youtube"></i><span id="kYoutube"></span></li>
+                        </ul>
+                        <p id="kSosialEmpty" class="muted" style="font-size:13px">Belum ada media sosial yang ditambahkan.</p>
+                    </div>
+                </article>
+            </div>
 
+            <aside class="kb-map-card" aria-label="Peta lokasi kantor kelurahan">
+                <div class="kb-map-toolbar">
+                    <span><i class="fa-solid fa-location-crosshairs"></i> Kantor Kelurahan Duren Mekar</span>
+                    <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+                </div>
+                <div class="kb-map-visual">
+                    <iframe
+                        title="Lokasi Kantor Kelurahan Duren Mekar"
+                        src="https://www.google.com/maps?q=-6.417573,106.742676&hl=id&z=16&output=embed"
+                        style="position:absolute;inset:0;width:100%;height:100%;border:0"
+                        loading="lazy" allowfullscreen
+                        referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+                <div class="kb-map-footer">
+                    <div>
+                        <strong>Titik Koordinat</strong>
+                        <span>Kelurahan Duren Mekar, Bojongsari</span>
+                    </div>
+                    <a class="kb-map-btn" href="https://www.google.com/maps?q=-6.417573,106.742676"
+                        target="_blank" rel="noopener">
+                        Buka di Google Maps <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>
+            </aside>
+        </div>
+
+        <div class="kb-contact-bottom">
+            <aside class="kb-faq-section">
+                <h2><span></span>Tanya Jawab (FAQ)</h2>
+                <div id="kFaqBox" class="kb-faq-list">
+                    <details open>
+                        <summary>Apa saja syarat pembuatan KTP baru?</summary>
+                        <p>Syarat utama meliputi fotokopi Kartu Keluarga, surat pengantar RT/RW, dan kehadiran pemohon
+                            di kantor kelurahan.</p>
+                    </details>
+                    <details>
+                        <summary>Berapa lama proses surat pengantar?</summary>
+                        <p>Estimasi proses mengikuti jenis layanan dan kelengkapan dokumen warga.</p>
+                    </details>
+                    <details>
+                        <summary>Bagaimana cara lapor pengaduan?</summary>
+                        <p>Pengaduan dapat disampaikan melalui form kontak, panel warga, atau kanal resmi kelurahan.</p>
+                    </details>
+                </div>
+
+            </aside>
+        </div>
+
+        <div class="kb-hidden-dynamic" aria-hidden="true">
+            <div id="kRtGrid"></div>
+        </div>
     </div>
-
-    <!-- JAM & SOSIAL -->
-    <div class="kontak-row">
-
-      <div class="kontak-box">
-        <h3>Jam Pelayanan & Info</h3>
-        <p id="kProfil" style="font-size: 14px; color: var(--muted); line-height: 1.5; white-space: pre-wrap;">-</p>
-      </div>
-
-      <div class="kontak-box">
-        <h3>Media Sosial</h3>
-        <ul class="sosial-list">
-          <li id="kIgRow" style="display:none;"><i class="fab fa-instagram"></i> <span id="kInstagram"></span></li>
-          <li id="kFbRow" style="display:none;"><i class="fab fa-facebook"></i> <span id="kFacebook"></span></li>
-          <li id="kYtRow" style="display:none;"><i class="fab fa-youtube"></i> <span id="kYoutube"></span></li>
-        </ul>
-      </div>
-
-    </div>
-
-    <!-- KONTAK RT/RW -->
-    <div class="kontak-box">
-      <h3>Kontak RT / RW</h3>
-      <div class="rt-grid" id="kRtGrid">
-        <div style="font-size: 13px; color: var(--muted);">Memuat kontak RT/RW...</div>
-      </div>
-    </div>
-
-    <!-- FAQ -->
-    <div class="kontak-box">
-      <h3>Pertanyaan yang Sering Diajukan (FAQ)</h3>
-      <div id="kFaqBox">
-        <div style="font-size: 13px; color: var(--muted);">Memuat FAQ...</div>
-      </div>
-    </div>
-
-  </div>
 </section>
