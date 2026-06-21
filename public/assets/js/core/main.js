@@ -171,6 +171,7 @@ function installTableObserver(e) {
 window.syncResponsiveTables = syncResponsiveTables;
 async function loadComponents() {
     try {
+<<<<<<< HEAD
         const e = await fetchFirstOk([
                 "pages/partials/header.html",
                 "pages/header.html",
@@ -196,6 +197,34 @@ async function loadComponents() {
         a &&
             (a.innerHTML =
                 '<div class="error" style="padding:24px;max-width:900px;margin:0 auto;">Gagal memuat komponen. Cek Console.</div>');
+=======
+        const headerHTML = await fetchFirstOk([
+            "pages/partials/header.html",
+            "pages/header.html",
+        ]);
+        const footerHTML = await fetchFirstOk([
+            "pages/partials/footer.html",
+            "pages/footer.html",
+        ]);
+        const headerEl = document.getElementById("header");
+        const footerEl = document.getElementById("footer");
+        if (headerEl) { headerEl.innerHTML = headerHTML; headerEl.classList.add("header"); }
+        if (footerEl) footerEl.innerHTML = footerHTML;
+
+        setupNavigation();
+        setupDropdowns();
+        setupStickyHeader();
+        setupMobileMenu();
+        updateHeaderAuthButton();
+        updateGuestOnlySections(document);
+        navigateTo(getPageFromHash(), { replace: true });
+    } catch (err) {
+        console.error("Gagal memuat komponen:", err);
+        const content = document.getElementById("content");
+        if (content) {
+            content.innerHTML = `<div class="error" style="padding:24px;max-width:900px;margin:0 auto;">Gagal memuat komponen. Cek Console.</div>`;
+        }
+>>>>>>> f095065e321e32c52ed71452dd74841c27579e72
     }
 }
 async function loadPageHtml(e) {

@@ -47,10 +47,20 @@
     <script src="/assets/js/lembaga.js?v=20260621-fix" defer></script>
     <script src="/assets/js/unit-kerja.js?v=20260621-fix" defer></script>
 
+<<<<<<< HEAD
     <!-- ADMIN JS -->
     <script src="/assets/js/admin/admin.js?v=20260621-fix19" defer></script>
     <script src="/assets/js/admin/admin_pagination_fix.js?v=20260621-fix" defer></script>
     <script src="/assets/js/admin/admin-enhance.js?v=20260621-fix13" defer></script>
+=======
+    <script src="{{ asset('assets/js/public/public.js') }}" defer></script>
+    <script src="/assets/js/public/home_sections.js" defer></script>
+    <script src="{{ asset('assets/js/admin/admin.js') }}" defer></script>
+    <script src="{{ asset('assets/js/staf/staf.js') }}" defer></script>
+    <script src="{{ asset('assets/js/staf/buat-surat.js') }}" defer></script>
+    <script src="{{ asset('assets/js/staf/arsip-surat.js') }}" defer></script>
+    <script src="{{ asset('assets/js/warga/warga.js') }}" defer></script>
+>>>>>>> f095065e321e32c52ed71452dd74841c27579e72
 
     <!-- STAF JS -->
     <script src="/assets/js/staf/staf.js?v=20260621-fix19" defer></script>
